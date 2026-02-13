@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Legal Compliant)</title>
+    <title>Spektra Install - Revízny Systém (Final Fix)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,26 +15,17 @@
             --preview-bg: #525252;
         }
 
-        body { 
-            background-color: var(--bg-color); 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0; padding: 0; 
-            transition: background-color 0.3s;
-        }
+        body { background-color: var(--bg-color); font-family: 'Roboto', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s; }
 
-        .app-container { 
-            display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 20px; 
-            max-width: 1600px; margin: 0 auto; align-items: start; transition: all 0.3s ease;
-        }
+        .app-container { display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; align-items: start; transition: all 0.3s ease; }
 
         /* OVLÁDACÍ PANEL */
-        .controls { 
-            background: white; padding: 20px; border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            position: sticky; top: 20px; z-index: 50; 
-        }
+        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; z-index: 50; }
         .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
         .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        
         label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; }
         input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
@@ -53,7 +44,7 @@
         .preview-container { display: flex; justify-content: center; transition: all 0.3s ease; }
         .a4-page { width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; }
 
-        /* PREVIEW MODE & MODAL & TOAST */
+        /* PREVIEW MODE */
         body.preview-mode { background-color: var(--preview-bg); }
         body.preview-mode .controls { display: none; }
         body.preview-mode .app-container { grid-template-columns: 1fr; display: flex; justify-content: center; }
@@ -80,19 +71,15 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        .notes-section { border: 1px solid #ccc; min-height: 60px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
+        .notes-section { border: 1px solid #ccc; min-height: 50px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
         .notes-text { font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
         .notes-canvas-container { flex-grow: 1; border: 1px dashed #ddd; cursor: pointer; position: relative; background: #fffafa; min-height: 50px; }
         #preview-notes-canvas { width: 100%; height: 100%; display: block; }
         
         .conclusion-text { font-size: 10px; margin-top: 5px; text-align: justify; line-height: 1.3; }
-
         .footer-area { margin-top: auto; }
-        
-        /* STATUS BOX - DYNAMIC */
         .status-box { margin: 5px auto 15px auto; border: 2px solid var(--success); padding: 6px; text-align: center; font-size: 12px; font-weight: 800; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
-
         .legal-text { font-size: 8px; color: #555; text-align: justify; margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 5px; }
 
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
@@ -152,9 +139,9 @@
         
         <div class="section-title">Základné údaje</div>
         <div class="form-group">
-            <label style="color:#c2410c;">TYP ZARIADENIA</label>
+            <label style="color:#c2410c;">KATEGÓRIA ZARIADENIA</label>
             <select id="inp-scenario" onchange="changeScenario()" style="font-weight:bold; color:#c2410c;">
-                <option value="plyn">🔥 PLYNOVÝ KOTOL (508/2009)</option>
+                <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
             </select>
         </div>
@@ -176,30 +163,36 @@
         </div>
         <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
 
-        <div class="section-title">Údaje zákazníka a zariadenia</div>
+        <div class="section-title">Údaje zákazníka</div>
         <div class="form-group"><label>Zákazník (Prevádzkovateľ)</label><input type="text" id="inp-name" placeholder="Meno"></div>
         <div class="form-group"><label>Adresa (Sídlo/Prevádzka)</label><input type="text" id="inp-addr" placeholder="Miesto"></div>
-        <div class="form-group"><label>Zariadenie (Model)</label><input type="text" id="inp-dev" placeholder="Model"></div>
-        <div class="form-group"><label>Sériové číslo (S/N)</label><input type="text" id="inp-sn" placeholder="Výrobné číslo"></div>
         
-        <div class="section-title">Technik a Prístroje</div>
-        <div class="form-group"><label>Revízny technik</label><input type="text" id="inp-tech-name" value="Pavol Pastorek"></div>
-        <div class="form-group"><label>Číslo osvedčenia</label><input type="text" id="inp-tech-id" value="1234/5/2023-PZ-A,Bg,Bh"></div>
-        <div class="form-group"><label>Prístroj / Ev. číslo</label><input type="text" id="inp-tool" value="Testo 330-2 LL (Kal. 12/2026)"></div>
-
+        <div class="section-title">Technické zariadenie</div>
+        <div class="form-row">
+            <div class="form-group"><label>Zariadenie (Typ)</label><input type="text" id="inp-dev" placeholder="Napr. Plynový kotol"></div>
+            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" placeholder="Výrobca"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Sériové číslo (S/N)</label><input type="text" id="inp-sn" placeholder="Výr. číslo"></div>
+            <div class="form-group"><label>Rok výroby</label><input type="text" id="inp-year" placeholder="Rok"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" placeholder="kW"></div>
+            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" placeholder="Napr. ZP"></div>
+        </div>
+        
         <div class="section-title">Výsledok</div>
+        
         <div class="form-group">
-            <label>Nedostatky z minulej prehliadky</label>
-            <select id="inp-prev-defects" onchange="render()">
-                <option value="Neboli zistené">Neboli zistené</option>
-                <option value="Boli odstránené">Boli odstránené</option>
-                <option value="Neboli odstránené">Neboli odstránené!</option>
-            </select>
+            <label style="color:var(--primary);">2. Zistené nedostatky (Detaily)</label>
+            <textarea id="inp-notes" rows="2" placeholder="Ak sú, popíšte ich..." oninput="renderNotes()"></textarea>
         </div>
+
         <div class="form-group">
-            <label style="color:var(--primary);">📝 Zistené nedostatky (Aktuálne)</label>
-            <textarea id="inp-notes" rows="3" placeholder="Tu napíšte závady..." oninput="renderNotes()"></textarea>
+            <label style="color:#000;">3. Umiestnenie / Trasa / Poznámka</label>
+            <textarea id="inp-location-note" rows="3" placeholder="Popis umiestnenia, dĺžka potrubia, trasa..." oninput="render()"></textarea>
         </div>
+
         <div class="form-group" style="background: #fffbe6; padding: 10px; border: 1px solid #ffe58f; border-radius: 6px;">
             <label style="color: #d48806;">⚖️ CELKOVÉ HODNOTENIE</label>
             <select id="inp-status" onchange="renderStatus()" style="font-weight:bold;">
@@ -238,8 +231,8 @@
                 </div>
                 <div class="box">
                     <div class="box-title">REVIZNY TECHNIK / ORGANIZÁCIA</div>
-                    <div class="row-item"><span>Meno:</span> <strong id="out-tech-name">Pavol Pastorek</strong></div>
-                    <div class="row-item"><span>Osvedčenie č.:</span> <strong style="font-size:9px" id="out-tech-id">...</strong></div>
+                    <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
+                    <div class="row-item"><span>Osvedčenie č.:</span> <strong style="font-size:9px">1234/5/2023-PZ-A,Bg,Bh</strong></div>
                     <div class="row-item"><span>Evidenčné č.:</span> <strong>SPE-26-001</strong></div>
                 </div>
             </div>
@@ -247,17 +240,19 @@
             <div class="info-grid">
                 <div class="box">
                     <div class="box-title">TECHNICKÉ ZARIADENIE (VTZ)</div>
-                    <div class="row-item"><span>Typ:</span> <strong id="out-dev">Kotol</strong></div>
-                    <div class="row-item"><span>S/N:</span> <strong id="out-sn">-</strong></div>
-                    <div class="row-item"><span>Zatriedenie:</span> <strong>Skupina Bh (Vyhl. 508/2009)</strong></div>
-                    <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
+                    <div class="row-item"><span>Zariadenie:</span> <strong id="out-dev">Kotol</strong></div>
+                    <div class="row-item"><span>Výrobca:</span> <strong id="out-manuf">-</strong></div>
+                    <div class="row-item"><span>Výrobné číslo:</span> <strong id="out-sn">-</strong></div>
+                    <div class="row-item"><span>Rok výroby:</span> <strong id="out-year">-</strong></div>
+                    <div class="row-item"><span>Parametre:</span> <strong id="out-params">-</strong></div>
+                    <div class="row-item"><span>Zatriedenie:</span> <strong id="out-group">Skupina Bh</strong></div>
                 </div>
                 <div class="box">
                     <div class="box-title">ÚDAJE O PREHLIADKE</div>
                     <div class="row-item"><span>Druh:</span> <strong id="out-type">Periodická...</strong></div>
                     <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
-                    <div class="row-item"><span>Prístroj:</span> <span id="out-tool">Testo</span></div>
-                    <div class="row-item"><span>Závady z minula:</span> <strong id="out-prev-defects">Neboli zistené</strong></div>
+                    <div class="row-item"><span>Prístroj:</span> <span>Testo 330-2 LL</span></div>
+                    <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
                 </div>
             </div>
 
@@ -269,19 +264,21 @@
 
             <div class="section-header">2. ZISTENÉ NEDOSTATKY A ZÁVADY</div>
             <div class="notes-section">
-                <div class="notes-text" id="out-notes-text">
-                    V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke.
-                </div>
+                <div class="notes-text" id="out-notes-text">V čase prehliadky neboli na zariadení zistené závady.</div>
                 <div class="notes-canvas-container" onclick="openModal('notes')">
                     <canvas id="preview-notes-canvas"></canvas>
                     <div class="tap-hint-notes" id="notes-hint">🖊️ Náčrt (voliteľné)</div>
                 </div>
             </div>
 
-            <div class="section-header">3. CELKOVÉ HODNOTENIE A ZÁVER</div>
+            <div class="section-header">3. OSTATNÉ ZISTENIA / UMIESTNENIE / POZNÁMKY</div>
+            <div class="notes-section" style="min-height:40px;">
+                <div class="notes-text" id="out-location-note" style="min-height:30px;">-</div>
+            </div>
+
+            <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
             <div class="conclusion-text" id="out-conclusion">
-                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z.
-                <br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong id="out-next-date">...</strong>.
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky...
             </div>
 
             <div class="footer-area">
@@ -319,20 +316,29 @@
 </div>
 
 <script>
-    // === LOGIKA STAVU (SPÔSOBILÉ/NESPÔSOBILÉ) ===
+    // === LOGIKA STAVU (OPRAVENÁ) ===
     function renderStatus() {
         const status = document.getElementById('inp-status').value;
         const statusBox = document.getElementById('out-status-box');
         const conclusion = document.getElementById('out-conclusion');
-        const nextDate = document.getElementById('out-next-date').textContent;
+        const nextDate = document.getElementById('out-next-date') ? document.getElementById('out-next-date').textContent : '...';
         
+        // Získanie nasledujúceho dátumu pre text (ak existuje)
+        const dVal = document.getElementById('inp-date').value;
+        let nextD = "...";
+        if(dVal) {
+            const d = new Date(dVal);
+            d.setFullYear(d.getFullYear() + 1);
+            nextD = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
+        }
+
         if (status === 'ok') {
             statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY";
-            statusBox.className = "status-box"; // Green
-            conclusion.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z.<br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextDate}</strong>.`;
+            statusBox.className = "status-box"; 
+            conclusion.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z.<br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
         } else {
             statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
-            statusBox.className = "status-box danger"; // Red
+            statusBox.className = "status-box danger"; // Pridá červenú triedu
             conclusion.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky.<br><strong>NÁVRH OPATRENÍ:</strong> Zariadenie je nutné bezodkladne odstaviť z prevádzky do odstránenia zistených nedostatkov uvedených v bode 2.`;
         }
         autoSave();
@@ -340,15 +346,26 @@
 
     // === RENDER ===
     function render() {
+        // Základné
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
+        
+        // Technické
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
+        document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
-        document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
+        document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
+        
+        const power = document.getElementById('inp-power').value;
+        const fuel = document.getElementById('inp-fuel').value;
+        document.getElementById('out-params').textContent = (power ? power + " " : "") + (fuel ? "/ " + fuel : "");
+        
+        // Ostatné
         document.getElementById('out-type').textContent = document.getElementById('inp-type').value;
-        document.getElementById('out-tech-name').textContent = document.getElementById('inp-tech-name').value;
-        document.getElementById('out-tech-id').textContent = document.getElementById('inp-tech-id').value;
-        document.getElementById('out-prev-defects').textContent = document.getElementById('inp-prev-defects').value;
+        
+        // POZNÁMKA (NOVÉ)
+        const locNote = document.getElementById('inp-location-note').value;
+        document.getElementById('out-location-note').innerText = locNote.trim() ? locNote : "-";
         
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
@@ -356,11 +373,8 @@
             const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
             document.getElementById('out-date').textContent = ds;
             document.getElementById('out-date-sig').textContent = ds;
-            // +1 rok
-            d.setFullYear(d.getFullYear() + 1);
-            document.getElementById('out-next-date').textContent = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
         }
-        renderStatus(); // Update status text based on date
+        renderStatus(); // Refresh status text
     }
 
     // === AUTOSAVE ===
@@ -369,36 +383,38 @@
             name: document.getElementById('inp-name').value,
             addr: document.getElementById('inp-addr').value,
             dev: document.getElementById('inp-dev').value,
+            manuf: document.getElementById('inp-manuf').value,
+            year: document.getElementById('inp-year').value,
+            power: document.getElementById('inp-power').value,
+            fuel: document.getElementById('inp-fuel').value,
             sn: document.getElementById('inp-sn').value,
-            tool: document.getElementById('inp-tool').value,
             notes: document.getElementById('inp-notes').value,
+            locNote: document.getElementById('inp-location-note').value, // Nové
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
             type: document.getElementById('inp-type').value,
-            techName: document.getElementById('inp-tech-name').value,
-            techId: document.getElementById('inp-tech-id').value,
-            prevDefects: document.getElementById('inp-prev-defects').value,
             status: document.getElementById('inp-status').value
         };
-        localStorage.setItem('autosave_data_legal', JSON.stringify(data));
+        localStorage.setItem('autosave_final_fix', JSON.stringify(data));
         showToast();
     }
 
     function loadAutoSave() {
-        const saved = localStorage.getItem('autosave_data_legal');
+        const saved = localStorage.getItem('autosave_final_fix');
         if (saved) {
             const data = JSON.parse(saved);
             if(data.name) document.getElementById('inp-name').value = data.name;
             if(data.addr) document.getElementById('inp-addr').value = data.addr;
             if(data.dev) document.getElementById('inp-dev').value = data.dev;
+            if(data.manuf) document.getElementById('inp-manuf').value = data.manuf;
+            if(data.year) document.getElementById('inp-year').value = data.year;
+            if(data.power) document.getElementById('inp-power').value = data.power;
+            if(data.fuel) document.getElementById('inp-fuel').value = data.fuel;
             if(data.sn) document.getElementById('inp-sn').value = data.sn;
-            if(data.tool) document.getElementById('inp-tool').value = data.tool;
             if(data.notes) document.getElementById('inp-notes').value = data.notes;
+            if(data.locNote) document.getElementById('inp-location-note').value = data.locNote;
             if(data.date) document.getElementById('inp-date').value = data.date;
             if(data.type) document.getElementById('inp-type').value = data.type;
-            if(data.techName) document.getElementById('inp-tech-name').value = data.techName;
-            if(data.techId) document.getElementById('inp-tech-id').value = data.techId;
-            if(data.prevDefects) document.getElementById('inp-prev-defects').value = data.prevDefects;
             if(data.status) document.getElementById('inp-status').value = data.status;
             if(data.scenario) {
                 document.getElementById('inp-scenario').value = data.scenario;
@@ -410,18 +426,12 @@
     }
 
     function clearAllData() {
-        if(confirm("Vymazať údaje a začať novú správu?")) {
-            localStorage.removeItem('autosave_data_legal');
-            // Reset fields
-            document.getElementById('inp-name').value = '';
-            document.getElementById('inp-addr').value = '';
-            document.getElementById('inp-dev').value = '';
-            document.getElementById('inp-sn').value = '';
-            document.getElementById('inp-notes').value = '';
-            document.getElementById('inp-status').value = 'ok';
-            document.getElementById('inp-prev-defects').value = 'Neboli zistené';
-            
+        if(confirm("Nová správa?")) {
+            localStorage.removeItem('autosave_final_fix');
+            document.querySelectorAll('input:not(#inp-no), textarea').forEach(el => el.value = '');
             document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('inp-status').value = 'ok';
+            
             const sigCtx = document.getElementById('preview-sig-canvas').getContext('2d');
             sigCtx.clearRect(0,0,300,150);
             const noteCtx = document.getElementById('preview-notes-canvas').getContext('2d');
@@ -434,10 +444,9 @@
         }
     }
 
-    // === ZVYŠNÉ FUNKCIE (Bez zmeny) ===
+    // === ZVYŠNÉ (BEZ ZMENY) ===
     function showToast() { const t = document.getElementById('save-toast'); t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 1500); }
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    
     function generateReportNumber() {
         const year = new Date().getFullYear();
         let count = localStorage.getItem(`rev_count_${year}`);
@@ -455,6 +464,7 @@
         plyn: {
             title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA",
             lawShort: "Vyhl. 508/2009 Z.z.",
+            group: "Skupina Bh (do 0,5 MW)",
             rows: [
                 { l: "Tlak plynu na vstupe (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },
                 { l: "Tesnosť plynových spojov", n: "0 ppm (bez úniku)", v: "0 ppm" },
@@ -470,6 +480,7 @@
         tc: {
             title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV",
             lawShort: "Zákon č. 286/2009",
+            group: "Chladiace zariadenie",
             rows: [
                 { l: "Kontrola úniku (Detektor)", n: "Bez úniku", v: "Negatívny" },
                 { l: "Vizuálna kontrola okruhu", n: "Bez oleja", v: "OK" },
@@ -487,6 +498,7 @@
         const data = SCENARIOS[type];
         document.getElementById('out-title').innerText = data.title;
         document.getElementById('out-law-short').textContent = data.lawShort;
+        document.getElementById('out-group').textContent = data.group;
         const tbody = document.getElementById('out-table-body');
         tbody.innerHTML = '';
         data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r.l}</td><td style="color:#555">${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`);
@@ -494,12 +506,12 @@
 
     function renderNotes() {
         const txt = document.getElementById('inp-notes').value;
-        const defaultTxt = "V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.";
+        const defaultTxt = "V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke.";
         document.getElementById('out-notes-text').innerText = txt.trim() ? txt : defaultTxt;
         autoSave();
     }
 
-    // Drawing Logic (Same as before)
+    // Canvas Logic
     let currentTarget = ''; const modal = document.getElementById('drawing-modal'); const fullCanvas = document.getElementById('full-screen-canvas'); const ctx = fullCanvas.getContext('2d'); let isDrawing = false;
     function openModal(t) { currentTarget = t; modal.style.display = 'flex'; document.getElementById('modal-title').innerText = t==='sig' ? '✍️ Podpis zákazníka' : '🖊️ Náčrt'; fullCanvas.width = fullCanvas.offsetWidth; fullCanvas.height = fullCanvas.offsetHeight; ctx.lineWidth = t==='sig' ? 3 : 2; ctx.lineCap = 'round'; ctx.strokeStyle = t==='sig' ? '#000' : '#D60000'; }
     function closeModal() { modal.style.display = 'none'; }
