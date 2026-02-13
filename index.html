@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oficiálna Správa o Odbornej Prehliadke a Skúške (OPaS)</title>
+    <title>OPaS - Digitálny Podpis</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -56,7 +56,7 @@
             position: relative;
         }
 
-        /* HLAVIČKA - OFICIÁLNA */
+        /* HLAVIČKA */
         .header { 
             border-bottom: 2px solid var(--primary); 
             padding-bottom: 5px; margin-bottom: 10px; 
@@ -64,12 +64,11 @@
         }
         .brand h1 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 900; }
         .brand .sub { font-size: 9px; color: #333; margin-top: 2px; }
-        
         .report-meta { text-align: right; }
         .report-type { font-size: 14px; font-weight: 800; text-transform: uppercase; color: #000; line-height: 1.2; }
         .report-no { font-size: 12px; margin-top: 3px; }
 
-        /* TECHNICKÉ GRIDY */
+        /* INFO BOXY */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ccc; padding: 6px; }
         .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
@@ -77,40 +76,66 @@
         .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; }
         .row-item strong { font-weight: 600; }
 
-        .section-header { 
-            background: #eee; padding: 4px 8px; font-weight: 700; font-size: 10px; 
-            text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); 
-        }
+        .section-header { background: #eee; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); }
 
-        /* TABUĽKA MERANÍ */
+        /* TABUĽKA */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; font-size: 10px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        /* OBLASŤ PRE TEXTY */
-        .text-area { font-size: 10px; line-height: 1.3; margin-top: 5px; text-align: justify; }
-
-        /* FOOTER AREA */
+        /* PÄTA A PODPISY */
         .footer-area { margin-top: auto; }
+        .legal-small { font-size: 8px; color: #555; text-align: justify; margin-bottom: 10px; line-height: 1.2; }
         
-        /* STATUS BOX */
         .status-box { 
-            margin: 10px auto; 
-            border: 2px solid var(--success); padding: 6px; 
+            margin: 10px auto; border: 2px solid var(--success); padding: 6px; 
             text-align: center; font-size: 13px; font-weight: 800; color: var(--success); 
             width: 80%; border-radius: 0; background: #f0fdf4; text-transform: uppercase;
         }
 
-        .legal-small { font-size: 8px; color: #555; text-align: justify; margin-bottom: 10px; line-height: 1.2; }
-
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
-        .sig-box { width: 30%; text-align: center; }
-        .sig-line { border-top: 1px solid #000; margin-top: 25px; font-size: 9px; padding-top: 2px; }
+        .sig-box { width: 32%; text-align: center; position: relative; }
+        .sig-line { border-top: 1px solid #000; margin-top: 5px; font-size: 9px; padding-top: 2px; font-weight: 700; }
+
+        /* KANVAS A UPLOAD */
+        canvas#cust-sig-canvas {
+            border: 1px dashed #ccc;
+            cursor: crosshair;
+            background: #fff;
+            touch-action: none; /* Dôležité pre dotykové obrazovky */
+        }
+        
+        .sig-controls {
+            margin-top: 2px;
+            font-size: 9px;
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        button.small-btn {
+            background: #eee; border: 1px solid #ccc; padding: 2px 5px; cursor: pointer; font-size: 9px; border-radius: 3px;
+        }
+        button.small-btn:hover { background: #ddd; }
+
+        .tech-sig-img {
+            max-width: 140px;
+            max-height: 60px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        input[type="file"] { display: none; }
+        .upload-label {
+            background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 9px; display: inline-block; margin-bottom: 2px;
+        }
 
         @media print {
             body { background: white; }
             .app-container { display: block; width: 100%; margin: 0; padding: 0; }
-            .controls { display: none !important; }
+            .controls, .sig-controls, .upload-label { display: none !important; } /* Skryje tlačidlá pri tlači */
+            canvas { border: none !important; } /* Skryje rámik pri tlači */
             .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; }
             @page { size: A4; margin: 0; }
         }
@@ -120,45 +145,20 @@
 
 <div class="app-container">
     <section class="controls">
-        <h2 style="margin-top:0; font-size:14px; color:var(--primary)">Parametre OPaS</h2>
+        <h2 style="margin-top:0; font-size:14px; color:var(--primary)">Nastavenia Revízie</h2>
         
-        <div class="form-group">
-            <label>Legislatívny rámec</label>
-            <select id="inp-law">
-                <option value="508">Vyhradené Tech. Zariadenie (VTZ) - 508/2009 Z.z.</option>
-                <option value="459">Plynové zariadenia - Vyhl. 459/2009 Z.z.</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Druh prehliadky</label>
-            <select id="inp-type">
-                <option value="Periodická odborná prehliadka">Periodická odborná prehliadka</option>
-                <option value="Východisková odborná prehliadka">Východisková odborná prehliadka</option>
-                <option value="Odborná skúška (Tlaková)">Odborná skúška (Tlaková)</option>
-            </select>
-        </div>
-
         <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="OPaS-2026/001"></div>
         <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
-
-        <hr style="border:0; border-top:1px solid #eee; margin:5px 0">
-
-        <div class="form-group"><label>Prevádzkovateľ</label><input type="text" id="inp-name" placeholder="Názov firmy / Meno"></div>
-        <div class="form-group"><label>Adresa / Miesto</label><input type="text" id="inp-addr"></div>
         
         <hr style="border:0; border-top:1px solid #eee; margin:5px 0">
+        <div class="form-group"><label>Prevádzkovateľ</label><input type="text" id="inp-name" placeholder="Firma / Meno"></div>
+        <div class="form-group"><label>Adresa</label><input type="text" id="inp-addr"></div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:5px 0">
+        <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-dev" placeholder="Napr. Plynový kotol Viessmann"></div>
+        <div class="form-group"><label>Merací prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL"></div>
 
-        <div class="form-group"><label>Technické zariadenie</label><input type="text" id="inp-dev" placeholder="Napr. Plynový kotol Viessmann"></div>
-        <div class="form-group"><label>Výrobné číslo</label><input type="text" id="inp-sn"></div>
-        <div class="form-group"><label>Rok výroby / Výkon</label><input type="text" id="inp-param" placeholder="2020 / 24 kW"></div>
-        <div class="form-group"><label>Skupina zariadenia</label><input type="text" id="inp-grp" value="Bh (do 0,5 MW)"></div>
-
-        <div class="form-group"><label>Revízny technik (Číslo osvedčenia)</label><input type="text" id="inp-tech-id" value="ev. č. 1234/5/2023-PZ-A,Bg,Bh"></div>
-
-        <div class="form-group"><label>Použitý merací prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL (Kalibrácia do 12/2026)"></div>
-
-        <button class="btn-print" onclick="window.print()">Tlačiť Protokol</button>
+        <button class="btn-print" onclick="window.print()">🖨️ Tlačiť Dokument</button>
     </section>
 
     <section class="preview-container">
@@ -172,7 +172,7 @@
                     </div>
                 </div>
                 <div class="report-meta">
-                    <div class="report-type" id="out-type">SPRÁVA O ODBORNEJ PREHLIADKE<br>A ODBORNEJ SKÚŠKE PLYNOVÉHO ZARIADENIA</div>
+                    <div class="report-type">SPRÁVA O ODBORNEJ PREHLIADKE<br>A ODBORNEJ SKÚŠKE PLYNOVÉHO ZARIADENIA</div>
                     <div class="report-no" id="out-no">Číslo: OPaS-2026/001</div>
                 </div>
             </div>
@@ -190,7 +190,7 @@
                     <div class="box-title">REVIZNY TECHNIK / ORGANIZÁCIA</div>
                     <div class="box-content">
                         <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                        <div class="row-item"><span>Osvedčenie č.:</span> <strong id="out-tech-id">1234/5/2023</strong></div>
+                        <div class="row-item"><span>Osvedčenie č.:</span> <strong>1234/5/2023</strong></div>
                         <div class="row-item"><span>Evidenčné č.:</span> <span>SPE-26-001</span></div>
                     </div>
                 </div>
@@ -201,17 +201,16 @@
                     <div class="box-title">TECHNICKÉ ZARIADENIE (VTZ)</div>
                     <div class="box-content">
                         <div class="row-item"><span>Názov:</span> <strong id="out-dev">Plynový kotol</strong></div>
-                        <div class="row-item"><span>Výr. číslo:</span> <span id="out-sn">-</span></div>
-                        <div class="row-item"><span>Rok/Výkon:</span> <span id="out-param">-</span></div>
-                        <div class="row-item"><span>Zatriedenie:</span> <strong id="out-grp">Skupina Bh</strong></div>
+                        <div class="row-item"><span>Výr. číslo:</span> <span>123456789</span></div>
+                        <div class="row-item"><span>Zatriedenie:</span> <strong>Skupina Bh (do 0,5 MW)</strong></div>
                     </div>
                 </div>
                 <div class="box">
                     <div class="box-title">ÚDAJE O PREHLIADKE</div>
                     <div class="box-content">
-                        <div class="row-item"><span>Druh:</span> <strong id="out-type-small">Periodická</strong></div>
-                        <div class="row-item"><span>Dátum výkonu:</span> <strong id="out-date">13. 02. 2026</strong></div>
-                        <div class="row-item"><span>Merací prístroj:</span> <span id="out-tool">Testo</span></div>
+                        <div class="row-item"><span>Druh:</span> <strong>Periodická</strong></div>
+                        <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
+                        <div class="row-item"><span>Prístroj:</span> <span id="out-tool">Testo 330</span></div>
                     </div>
                 </div>
             </div>
@@ -220,79 +219,81 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width:40%">Predmet merania / kontroly</th>
-                        <th style="width:20%">Predpísaná hodnota</th>
-                        <th style="width:20%">Nameraná hodnota</th>
+                        <th style="width:40%">Predmet merania</th>
+                        <th style="width:20%">Norma</th>
+                        <th style="width:20%">Namerané</th>
                         <th style="width:20%">Hodnotenie</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>Tlak plynu na vstupe (HUP)</td><td>1.8 - 2.5 kPa</td><td><strong>2.1 kPa</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Tesnosť plynových spojov (detektor)</td><td>0 ppm (bez úniku)</td><td><strong>0 ppm</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Koncentrácia CO v spalinách</td><td>max. 100 ppm</td><td><strong>14 ppm</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Ťah komína / Teplota spalín</td><td>min. 3 Pa / max 80°C</td><td><strong>12 Pa / 45°C</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Funkcia blokovacích prvkov</td><td>vypnutie &lt; 1s</td><td><strong>0.5s</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Tlak vo vykurovacej sústave</td><td>1.0 - 2.0 bar</td><td><strong>1.5 bar</strong></td><td>Vyhovuje</td></tr>
-                    <tr><td>Vizuálna kontrola umiestnenia</td><td>podľa TPP 704 01</td><td><strong>Bez závad</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Tlak plynu na vstupe</td><td>1.8 - 2.5 kPa</td><td><strong>2.1 kPa</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Tesnosť spojov (detektor)</td><td>0 ppm</td><td><strong>0 ppm</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Koncentrácia CO</td><td>max. 100 ppm</td><td><strong>14 ppm</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Ťah komína / Teplota</td><td>min. 3 Pa</td><td><strong>12 Pa / 45°C</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Funkcia blok. prvkov</td><td>&lt; 1s</td><td><strong>0.5s</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Tlak v systéme</td><td>1.0 - 2.0 bar</td><td><strong>1.5 bar</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Vizuálna kontrola</td><td>podľa TPP</td><td><strong>Bez závad</strong></td><td>Vyhovuje</td></tr>
                 </tbody>
             </table>
 
-            <div class="section-header">2. Zistené nedostatky a závady</div>
-            <div style="border:1px solid #ccc; height:40px; margin-top:5px; padding:5px; font-size:10px;">
-                V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.
-            </div>
-
-            <div class="section-header">3. Celkové hodnotenie a záver</div>
-            <div class="text-area">
-                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu. <br>
-                Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>13. 02. 2027</strong>.
+            <div class="section-header">2. Celkové hodnotenie</div>
+            <div style="font-size:10px; margin-top:5px; text-align:justify;">
+                Zariadenie nevykazuje vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky 508/2009 Z.z.
+                Ďalšia prehliadka do: <strong>13. 02. 2027</strong>.
             </div>
 
             <div class="footer-area">
-                
                 <div class="legal-small">
-                    Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. o bezpečnosti a ochrane zdravia pri práci. Prevádzkovateľ je povinný uchovávať túto správu do vykonania nasledujúcej odbornej prehliadky. Pri zistení nedostatkov je prevádzkovateľ povinný zabezpečiť ich odstránenie v stanovenom termíne.
+                    Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. Prevádzkovateľ je povinný uchovávať túto správu do nasledujúcej prehliadky.
                 </div>
 
-                <div class="status-box">
-                    ZARIADENIE JE SPÔSOBILÉ NA ĎALŠIU PREVÁDZKU
-                </div>
+                <div class="status-box">ZARIADENIE JE SPÔSOBILÉ NA ĎALŠIU PREVÁDZKU</div>
 
                 <div class="signatures">
                     <div class="sig-box">
+                        <div style="height: 60px; display:flex; align-items:flex-end; justify-content:center;">
+                            <strong id="out-date-sig" style="font-size:12px;">13. 02. 2026</strong>
+                        </div>
                         <div class="sig-line">Dátum vyhotovenia</div>
-                        <strong id="out-date-sig">13. 02. 2026</strong>
                     </div>
+
                     <div class="sig-box">
+                        <canvas id="cust-sig-canvas" width="180" height="60"></canvas>
+                        <div class="sig-controls">
+                            <button class="small-btn" onclick="clearCanvas()">Vymazať</button>
+                            <span style="color:#999; font-size:8px; line-height:16px;">(Podpíšte tu)</span>
+                        </div>
                         <div class="sig-line">Podpis prevádzkovateľa</div>
-                        (oboznámený s výsledkom)
                     </div>
+
                     <div class="sig-box">
-                        <div class="sig-line">Revízny technik</div>
-                        <strong>Pavol Pastorek</strong><br>
-                        <span style="font-size:8px;">(Pečiatka a podpis)</span>
+                        <div style="height: 60px; display: flex; align-items: flex-end; justify-content: center;">
+                            <img id="tech-sig-preview" class="tech-sig-img" src="" alt="Pečiatka">
+                        </div>
+                        <div class="sig-controls">
+                            <label for="tech-sig-upload" class="upload-label">📂 Nahrať pečiatku</label>
+                            <input type="file" id="tech-sig-upload" accept="image/*" onchange="loadTechSig(event)">
+                        </div>
+                        <div class="sig-line">
+                            <strong>Pavol Pastorek</strong><br>Revízny technik
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
     </section>
 </div>
 
 <script>
+    // --- ZÁKLADNÁ LOGIKA VYKRESLOVANIA ---
     function render() {
-        // Mapovanie vstupov
         document.getElementById('out-no').textContent = "Číslo: " + document.getElementById('inp-no').value;
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
-        document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
-        document.getElementById('out-param').textContent = document.getElementById('inp-param').value || "—";
-        document.getElementById('out-grp').textContent = document.getElementById('inp-grp').value;
-        document.getElementById('out-tech-id').textContent = document.getElementById('inp-tech-id').value;
         document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
 
-        // Dátum
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
             const d = new Date(dVal);
@@ -300,13 +301,64 @@
             document.getElementById('out-date').textContent = dateStr;
             document.getElementById('out-date-sig').textContent = dateStr;
         }
-
-        // Druh prehliadky
-        const type = document.getElementById('inp-type').value;
-        document.getElementById('out-type').innerHTML = "SPRÁVA O " + type.toUpperCase() + "<br>VYHRADENÉHO TECHNICKÉHO ZARIADENIA";
-        document.getElementById('out-type-small').textContent = type;
     }
 
+    // --- PODPIS ZÁKAZNÍKA (CANVAS) ---
+    const canvas = document.getElementById('cust-sig-canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    // Nastavenie pre lepšie kreslenie
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+
+    function startPosition(e) {
+        drawing = true;
+        draw(e);
+    }
+    function endPosition() {
+        drawing = false;
+        ctx.beginPath();
+    }
+    function draw(e) {
+        if (!drawing) return;
+        e.preventDefault(); // Zabráni scrollovaniu na mobile
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    // Event Listenery (Myš)
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('mouseup', endPosition);
+    canvas.addEventListener('mousemove', draw);
+
+    // Event Listenery (Dotyk - Mobil/Tablet)
+    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('touchend', endPosition);
+    canvas.addEventListener('touchmove', draw);
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // --- NAHRANIE PEČIATKY TECHNIKA ---
+    function loadTechSig(event) {
+        const reader = new FileReader();
+        reader.onload = function(){
+            document.getElementById('tech-sig-preview').src = reader.result;
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    // Init
     document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', render));
     render();
