@@ -3,148 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Full Sig)</title>
+    <title>Spektra Install - Revízny Systém (Smart Podpis)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #D60000;
-            --gray-100: #F3F4F6;
-            --gray-200: #E5E7EB;
-            --gray-700: #374151;
-            --gray-900: #111827;
             --success: #16a34a;
         }
-
-        body { 
-            background-color: #e5e7eb; 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0; padding: 0; 
-        }
-
+        body { background-color: #e5e7eb; font-family: 'Roboto', sans-serif; margin: 0; padding: 0; }
+        
         .app-container { 
-            display: grid; 
-            grid-template-columns: 320px 1fr; 
-            gap: 20px; 
-            padding: 20px; 
-            max-width: 1600px;
-            margin: 0 auto;
-            align-items: start;
+            display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 20px; 
+            max-width: 1600px; margin: 0 auto; align-items: start; 
         }
 
-        /* === OVLÁDACÍ PANEL === */
+        /* OVLÁDANIE */
         .controls { 
-            background: white; padding: 20px; border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
             position: sticky; top: 20px; z-index: 50;
         }
-
-        .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
         .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 11px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; }
+        label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; }
         input, select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
-        
         .btn-print { 
-            width: 100%; background: var(--primary); color: white; border: none; 
-            padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; 
-            margin-top: 10px; font-size: 14px; text-transform: uppercase; 
+            width: 100%; background: var(--primary); color: white; border: none; padding: 14px; 
+            border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 10px; font-size: 14px; text-transform: uppercase; 
         }
 
-        /* === NÁHĽAD A4 === */
+        /* DOKUMENT A4 */
         .preview-container { display: flex; justify-content: center; }
         .a4-page {
             width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm;
-            box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: flex; flex-direction: column; position: relative;
+            box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column;
         }
 
+        /* DIZAJN PRVKOV DOKUMENTU */
         .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 900; }
         .brand .sub { font-size: 9px; color: #444; margin-top: 2px; }
         .report-meta { text-align: right; }
-        .report-type { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #000; line-height: 1.2; max-width: 250px; }
+        .report-type { font-size: 11px; font-weight: 800; text-transform: uppercase; line-height: 1.2; }
         .report-no { font-size: 12px; margin-top: 4px; font-weight: 500; }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
-        .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
+        .box { border: 1px solid #ddd; padding: 6px; }
+        .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; }
         .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; }
-        
+
         .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 10px; border-left: 3px solid var(--primary); }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10px; }
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
         
-        .notes-box { border: 1px solid #ccc; min-height: 40px; margin-top: 5px; font-size: 10px; padding: 5px; }
         .footer-area { margin-top: auto; }
-        .legal-text { font-size: 8px; color: #555; text-align: justify; margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 5px; }
         .status-box { margin: 5px auto 15px auto; border: 2px solid var(--success); padding: 6px; text-align: center; font-size: 12px; font-weight: 800; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        .legal-text { font-size: 8px; color: #555; text-align: justify; margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 5px; }
 
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
 
-        /* === CSS PRE SIGNATURE MODAL (FULL SCREEN) === */
+        /* MODAL PRE PODPIS (FULL SCREEN) */
         #sig-modal {
-            display: none; /* Skryté defaultne */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 9999;
-            flex-direction: column; justify-content: space-between;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 9999; flex-direction: column;
         }
-        
-        .modal-header {
-            padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd;
-            text-align: center; font-weight: bold; color: #333;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .modal-canvas-area {
-            flex-grow: 1; position: relative; background: #fff;
-            background-image: radial-gradient(#ddd 1px, transparent 1px);
-            background-size: 20px 20px; /* Bodky pre lepšiu orientáciu */
-        }
-
-        #full-sig-canvas {
-            width: 100%; height: 100%; display: block; touch-action: none;
-        }
-
-        .modal-footer {
-            padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd;
-            display: flex; gap: 10px;
-        }
-
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .modal-canvas-area { flex-grow: 1; position: relative; background: #fff; touch-action: none; }
+        #full-sig-canvas { width: 100%; height: 100%; display: block; }
+        .modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 10px; }
         .btn-modal { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-save { background: var(--success); color: white; }
-        .btn-clear { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .btn-close { background: #e5e7eb; color: #333; }
+        .btn-clear { background: #fee2e2; color: #991b1b; }
 
-        /* Preview Canvas (Malý na A4) */
-        #preview-sig-canvas {
-            border: 2px dashed #D60000; width: 100%; height: 50px; cursor: pointer;
-            background: #fffafa;
-        }
-        .tap-hint { font-size: 9px; color: #D60000; margin-top: 2px; display: block; cursor: pointer;}
-
-        .tech-sig-img { max-width: 120px; max-height: 60px; object-fit: contain; display: block; margin: 0 auto; }
+        /* PREVIEW CANVAS */
+        #preview-sig-canvas { border: 2px dashed #D60000; width: 100%; height: 50px; cursor: pointer; background: #fffafa; }
+        .tap-hint { font-size: 9px; color: #D60000; display: block; }
+        
+        .tech-sig-img { max-width: 100px; max-height: 50px; object-fit: contain; margin: 0 auto; display: block; }
         .upload-label { background: #e0e7ff; color: #3730a3; padding: 4px; border-radius: 4px; cursor: pointer; font-size: 10px; display: block; margin: 5px auto; width: 80%; }
         input[type="file"] { display: none; }
 
-        /* MOBILE RESPONSIVE */
         @media screen and (max-width: 900px) {
             .app-container { display: block; padding: 10px; }
             .controls { position: relative; top: 0; margin-bottom: 20px; }
             .preview-container { overflow-x: auto; background: #555; padding: 15px; border-radius: 8px; }
             .a4-page { transform: scale(1); min-width: 210mm; }
         }
-
-        /* PRINT */
         @media print {
-            body { background: white; }
-            .app-container { display: block; padding: 0; margin: 0; }
-            .controls, #sig-modal { display: none !important; }
-            .preview-container { display: block; padding: 0; background: white; }
-            .a4-page { box-shadow: none; margin: 0 auto; width: 210mm; height: 297mm; }
-            canvas { border: none !important; background: transparent !important; }
-            .upload-label, .tap-hint { display: none !important; }
+            .controls, #sig-modal, .upload-label, .tap-hint { display: none !important; }
+            .app-container, .preview-container { display: block; padding: 0; margin: 0; background: white; }
+            .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; }
+            canvas { border: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -154,9 +104,9 @@
 <div id="sig-modal">
     <div class="modal-header">
         <span>✍️ Podpíšte sa prstom</span>
-        <button onclick="closeModal()" style="background:none; border:none; font-size:24px;">&times;</button>
+        <button onclick="closeModal()" style="font-size:24px; border:none; background:none;">&times;</button>
     </div>
-    <div class="modal-canvas-area" id="canvas-container">
+    <div class="modal-canvas-area">
         <canvas id="full-sig-canvas"></canvas>
     </div>
     <div class="modal-footer">
@@ -166,9 +116,8 @@
 </div>
 
 <div class="app-container">
-    
     <section class="controls">
-        <h2>⚙️ Nastavenia Revízie</h2>
+        <h2>⚙️ Nastavenia</h2>
         <div class="form-group" style="background:#fff7ed; padding:10px; border:1px solid #fed7aa; border-radius:6px;">
             <label style="color:#c2410c;">TYP ZARIADENIA</label>
             <select id="inp-scenario" onchange="changeScenario()" style="font-weight:bold; color:#c2410c;">
@@ -177,11 +126,10 @@
             </select>
         </div>
         <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="REV-2026/001"></div>
-        <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
+        <div class="form-group"><label>Dátum</label><input type="date" id="inp-date"></div>
         <div class="form-group"><label>Zákazník</label><input type="text" id="inp-name" placeholder="Meno / Firma"></div>
         <div class="form-group"><label>Adresa</label><input type="text" id="inp-addr" placeholder="Miesto inštalácie"></div>
-        <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-dev" placeholder="Model"></div>
-        <div class="form-group"><label>Prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL"></div>
+        <div class="form-group"><label>Model</label><input type="text" id="inp-dev" placeholder="Zariadenie"></div>
         <button class="btn-print" onclick="window.print()">🖨️ Tlačiť / PDF</button>
     </section>
 
@@ -193,7 +141,7 @@
                     <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036</div>
                 </div>
                 <div class="report-meta">
-                    <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
+                    <div class="report-type" id="out-title">SPRÁVA O PREHLIADKE</div>
                     <div class="report-no" id="out-no">Číslo: REV-2026/001</div>
                 </div>
             </div>
@@ -205,7 +153,7 @@
                     <div class="row-item"><span>Adresa:</span> <span id="out-addr">Žilina</span></div>
                 </div>
                 <div class="box">
-                    <div class="box-title">TECHNIK / OSVEDČENIE</div>
+                    <div class="box-title">TECHNIK</div>
                     <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
                     <div class="row-item"><span>Osv.:</span> <strong>1234/5/2023</strong></div>
                 </div>
@@ -213,28 +161,25 @@
 
             <div class="info-grid">
                 <div class="box">
-                    <div class="box-title">TECHNICKÉ ZARIADENIE</div>
+                    <div class="box-title">ZARIADENIE</div>
                     <div class="row-item"><span>Typ:</span> <strong id="out-dev">Kotol</strong></div>
                     <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
                 </div>
                 <div class="box">
                     <div class="box-title">PREHLIADKA</div>
                     <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
-                    <div class="row-item"><span>Prístroj:</span> <span id="out-tool">Testo</span></div>
+                    <div class="row-item"><span>Stav:</span> <strong>Vyhovuje</strong></div>
                 </div>
             </div>
 
-            <div class="section-header">1. Výsledky meraní a skúšok</div>
+            <div class="section-header">1. Výsledky meraní</div>
             <table class="data-table">
                 <thead><tr><th>Meranie</th><th>Norma</th><th>Hodnota</th><th>Stav</th></tr></thead>
                 <tbody id="out-table-body"></tbody>
             </table>
 
-            <div class="section-header">2. Záver</div>
-            <div class="notes-box">Zariadenie je bezpečné. Neboli zistené úniky.</div>
-
             <div class="footer-area">
-                <div class="legal-text" id="out-legal-text">Doklad podľa zákona o BOZP.</div>
+                <div class="legal-text" id="out-legal-text">Doklad podľa BOZP.</div>
                 <div class="status-box">ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY</div>
 
                 <div class="signatures">
@@ -251,7 +196,7 @@
                     </div>
 
                     <div class="sig-box">
-                        <div style="height:60px; display:flex; align-items:flex-end; justify-content:center;">
+                        <div style="height:50px; display:flex; align-items:flex-end; justify-content:center;">
                             <img id="tech-sig-preview" class="tech-sig-img" src="" alt="">
                         </div>
                         <label for="tech-sig-upload" class="upload-label">📸 Pečiatka</label>
@@ -265,12 +210,12 @@
 </div>
 
 <script>
-    // === DÁTA ===
+    // DÁTA
     const SCENARIOS = {
         plyn: {
             title: "SPRÁVA O ODBORNEJ PREHLIADKE<br>A SKÚŠKE PLYNOVÉHO ZARIADENIA",
-            lawShort: "Vyhl. 508/2009 Z.z.",
-            legalText: "Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. o BOZP a Vyhlášky č. 508/2009 Z. z.",
+            lawShort: "Vyhl. 508/2009",
+            legal: "Doklad podľa § 9 zákona č. 124/2006 Z. z. o BOZP a Vyhlášky č. 508/2009 Z. z.",
             rows: [
                 { l: "Tlak plynu", n: "1.8-2.5 kPa", v: "2.1 kPa" },
                 { l: "Tesnosť (Detektor)", n: "0 ppm", v: "0 ppm" },
@@ -282,13 +227,12 @@
         tc: {
             title: "SPRÁVA O KONTROLE ÚNIKU<br>FLUÓROVANÝCH PLYNOV",
             lawShort: "Zákon č. 286/2009",
-            legalText: "Tento doklad slúži ako záznam o kontrole tesnosti podľa Nariadenia EÚ č. 517/2014 a Zákona č. 286/2009 Z. z.",
+            legal: "Záznam o kontrole tesnosti podľa Nariadenia EÚ č. 517/2014 a Zákona č. 286/2009 Z. z.",
             rows: [
                 { l: "Kontrola úniku", n: "Bez úniku", v: "Negatívny" },
-                { l: "Vizuálna kontrola", n: "Bez oleja", v: "OK" },
-                { l: "Prúd kompresora", n: "I-nom", v: "Podľa štítku" },
-                { l: "Tlak chladiva", n: "Podľa T-ok", v: "V norme" },
-                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" }
+                { l: "Prúd kompresora", n: "I-nom", v: "OK" },
+                { l: "Tlak chladiva", n: "Podľa T-ok", v: "OK" },
+                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "OK" }
             ]
         }
     };
@@ -298,12 +242,10 @@
         const data = SCENARIOS[type];
         document.getElementById('out-title').innerHTML = data.title;
         document.getElementById('out-law-short').textContent = data.lawShort;
-        document.getElementById('out-legal-text').textContent = data.legalText;
+        document.getElementById('out-legal-text').textContent = data.legal;
         const tbody = document.getElementById('out-table-body');
         tbody.innerHTML = '';
-        data.rows.forEach(r => {
-            tbody.innerHTML += `<tr><td>${r.l}</td><td style="color:#555">${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`;
-        });
+        data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r.l}</td><td style="color:#555">${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`);
     }
 
     function render() {
@@ -311,17 +253,16 @@
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
-        document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
             const d = new Date(dVal);
-            const dateStr = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2, '0')}. ${d.getFullYear()}`;
-            document.getElementById('out-date').textContent = dateStr;
-            document.getElementById('out-date-sig').textContent = dateStr;
+            const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
+            document.getElementById('out-date').textContent = ds;
+            document.getElementById('out-date-sig').textContent = ds;
         }
     }
 
-    // === LOGIKA PODPISU (MODAL) ===
+    // === LOGIKA OREZANIA (CROP) PODPISU ===
     const modal = document.getElementById('sig-modal');
     const bigCanvas = document.getElementById('full-sig-canvas');
     const bigCtx = bigCanvas.getContext('2d');
@@ -329,69 +270,88 @@
     const smallCtx = smallCanvas.getContext('2d');
     let isDrawing = false;
 
-    // Otvorenie okna
     function openModal() {
         modal.style.display = 'flex';
-        // Nastav veľkosť canvasu podľa obrazovky
+        // Nastav rozlíšenie podľa skutočnej veľkosti
         bigCanvas.width = bigCanvas.offsetWidth;
         bigCanvas.height = bigCanvas.offsetHeight;
-        
-        bigCtx.lineWidth = 3;
-        bigCtx.lineCap = 'round';
-        bigCtx.strokeStyle = '#000';
+        bigCtx.lineWidth = 3; bigCtx.lineCap = 'round'; bigCtx.strokeStyle = '#000';
     }
+    function closeModal() { modal.style.display = 'none'; }
+    function clearBigCanvas() { bigCtx.clearRect(0,0,bigCanvas.width,bigCanvas.height); bigCtx.beginPath(); }
 
-    // Zatvorenie okna
-    function closeModal() {
-        modal.style.display = 'none';
+    // Kreslenie
+    function getPos(e) {
+        const r = bigCanvas.getBoundingClientRect();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: cx - r.left, y: cy - r.top };
     }
+    function start(e) { e.preventDefault(); isDrawing=true; bigCtx.beginPath(); bigCtx.moveTo(getPos(e).x, getPos(e).y); }
+    function move(e) { if(!isDrawing) return; e.preventDefault(); bigCtx.lineTo(getPos(e).x, getPos(e).y); bigCtx.stroke(); }
+    function end() { isDrawing=false; }
+    
+    bigCanvas.addEventListener('mousedown', start); bigCanvas.addEventListener('mousemove', move); bigCanvas.addEventListener('mouseup', end);
+    bigCanvas.addEventListener('touchstart', start, {passive:false}); bigCanvas.addEventListener('touchmove', move, {passive:false}); bigCanvas.addEventListener('touchend', end);
 
-    // Uloženie podpisu (Transfer z veľkého na malý)
+    // INTELIGENTNÉ ULOŽENIE (OREZANIE)
     function saveSignature() {
-        // Vyčisti malý canvas
+        // 1. Zisti hranice podpisu (kde sú pixely)
+        const w = bigCanvas.width;
+        const h = bigCanvas.height;
+        const pixels = bigCtx.getImageData(0, 0, w, h).data;
+        let minX=w, minY=h, maxX=0, maxY=0;
+        let found = false;
+
+        for(let y=0; y<h; y++) {
+            for(let x=0; x<w; x++) {
+                const alpha = pixels[(y*w + x)*4 + 3]; // Alpha kanál
+                if(alpha > 0) {
+                    if(x < minX) minX = x;
+                    if(x > maxX) maxX = x;
+                    if(y < minY) minY = y;
+                    if(y > maxY) maxY = y;
+                    found = true;
+                }
+            }
+        }
+
+        if(!found) { closeModal(); return; } // Prázdny podpis
+
+        // Pridaj malý okraj (padding)
+        const padding = 10;
+        minX = Math.max(0, minX - padding);
+        minY = Math.max(0, minY - padding);
+        maxX = Math.min(w, maxX + padding);
+        maxY = Math.min(h, maxY + padding);
+
+        const trimW = maxX - minX;
+        const trimH = maxY - minY;
+
+        // 2. Vykresli orezaný podpis do malého canvasu so zachovaním pomeru strán
         smallCanvas.width = smallCanvas.offsetWidth;
         smallCanvas.height = smallCanvas.offsetHeight;
         smallCtx.clearRect(0, 0, smallCanvas.width, smallCanvas.height);
-        
-        // Nakresli zmenšený obrázok
-        smallCtx.drawImage(bigCanvas, 0, 0, smallCanvas.width, smallCanvas.height);
+
+        // Vypočítaj mierku (Scale) aby sa zmestil (contain)
+        const scale = Math.min(smallCanvas.width / trimW, smallCanvas.height / trimH);
+        const centerW = (smallCanvas.width - (trimW * scale)) / 2;
+        const centerH = (smallCanvas.height - (trimH * scale)) / 2;
+
+        smallCtx.drawImage(bigCanvas, minX, minY, trimW, trimH, centerW, centerH, trimW*scale, trimH*scale);
         closeModal();
     }
 
-    function clearBigCanvas() {
-        bigCtx.clearRect(0, 0, bigCanvas.width, bigCanvas.height);
-        bigCtx.beginPath();
-    }
-
-    // Kreslenie (Mouse + Touch)
-    function getPos(e, c) {
-        const rect = c.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
-    function start(e) { e.preventDefault(); isDrawing = true; bigCtx.beginPath(); bigCtx.moveTo(getPos(e, bigCanvas).x, getPos(e, bigCanvas).y); }
-    function move(e) { if(!isDrawing) return; e.preventDefault(); bigCtx.lineTo(getPos(e, bigCanvas).x, getPos(e, bigCanvas).y); bigCtx.stroke(); }
-    function end() { isDrawing = false; }
-
-    bigCanvas.addEventListener('mousedown', start);
-    bigCanvas.addEventListener('mousemove', move);
-    bigCanvas.addEventListener('mouseup', end);
-    bigCanvas.addEventListener('touchstart', start, {passive: false});
-    bigCanvas.addEventListener('touchmove', move, {passive: false});
-    bigCanvas.addEventListener('touchend', end);
-
-    // === PEČIATKA ===
-    function loadTechSig(event) {
-        if(event.target.files && event.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e){ document.getElementById('tech-sig-preview').src = e.target.result; }
-            reader.readAsDataURL(event.target.files[0]);
+    // Pečiatka
+    function loadTechSig(e) {
+        if(e.target.files && e.target.files[0]) {
+            const r = new FileReader();
+            r.onload = function(evt){ document.getElementById('tech-sig-preview').src = evt.target.result; }
+            r.readAsDataURL(e.target.files[0]);
         }
     }
 
-    // INIT
+    // Init
     document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('input').forEach(el => el.addEventListener('input', render));
     changeScenario();
