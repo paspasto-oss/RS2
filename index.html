@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Auto-Number)</title>
+    <title>Spektra Install - Revízny Systém (Updated Data)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -62,18 +62,14 @@
         /* PRVKY DOKUMENTU */
         .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
         
-        /* LOGO UPDATE: SPEKTRA ČIERNA, INSTALL ČERVENÁ */
         .brand h1 { color: var(--black); margin: 0; font-size: 24px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
-        .brand .sub { font-size: 9px; color: #444; margin-top: 2px; }
+        .brand .sub { font-size: 9px; color: #444; margin-top: 2px; line-height: 1.3; }
         
-        /* NADPIS SPRÁVY - ROZTIAHNUTÝ */
         .report-meta { text-align: right; flex-shrink: 0; }
         .report-type { 
             font-size: 11px; font-weight: 800; text-transform: uppercase; color: #000; 
-            line-height: 1.2; 
-            max-width: none; /* Zrušené obmedzenie šírky */
-            white-space: nowrap; /* Text v jednom riadku */
+            line-height: 1.2; white-space: nowrap; 
         }
         .report-no { font-size: 12px; margin-top: 4px; font-weight: 500; }
 
@@ -87,10 +83,13 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        .notes-section { border: 1px solid #ccc; min-height: 80px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
+        .notes-section { border: 1px solid #ccc; min-height: 60px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
         .notes-text { font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
-        .notes-canvas-container { flex-grow: 1; border: 1px dashed #ddd; cursor: pointer; position: relative; background: #fffafa; min-height: 60px; }
+        .notes-canvas-container { flex-grow: 1; border: 1px dashed #ddd; cursor: pointer; position: relative; background: #fffafa; min-height: 50px; }
         #preview-notes-canvas { width: 100%; height: 100%; display: block; }
+
+        /* TEXT ZÁVERU */
+        .conclusion-text { font-size: 10px; margin-top: 5px; text-align: justify; line-height: 1.3; }
 
         .footer-area { margin-top: auto; }
         .legal-text { font-size: 8px; color: #555; text-align: justify; margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 5px; }
@@ -156,6 +155,7 @@
 <div class="app-container">
     <section class="controls">
         <h2>⚙️ Nastavenia Revízie</h2>
+        
         <div class="form-group" style="background:#fff7ed; padding:10px; border:1px solid #fed7aa; border-radius:6px;">
             <label style="color:#c2410c;">TYP ZARIADENIA</label>
             <select id="inp-scenario" onchange="changeScenario()" style="font-weight:bold; color:#c2410c;">
@@ -167,16 +167,16 @@
         <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label>Číslo správy</label>
-                <button class="btn-reset" onclick="resetCounter()">Resetovať počítadlo</button>
+                <button class="btn-reset" onclick="resetCounter()">Resetovať</button>
             </div>
             <input type="text" id="inp-no" readonly style="background:#f9fafb; color:#666;">
         </div>
 
-        <div class="form-group"><label>Dátum</label><input type="date" id="inp-date"></div>
+        <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
         <div class="form-group"><label>Zákazník</label><input type="text" id="inp-name" placeholder="Meno"></div>
         <div class="form-group"><label>Adresa</label><input type="text" id="inp-addr" placeholder="Miesto"></div>
         <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-dev" placeholder="Model"></div>
-        <div class="form-group"><label>Prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL"></div>
+        <div class="form-group"><label>Prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL (Kalibrácia do 12/2026)"></div>
         
         <div class="form-group">
             <label style="color:var(--primary);">📝 Poznámky / Zistené nedostatky</label>
@@ -191,7 +191,7 @@
             <div class="header">
                 <div class="brand">
                     <h1>SPEKTRA <span>INSTALL</span></h1>
-                    <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036</div>
+                    <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | DPH: 23%<br>Oprávnenie na činnosť č.: OPO-0000/2020</div>
                 </div>
                 <div class="report-meta">
                     <div class="report-type" id="out-title">SPRÁVA O PREHLIADKE</div>
@@ -201,49 +201,58 @@
 
             <div class="info-grid">
                 <div class="box">
-                    <div class="box-title">PREVÁDZKOVATEĽ</div>
-                    <div class="row-item"><span>Meno:</span> <strong id="out-name">Ján Novák</strong></div>
+                    <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
+                    <div class="row-item"><span>Názov/Meno:</span> <strong id="out-name">Ján Novák</strong></div>
                     <div class="row-item"><span>Adresa:</span> <span id="out-addr">Žilina</span></div>
+                    <div class="row-item"><span>IČO:</span> <span>-</span></div>
                 </div>
                 <div class="box">
-                    <div class="box-title">TECHNIK / OSVEDČENIE</div>
+                    <div class="box-title">REVIZNY TECHNIK / ORGANIZÁCIA</div>
                     <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                    <div class="row-item"><span>Osv.:</span> <strong>1234/5/2023</strong></div>
+                    <div class="row-item"><span>Osvedčenie č.:</span> <strong style="font-size:9px">ev. č. 1234/5/2023-PZ-A,Bg,Bh</strong></div>
+                    <div class="row-item"><span>Evidenčné č.:</span> <strong>SPE-26-001</strong></div>
                 </div>
             </div>
 
             <div class="info-grid">
                 <div class="box">
-                    <div class="box-title">ZARIADENIE</div>
+                    <div class="box-title">TECHNICKÉ ZARIADENIE (VTZ)</div>
                     <div class="row-item"><span>Typ:</span> <strong id="out-dev">Kotol</strong></div>
+                    <div class="row-item"><span>Zatriedenie:</span> <strong>Bh (do 0,5 MW)</strong></div>
                     <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
                 </div>
                 <div class="box">
-                    <div class="box-title">PREHLIADKA</div>
+                    <div class="box-title">ÚDAJE O PREHLIADKE</div>
+                    <div class="row-item"><span>Druh:</span> <strong>Periodická odborná prehliadka</strong></div>
                     <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
                     <div class="row-item"><span>Prístroj:</span> <span id="out-tool">Testo</span></div>
                 </div>
             </div>
 
-            <div class="section-header">1. Výsledky meraní</div>
+            <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
             <table class="data-table">
-                <thead><tr><th>Predmet kontroly</th><th>Norma</th><th>Hodnota</th><th>Stav</th></tr></thead>
+                <thead><tr><th>Predmet merania / kontroly</th><th>Predpísaná hodnota</th><th>Nameraná hodnota</th><th>Hodnotenie</th></tr></thead>
                 <tbody id="out-table-body"></tbody>
             </table>
 
-            <div class="section-header">2. Zistené nedostatky</div>
+            <div class="section-header">2. ZISTENÉ NEDOSTATKY A ZÁVADY</div>
             <div class="notes-section">
                 <div class="notes-text" id="out-notes-text">
-                    Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.
+                    V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.
                 </div>
                 <div class="notes-canvas-container" onclick="openModal('notes')">
                     <canvas id="preview-notes-canvas"></canvas>
-                    <div class="tap-hint-notes" id="notes-hint">🖊️ Kliknite pre kreslenie / náčrt</div>
+                    <div class="tap-hint-notes" id="notes-hint">🖊️ Náčrt (voliteľné)</div>
                 </div>
             </div>
 
+            <div class="section-header">3. CELKOVÉ HODNOTENIE A ZÁVER</div>
+            <div class="conclusion-text">
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu.
+                <br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong id="out-next-date">13. 02. 2027</strong>.
+            </div>
+
             <div class="footer-area">
-                <div class="legal-text" id="out-legal-text">Doklad v zmysle legislatívy SR.</div>
                 <div class="status-box">ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY</div>
 
                 <div class="signatures">
@@ -258,7 +267,7 @@
                             <canvas id="preview-sig-canvas"></canvas>
                         </div>
                         <span class="tap-hint">👆 Kliknite pre podpis</span>
-                        <div class="sig-line">Podpis zákazníka</div>
+                        <div class="sig-line">Podpis prevádzkovateľa</div>
                     </div>
 
                     <div class="sig-box">
@@ -267,7 +276,7 @@
                         </div>
                         <label for="tech-sig-upload" class="upload-label">📸 Pečiatka</label>
                         <input type="file" id="tech-sig-upload" accept="image/*" onchange="loadTechSig(event)">
-                        <div class="sig-line">Pavol Pastorek</div>
+                        <div class="sig-line">Pavol Pastorek<br><span style="font-size:8px; font-weight:400">Servisný technik</span></div>
                     </div>
                 </div>
             </div>
@@ -279,22 +288,12 @@
     // === AUTO NUMBER GENERATOR ===
     function generateReportNumber() {
         const year = new Date().getFullYear();
-        // Načítaj z localStorage, ak neexistuje, začni od 0
         let count = localStorage.getItem(`rev_count_${year}`);
-        
-        // Ak sa stránka načíta (nie pri resete), len zobrazíme aktuálne + 1 (alebo to, ktoré sme naposledy vygenerovali?)
-        // Pre zjednodušenie: Pri každom načítaní stránky zvýšime číslo o 1
         if(!count) count = 0;
-        
-        // Inkrementuj
         count = parseInt(count) + 1;
-        
-        // Ulož
         localStorage.setItem(`rev_count_${year}`, count);
-        
-        // Formátuj
         const padded = String(count).padStart(3, '0');
-        const numStr = `REV-${year}/${padded}`;
+        const numStr = `OPaS-${year}/${padded}`;
         
         document.getElementById('inp-no').value = numStr;
         document.getElementById('out-no').textContent = "Číslo: " + numStr;
@@ -308,31 +307,31 @@
         }
     }
 
-    // === SCENÁRE (BEZ BR TAGOV V NADPISE) ===
+    // === SCENÁRE (DATA UPDATED FROM IMAGE) ===
     const SCENARIOS = {
         plyn: {
-            // Nadpis v jednom riadku
             title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA",
             lawShort: "Vyhl. 508/2009 Z.z.",
-            legal: "Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. o BOZP a Vyhlášky č. 508/2009 Z. z.",
             rows: [
-                { l: "Tlak plynu na vstupe", n: "1.8-2.5 kPa", v: "2.1 kPa" },
-                { l: "Tesnosť spojov (Detektor)", n: "0 ppm", v: "0 ppm" },
-                { l: "Koncentrácia CO", n: "< 100 ppm", v: "14 ppm" },
-                { l: "Ťah komína / Teplota", n: "> 3 Pa", v: "12 Pa / 45°C" },
-                { l: "Tlak vykurovacej vody", n: "1.0-2.0 bar", v: "1.5 bar" }
+                { l: "Tlak plynu na vstupe (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },
+                { l: "Tesnosť plynových spojov (detektor)", n: "0 ppm (bez úniku)", v: "0 ppm" },
+                { l: "Koncentrácia CO v spalinách", n: "max. 100 ppm", v: "14 ppm" },
+                { l: "Ťah komína / Teplota spalín", n: "min. 3 Pa / max 80°C", v: "12 Pa / 45°C" },
+                { l: "Funkcia blokovacích prvkov", n: "vypnutie < 1s", v: "0.5s" },
+                { l: "Tlak vo vykurovacej sústave", n: "1.0 - 2.0 bar", v: "1.5 bar" },
+                { l: "Vizuálna kontrola umiestnenia", n: "podľa TPP 704 01", v: "Bez závad" }
             ]
         },
         tc: {
             title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV",
             lawShort: "Zákon č. 286/2009",
-            legal: "Záznam o kontrole tesnosti podľa Nariadenia EÚ č. 517/2014 a Zákona č. 286/2009 Z. z. o F-plynoch.",
             rows: [
                 { l: "Kontrola úniku (Detektor)", n: "Bez úniku", v: "Negatívny" },
                 { l: "Vizuálna kontrola", n: "Bez oleja", v: "OK" },
                 { l: "Prúd kompresora", n: "I-nom", v: "Podľa štítku" },
                 { l: "Tlak chladiva", n: "Podľa T-ok", v: "V norme" },
-                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" }
+                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" },
+                { l: "Tlak vo vykurovacej sústave", n: "> 1.0 bar", v: "1.5 bar" }
             ]
         }
     };
@@ -340,16 +339,15 @@
     function changeScenario() {
         const type = document.getElementById('inp-scenario').value;
         const data = SCENARIOS[type];
-        document.getElementById('out-title').innerText = data.title; // innerText pre istotu
+        document.getElementById('out-title').innerText = data.title;
         document.getElementById('out-law-short').textContent = data.lawShort;
-        document.getElementById('out-legal-text').textContent = data.legal;
+        
         const tbody = document.getElementById('out-table-body');
         tbody.innerHTML = '';
         data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r.l}</td><td style="color:#555">${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`);
     }
 
     function render() {
-        // inp-no už neriešime v render(), lebo sa generuje automaticky
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
@@ -361,12 +359,17 @@
             const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
             document.getElementById('out-date').textContent = ds;
             document.getElementById('out-date-sig').textContent = ds;
+            
+            // Next date (+1 rok)
+            d.setFullYear(d.getFullYear() + 1);
+            const nextDs = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
+            document.getElementById('out-next-date').textContent = nextDs;
         }
     }
 
     function renderNotes() {
         const txt = document.getElementById('inp-notes').value;
-        const defaultTxt = "Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.";
+        const defaultTxt = "V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.";
         document.getElementById('out-notes-text').innerText = txt.trim() ? txt : defaultTxt;
     }
 
@@ -458,7 +461,7 @@
     document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', render));
     
     // Spustenie
-    generateReportNumber(); // Auto číslovanie
+    generateReportNumber();
     changeScenario();
     render();
 </script>
