@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Master + Notes)</title>
+    <title>Spektra Install - Revízny Systém (Auto-Number)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #D60000;
+            --black: #000000;
             --success: #16a34a;
             --bg-color: #e5e7eb;
         }
@@ -38,17 +39,16 @@
         .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
         .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; }
-        
-        input, select, textarea { 
-            padding: 10px; border: 1px solid #ccc; border-radius: 6px; 
-            font-size: 16px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit;
-        }
+        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
-        
         .btn-print { 
             width: 100%; background: var(--primary); color: white; border: none; 
             padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; 
             margin-top: 10px; font-size: 14px; text-transform: uppercase; 
+        }
+        .btn-reset {
+            background: #eee; color: #333; border: 1px solid #ccc; padding: 5px; 
+            border-radius: 4px; font-size: 10px; margin-top: 2px; cursor: pointer;
         }
 
         /* === NÁHĽAD A4 === */
@@ -61,10 +61,20 @@
 
         /* PRVKY DOKUMENTU */
         .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .brand h1 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 900; }
+        
+        /* LOGO UPDATE: SPEKTRA ČIERNA, INSTALL ČERVENÁ */
+        .brand h1 { color: var(--black); margin: 0; font-size: 24px; font-weight: 900; }
+        .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 9px; color: #444; margin-top: 2px; }
-        .report-meta { text-align: right; }
-        .report-type { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #000; line-height: 1.2; max-width: 250px; }
+        
+        /* NADPIS SPRÁVY - ROZTIAHNUTÝ */
+        .report-meta { text-align: right; flex-shrink: 0; }
+        .report-type { 
+            font-size: 11px; font-weight: 800; text-transform: uppercase; color: #000; 
+            line-height: 1.2; 
+            max-width: none; /* Zrušené obmedzenie šírky */
+            white-space: nowrap; /* Text v jednom riadku */
+        }
         .report-no { font-size: 12px; margin-top: 4px; font-weight: 500; }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -77,29 +87,11 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        /* SEKCIA POZNÁMKY V A4 */
-        .notes-section {
-            border: 1px solid #ccc;
-            min-height: 80px;
-            margin-top: 5px;
-            padding: 5px;
-            display: flex;
-            flex-direction: column;
-        }
+        .notes-section { border: 1px solid #ccc; min-height: 80px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
         .notes-text { font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
-        
-        /* KANVAS V PREVIEW */
-        .notes-canvas-container {
-            flex-grow: 1;
-            border: 1px dashed #ddd;
-            cursor: pointer;
-            position: relative;
-            background: #fffafa;
-            min-height: 60px;
-        }
+        .notes-canvas-container { flex-grow: 1; border: 1px dashed #ddd; cursor: pointer; position: relative; background: #fffafa; min-height: 60px; }
         #preview-notes-canvas { width: 100%; height: 100%; display: block; }
 
-        /* PÄTA */
         .footer-area { margin-top: auto; }
         .legal-text { font-size: 8px; color: #555; text-align: justify; margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 5px; }
         .status-box { margin: 5px auto 15px auto; border: 2px solid var(--success); padding: 6px; text-align: center; font-size: 12px; font-weight: 800; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
@@ -107,24 +99,14 @@
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-
-        /* PODPIS PREVIEW */
-        .sig-canvas-container {
-            width: 100%; height: 50px;
-            border: 2px dashed #D60000;
-            cursor: pointer;
-            background: #fffafa;
-        }
+        .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
         .tap-hint { font-size: 9px; color: #D60000; display: block; text-align: center; margin-top: 2px; pointer-events: none; }
         .tap-hint-notes { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 10px; pointer-events: none; }
 
         /* MODAL */
-        #drawing-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 9999; flex-direction: column;
-        }
+        #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .modal-canvas-area { flex-grow: 1; position: relative; background: #fff; touch-action: none; background-image: radial-gradient(#ddd 1px, transparent 1px); background-size: 20px 20px; }
         #full-screen-canvas { width: 100%; height: 100%; display: block; }
@@ -145,7 +127,7 @@
         }
 
         @media print {
-            .controls, #drawing-modal, .upload-label, .tap-hint, .tap-hint-notes, .btn-print { display: none !important; }
+            .controls, #drawing-modal, .upload-label, .tap-hint, .tap-hint-notes, .btn-print, .btn-reset { display: none !important; }
             .app-container, .preview-container { display: block; padding: 0; margin: 0; background: white; }
             .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; }
             body { background: white; }
@@ -181,7 +163,15 @@
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
             </select>
         </div>
-        <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="REV-2026/001"></div>
+        
+        <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Číslo správy</label>
+                <button class="btn-reset" onclick="resetCounter()">Resetovať počítadlo</button>
+            </div>
+            <input type="text" id="inp-no" readonly style="background:#f9fafb; color:#666;">
+        </div>
+
         <div class="form-group"><label>Dátum</label><input type="date" id="inp-date"></div>
         <div class="form-group"><label>Zákazník</label><input type="text" id="inp-name" placeholder="Meno"></div>
         <div class="form-group"><label>Adresa</label><input type="text" id="inp-addr" placeholder="Miesto"></div>
@@ -190,7 +180,7 @@
         
         <div class="form-group">
             <label style="color:var(--primary);">📝 Poznámky / Zistené nedostatky</label>
-            <textarea id="inp-notes" rows="4" placeholder="Tu napíšte závady, ak nejaké sú. Ak necháte prázdne, použije sa predvolený text 'Bez závad'." oninput="renderNotes()"></textarea>
+            <textarea id="inp-notes" rows="4" placeholder="Tu napíšte závady..." oninput="renderNotes()"></textarea>
         </div>
 
         <button class="btn-print" onclick="window.print()">🖨️ Tlačiť / PDF</button>
@@ -200,7 +190,7 @@
         <div class="a4-page">
             <div class="header">
                 <div class="brand">
-                    <h1>SPEKTRA INSTALL</h1>
+                    <h1>SPEKTRA <span>INSTALL</span></h1>
                     <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036</div>
                 </div>
                 <div class="report-meta">
@@ -246,7 +236,6 @@
                 <div class="notes-text" id="out-notes-text">
                     Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.
                 </div>
-                
                 <div class="notes-canvas-container" onclick="openModal('notes')">
                     <canvas id="preview-notes-canvas"></canvas>
                     <div class="tap-hint-notes" id="notes-hint">🖊️ Kliknite pre kreslenie / náčrt</div>
@@ -287,10 +276,43 @@
 </div>
 
 <script>
-    // DÁTA
+    // === AUTO NUMBER GENERATOR ===
+    function generateReportNumber() {
+        const year = new Date().getFullYear();
+        // Načítaj z localStorage, ak neexistuje, začni od 0
+        let count = localStorage.getItem(`rev_count_${year}`);
+        
+        // Ak sa stránka načíta (nie pri resete), len zobrazíme aktuálne + 1 (alebo to, ktoré sme naposledy vygenerovali?)
+        // Pre zjednodušenie: Pri každom načítaní stránky zvýšime číslo o 1
+        if(!count) count = 0;
+        
+        // Inkrementuj
+        count = parseInt(count) + 1;
+        
+        // Ulož
+        localStorage.setItem(`rev_count_${year}`, count);
+        
+        // Formátuj
+        const padded = String(count).padStart(3, '0');
+        const numStr = `REV-${year}/${padded}`;
+        
+        document.getElementById('inp-no').value = numStr;
+        document.getElementById('out-no').textContent = "Číslo: " + numStr;
+    }
+
+    function resetCounter() {
+        if(confirm("Naozaj chcete resetovať počítadlo revízií na 0?")) {
+            const year = new Date().getFullYear();
+            localStorage.setItem(`rev_count_${year}`, 0);
+            location.reload();
+        }
+    }
+
+    // === SCENÁRE (BEZ BR TAGOV V NADPISE) ===
     const SCENARIOS = {
         plyn: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE<br>A SKÚŠKE PLYNOVÉHO ZARIADENIA",
+            // Nadpis v jednom riadku
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA",
             lawShort: "Vyhl. 508/2009 Z.z.",
             legal: "Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. o BOZP a Vyhlášky č. 508/2009 Z. z.",
             rows: [
@@ -302,7 +324,7 @@
             ]
         },
         tc: {
-            title: "SPRÁVA O KONTROLE ÚNIKU<br>FLUÓROVANÝCH PLYNOV",
+            title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV",
             lawShort: "Zákon č. 286/2009",
             legal: "Záznam o kontrole tesnosti podľa Nariadenia EÚ č. 517/2014 a Zákona č. 286/2009 Z. z. o F-plynoch.",
             rows: [
@@ -318,7 +340,7 @@
     function changeScenario() {
         const type = document.getElementById('inp-scenario').value;
         const data = SCENARIOS[type];
-        document.getElementById('out-title').innerHTML = data.title;
+        document.getElementById('out-title').innerText = data.title; // innerText pre istotu
         document.getElementById('out-law-short').textContent = data.lawShort;
         document.getElementById('out-legal-text').textContent = data.legal;
         const tbody = document.getElementById('out-table-body');
@@ -327,7 +349,7 @@
     }
 
     function render() {
-        document.getElementById('out-no').textContent = "Číslo: " + document.getElementById('inp-no').value;
+        // inp-no už neriešime v render(), lebo sa generuje automaticky
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
@@ -342,7 +364,6 @@
         }
     }
 
-    // Funkcia na prenos textu poznámok
     function renderNotes() {
         const txt = document.getElementById('inp-notes').value;
         const defaultTxt = "Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.";
@@ -434,7 +455,10 @@
 
     // INIT
     document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-    document.querySelectorAll('input').forEach(el => el.addEventListener('input', render));
+    document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', render));
+    
+    // Spustenie
+    generateReportNumber(); // Auto číslovanie
     changeScenario();
     render();
 </script>
