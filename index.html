@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Auto-Save)</title>
+    <title>Spektra Install - Revízny Systém (Vyhláška 508/2009 Compliant)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -45,7 +45,6 @@
         .btn-print { flex: 1; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase; }
         .btn-preview { flex: 1; background: #374151; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px; text-transform: uppercase; }
         
-        /* Tlačidlo Nová správa */
         .btn-new { background: white; color: #b91c1c; border: 1px solid #fca5a5; padding: 10px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; text-transform: uppercase; width: 100%; }
         .btn-new:hover { background: #fef2f2; }
 
@@ -113,7 +112,6 @@
         .upload-label { background: #e0e7ff; color: #3730a3; padding: 4px; border-radius: 4px; cursor: pointer; font-size: 10px; display: block; margin: 5px auto; width: 80%; }
         input[type="file"] { display: none; }
         
-        /* OZNÁMENIE O ULOŽENÍ */
         #save-toast {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: #333; color: white; padding: 10px 20px; border-radius: 20px;
@@ -167,6 +165,16 @@
             <select id="inp-scenario" onchange="changeScenario()" style="font-weight:bold; color:#c2410c;">
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (508/2009)</option>
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Druh prehliadky</label>
+            <select id="inp-type" onchange="render()">
+                <option value="Periodická odborná prehliadka">Periodická odborná prehliadka</option>
+                <option value="Východisková odborná prehliadka">Východisková odborná prehliadka</option>
+                <option value="Mimoriadna odborná prehliadka">Mimoriadna odborná prehliadka</option>
+                <option value="Odborná skúška (Tlaková)">Odborná skúška (Tlaková)</option>
             </select>
         </div>
         
@@ -232,12 +240,12 @@
                     <div class="box-title">TECHNICKÉ ZARIADENIE (VTZ)</div>
                     <div class="row-item"><span>Typ:</span> <strong id="out-dev">Kotol</strong></div>
                     <div class="row-item"><span>S/N:</span> <strong id="out-sn">-</strong></div>
-                    <div class="row-item"><span>Zatriedenie:</span> <strong>Bh (do 0,5 MW)</strong></div>
+                    <div class="row-item"><span>Zatriedenie:</span> <strong>Skupina Bh (Vyhl. 508/2009)</strong></div>
                     <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
                 </div>
                 <div class="box">
                     <div class="box-title">ÚDAJE O PREHLIADKE</div>
-                    <div class="row-item"><span>Druh:</span> <strong>Periodická odborná prehliadka</strong></div>
+                    <div class="row-item"><span>Druh:</span> <strong id="out-type">Periodická odborná prehliadka</strong></div>
                     <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
                     <div class="row-item"><span>Prístroj:</span> <span id="out-tool">Testo</span></div>
                 </div>
@@ -262,7 +270,7 @@
 
             <div class="section-header">3. CELKOVÉ HODNOTENIE A ZÁVER</div>
             <div class="conclusion-text">
-                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu.
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Zákona č. 124/2006 Z.z. (§ 9) a Vyhlášky č. 508/2009 Z.z.
                 <br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong id="out-next-date">13. 02. 2027</strong>.
             </div>
 
@@ -299,7 +307,7 @@
 </div>
 
 <script>
-    // === 1. AUTOMATICKÉ UKLADANIE (LOCAL STORAGE) ===
+    // === 1. AUTOMATICKÉ UKLADANIE ===
     function autoSave() {
         const data = {
             name: document.getElementById('inp-name').value,
@@ -309,7 +317,8 @@
             tool: document.getElementById('inp-tool').value,
             notes: document.getElementById('inp-notes').value,
             date: document.getElementById('inp-date').value,
-            scenario: document.getElementById('inp-scenario').value
+            scenario: document.getElementById('inp-scenario').value,
+            type: document.getElementById('inp-type').value
         };
         localStorage.setItem('autosave_data', JSON.stringify(data));
         showToast();
@@ -326,6 +335,7 @@
             if(data.tool) document.getElementById('inp-tool').value = data.tool;
             if(data.notes) document.getElementById('inp-notes').value = data.notes;
             if(data.date) document.getElementById('inp-date').value = data.date;
+            if(data.type) document.getElementById('inp-type').value = data.type;
             if(data.scenario) {
                 document.getElementById('inp-scenario').value = data.scenario;
                 changeScenario();
@@ -338,18 +348,14 @@
     function clearAllData() {
         if(confirm("Vymazať všetky údaje formulára? (Nová revízia)")) {
             localStorage.removeItem('autosave_data');
-            // Reset inputov
             document.querySelectorAll('input:not(#inp-no), textarea').forEach(el => el.value = '');
-            // Nastav dátum
             document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-            // Reset canvasov
             const sigCtx = document.getElementById('preview-sig-canvas').getContext('2d');
             sigCtx.clearRect(0,0,300,150);
             const noteCtx = document.getElementById('preview-notes-canvas').getContext('2d');
             noteCtx.clearRect(0,0,300,150);
             document.getElementById('notes-hint').style.display = 'block';
             
-            // Generuj nové číslo
             generateReportNumber();
             render();
             renderNotes();
@@ -362,7 +368,7 @@
         setTimeout(() => t.style.opacity = 0, 1500);
     }
 
-    // === PREPÍNANIE REŽIMU NÁHĽADU ===
+    // === PREVIEW MODE ===
     function togglePreviewMode() {
         document.body.classList.toggle('preview-mode');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -373,11 +379,6 @@
         const year = new Date().getFullYear();
         let count = localStorage.getItem(`rev_count_${year}`);
         if(!count) count = 0; 
-        // Tu inkrementujeme len ak vytvárame "Novú správu" alebo prvý load, 
-        // ale pre jednoduchosť necháme inkrementáciu pri loade, ak chceme
-        // v tomto prípade voláme len pri loade.
-        // Pri loade ale chceme načítať posledné číslo, nie generovať nové, ak reloadnem.
-        // Logiku nechám: Inkrementuje sa pri loade stránky.
         count = parseInt(count) + 1;
         localStorage.setItem(`rev_count_${year}`, count);
         const padded = String(count).padStart(3, '0');
@@ -385,7 +386,6 @@
         document.getElementById('inp-no').value = numStr;
         document.getElementById('out-no').textContent = "Číslo: " + numStr;
     }
-    // Uprava: volame generateReportNumber len raz pri starte, nie pri kazdom autosave
 
     function resetCounter() {
         if(confirm("Resetovať počítadlo na 0?")) {
@@ -395,20 +395,21 @@
         }
     }
 
-    // === SCENÁRE ===
+    // === SCENÁRE (S VETRANÍM A HUP) ===
     const SCENARIOS = {
         plyn: {
             title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA",
             lawShort: "Vyhl. 508/2009 Z.z.",
             rows: [
                 { l: "Tlak plynu na vstupe (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },
-                { l: "Tesnosť plynových spojov (detektor)", n: "0 ppm (bez úniku)", v: "0 ppm" },
+                { l: "Tesnosť spojov (Detektor)", n: "0 ppm", v: "0 ppm" },
+                { l: "Hlavný uzáver plynu (HUP)", n: "Označený, prístupný", v: "Vyhovuje" },
+                { l: "Vetranie miestnosti (TPP 704)", n: "Nezakryté", v: "Vyhovuje" },
                 { l: "Koncentrácia CO v spalinách", n: "max. 100 ppm", v: "14 ppm" },
-                { l: "Ťah komína / Teplota spalín", n: "min. 3 Pa / max 80°C", v: "12 Pa / 45°C" },
-                { l: "Kontrola bezpečnostných prvkov", n: "Funkčné", v: "Vyhovuje" },
+                { l: "Ťah komína / Teplota spalín", n: "> 3 Pa / < 120°C", v: "12 Pa / 45°C" },
+                { l: "Bezpečnostné prvky (Termopoistka)", n: "Funkčné", v: "Vyhovuje" },
                 { l: "Funkcia blokovacích prvkov", n: "vypnutie < 1s", v: "0.5s" },
-                { l: "Tlak vo vykurovacej sústave", n: "1.0 - 2.0 bar", v: "1.5 bar" },
-                { l: "Vizuálna kontrola umiestnenia", n: "podľa TPP 704 01", v: "Bez závad" }
+                { l: "Tlak vykurovacej vody", n: "1.0 - 2.0 bar", v: "1.5 bar" }
             ]
         },
         tc: {
@@ -416,12 +417,12 @@
             lawShort: "Zákon č. 286/2009",
             rows: [
                 { l: "Kontrola úniku (Detektor)", n: "Bez úniku", v: "Negatívny" },
-                { l: "Vizuálna kontrola", n: "Bez oleja", v: "OK" },
+                { l: "Vizuálna kontrola okruhu", n: "Bez oleja", v: "OK" },
                 { l: "Kontrola bezpečnostných prvkov", n: "Funkčné", v: "Vyhovuje" },
                 { l: "Prúd kompresora", n: "I-nom", v: "Podľa štítku" },
                 { l: "Tlak chladiva", n: "Podľa T-ok", v: "V norme" },
-                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" },
-                { l: "Tlak vo vykurovacej sústave", n: "> 1.0 bar", v: "1.5 bar" }
+                { l: "Funkčná skúška (Kúrenie/Chlad)", n: "Funkčné", v: "Funkčné" },
+                { l: "Tlak vody / Prietok", n: "> 1.0 bar", v: "1.5 bar" }
             ]
         }
     };
@@ -442,6 +443,7 @@
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
         document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
+        document.getElementById('out-type').textContent = document.getElementById('inp-type').value;
         
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
@@ -452,7 +454,7 @@
             d.setFullYear(d.getFullYear() + 1);
             document.getElementById('out-next-date').textContent = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
         }
-        autoSave(); // Uložiť pri každej zmene
+        autoSave();
     }
 
     function renderNotes() {
@@ -534,11 +536,11 @@
 
     // INIT
     document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-    document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', render));
+    document.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', render));
     
     generateReportNumber();
     changeScenario();
-    loadAutoSave(); // Načítať dáta z pamäte
+    loadAutoSave(); 
     render();
 </script>
 </body>
