@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spektra Install – Jednostránková Revízna Správa</title>
+    <title>Oficiálna Správa o Odbornej Prehliadke a Skúške (OPaS)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -32,78 +32,86 @@
 
         /* OVLÁDACÍ PANEL */
         .controls { 
-            background: white; padding: 20px; border-radius: 12px; 
+            background: white; padding: 20px; border-radius: 8px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: fit-content;
             position: sticky; top: 10px; font-size: 13px;
         }
 
         .form-group { margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
         label { font-size: 9px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; }
-        input, select, textarea { padding: 6px; border: 1px solid var(--gray-200); border-radius: 4px; font-size: 12px; }
-        .btn-print { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        input, select, textarea { padding: 6px; border: 1px solid var(--gray-200); border-radius: 4px; font-size: 11px; }
+        .btn-print { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 4px; font-weight: 700; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
 
         /* === DOKUMENT A4 === */
         .a4-page {
             width: 210mm;
             height: 297mm;
             background: white;
-            padding: 12mm 15mm; /* Optimalizované okraje */
+            padding: 10mm 15mm;
             box-sizing: border-box;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Zabezpečí, že nič nevytečie von */
+            overflow: hidden;
+            position: relative;
         }
 
-        /* HLAVIČKA - ZMENŠENÁ */
+        /* HLAVIČKA - OFICIÁLNA */
         .header { 
-            display: flex; justify-content: space-between; 
             border-bottom: 2px solid var(--primary); 
-            padding-bottom: 10px; margin-bottom: 15px; 
+            padding-bottom: 5px; margin-bottom: 10px; 
+            display: flex; justify-content: space-between; align-items: flex-end;
         }
-        .brand h1 { color: var(--primary); margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -1px; }
-        .brand .sub { font-size: 10px; color: #555; margin-top: 2px; }
-        .doc-title { text-align: right; }
-        .doc-title h2 { color: var(--primary); margin: 0; font-size: 16px; font-weight: 800; text-transform: uppercase; }
-        .doc-title .no { font-size: 14px; font-weight: 500; margin-top: 4px; }
+        .brand h1 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 900; }
+        .brand .sub { font-size: 9px; color: #333; margin-top: 2px; }
+        
+        .report-meta { text-align: right; }
+        .report-type { font-size: 14px; font-weight: 800; text-transform: uppercase; color: #000; line-height: 1.2; }
+        .report-no { font-size: 12px; margin-top: 3px; }
 
-        /* OBSAH */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .box { background: #F9FAFB; padding: 10px; border-left: 4px solid var(--primary); }
-        .box h3 { margin: 0 0 5px 0; font-size: 10px; color: var(--gray-700); text-transform: uppercase; }
-        .box p { margin: 2px 0; font-size: 12px; }
+        /* TECHNICKÉ GRIDY */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .box { border: 1px solid #ccc; padding: 6px; }
+        .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
+        .box-content { font-size: 11px; line-height: 1.3; }
+        .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .row-item strong { font-weight: 600; }
 
-        .section-tag { 
-            background: #F3F4F6; padding: 6px 10px; font-weight: 900; font-size: 10px; 
-            text-transform: uppercase; margin-top: 15px; border-left: 4px solid var(--primary); 
+        .section-header { 
+            background: #eee; padding: 4px 8px; font-weight: 700; font-size: 10px; 
+            text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); 
         }
 
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        .data-table th, .data-table td { border: 1px solid #E5E7EB; padding: 6px 10px; font-size: 11px; text-align: left; }
-        .data-table th { background: #fff; color: #6B7280; font-size: 9px; }
+        /* TABUĽKA MERANÍ */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; font-size: 10px; text-align: left; }
+        .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        /* STATUS BOX - ZMENŠENÝ PODĽA POŽIADAVKY */
+        /* OBLASŤ PRE TEXTY */
+        .text-area { font-size: 10px; line-height: 1.3; margin-top: 5px; text-align: justify; }
+
+        /* FOOTER AREA */
+        .footer-area { margin-top: auto; }
+        
+        /* STATUS BOX */
         .status-box { 
-            margin: 15px auto; border: 2px solid var(--success); padding: 8px; 
-            text-align: center; font-size: 14px; font-weight: 700; color: var(--success); 
-            width: 70%; border-radius: 4px; text-transform: uppercase; 
+            margin: 10px auto; 
+            border: 2px solid var(--success); padding: 6px; 
+            text-align: center; font-size: 13px; font-weight: 800; color: var(--success); 
+            width: 80%; border-radius: 0; background: #f0fdf4; text-transform: uppercase;
         }
 
-        .notes-box {
-            border: 1px solid #eee; padding: 10px; min-height: 50px; font-size: 11px; line-height: 1.4; margin-top: 5px;
-        }
+        .legal-small { font-size: 8px; color: #555; text-align: justify; margin-bottom: 10px; line-height: 1.2; }
 
-        /* PÄTA */
-        .footer-area { margin-top: auto; padding-top: 10px; }
-        .legal-text { font-size: 9px; color: #6B7280; text-align: justify; margin-bottom: 20px; line-height: 1.4; }
-        .signatures { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .sig-col { width: 200px; text-align: center; font-size: 11px; border-top: 1.5px solid #000; padding-top: 5px; }
+        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .sig-box { width: 30%; text-align: center; }
+        .sig-line { border-top: 1px solid #000; margin-top: 25px; font-size: 9px; padding-top: 2px; }
 
         @media print {
             body { background: white; }
             .app-container { display: block; width: 100%; margin: 0; padding: 0; }
             .controls { display: none !important; }
-            .a4-page { box-shadow: none; margin: 0 auto; width: 210mm; height: 297mm; }
+            .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -112,23 +120,45 @@
 
 <div class="app-container">
     <section class="controls">
-        <h2 style="color:var(--primary); margin-top:0; font-size: 16px;">Ovládací Panel</h2>
+        <h2 style="margin-top:0; font-size:14px; color:var(--primary)">Parametre OPaS</h2>
+        
         <div class="form-group">
-            <label>Zdroj tepla</label>
-            <select id="inp-sys" onchange="updateSystem()">
-                <option value="plyn">Plynový kondenzačný kotol</option>
-                <option value="tc">Tepelné čerpadlo</option>
-                <option value="pelet">Peletový kotol</option>
+            <label>Legislatívny rámec</label>
+            <select id="inp-law">
+                <option value="508">Vyhradené Tech. Zariadenie (VTZ) - 508/2009 Z.z.</option>
+                <option value="459">Plynové zariadenia - Vyhl. 459/2009 Z.z.</option>
             </select>
         </div>
-        <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="REV-2026-001"></div>
-        <div class="form-group"><label>Zákazník</label><input type="text" id="inp-name" placeholder="Meno a Priezvisko"></div>
-        <div class="form-group"><label>Adresa</label><textarea id="inp-addr" rows="2"></textarea></div>
-        <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-model" placeholder="Značka, model, S/N"></div>
-        
-        <div id="dynamic-inputs"></div>
 
-        <button class="btn-print" onclick="window.print()">TLAČIŤ (1 STRANA A4)</button>
+        <div class="form-group">
+            <label>Druh prehliadky</label>
+            <select id="inp-type">
+                <option value="Periodická odborná prehliadka">Periodická odborná prehliadka</option>
+                <option value="Východisková odborná prehliadka">Východisková odborná prehliadka</option>
+                <option value="Odborná skúška (Tlaková)">Odborná skúška (Tlaková)</option>
+            </select>
+        </div>
+
+        <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="OPaS-2026/001"></div>
+        <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
+
+        <hr style="border:0; border-top:1px solid #eee; margin:5px 0">
+
+        <div class="form-group"><label>Prevádzkovateľ</label><input type="text" id="inp-name" placeholder="Názov firmy / Meno"></div>
+        <div class="form-group"><label>Adresa / Miesto</label><input type="text" id="inp-addr"></div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:5px 0">
+
+        <div class="form-group"><label>Technické zariadenie</label><input type="text" id="inp-dev" placeholder="Napr. Plynový kotol Viessmann"></div>
+        <div class="form-group"><label>Výrobné číslo</label><input type="text" id="inp-sn"></div>
+        <div class="form-group"><label>Rok výroby / Výkon</label><input type="text" id="inp-param" placeholder="2020 / 24 kW"></div>
+        <div class="form-group"><label>Skupina zariadenia</label><input type="text" id="inp-grp" value="Bh (do 0,5 MW)"></div>
+
+        <div class="form-group"><label>Revízny technik (Číslo osvedčenia)</label><input type="text" id="inp-tech-id" value="ev. č. 1234/5/2023-PZ-A,Bg,Bh"></div>
+
+        <div class="form-group"><label>Použitý merací prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL (Kalibrácia do 12/2026)"></div>
+
+        <button class="btn-print" onclick="window.print()">Tlačiť Protokol</button>
     </section>
 
     <section class="preview-container">
@@ -136,124 +166,150 @@
             <div class="header">
                 <div class="brand">
                     <h1>SPEKTRA INSTALL</h1>
-                    <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | DPH: 23%</div>
+                    <div class="sub">
+                        Hollého 210, 015 01 Rajec | IČO: 53690036 | DPH: 23%<br>
+                        Oprávnenie na činnosť č.: OPO-0000/2020
+                    </div>
                 </div>
-                <div class="doc-title">
-                    <h2>Správa o servise a kontrole</h2>
-                    <div class="no" id="out-no">Číslo: REV-2026-001</div>
+                <div class="report-meta">
+                    <div class="report-type" id="out-type">SPRÁVA O ODBORNEJ PREHLIADKE<br>A ODBORNEJ SKÚŠKE PLYNOVÉHO ZARIADENIA</div>
+                    <div class="report-no" id="out-no">Číslo: OPaS-2026/001</div>
                 </div>
             </div>
 
             <div class="info-grid">
                 <div class="box">
-                    <h3>Prevádzkovateľ</h3>
-                    <p><strong id="out-name" style="font-size:13px;">—</strong></p>
-                    <p id="out-addr" style="white-space: pre-line;">—</p>
+                    <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
+                    <div class="box-content">
+                        <div class="row-item"><span>Názov/Meno:</span> <strong id="out-name">Ján Novák</strong></div>
+                        <div class="row-item"><span>Adresa:</span> <span id="out-addr">Miesto inštalácie</span></div>
+                        <div class="row-item"><span>IČO:</span> <span>-</span></div>
+                    </div>
                 </div>
                 <div class="box">
-                    <h3>Identifikácia Zariadenia</h3>
-                    <p>Model/SN: <strong id="out-model">—</strong></p>
-                    <p>Dátum kontroly: <span id="out-date">13. 2. 2026</span></p>
-                    <p>Technik: <span>Pavol Pastorek</span></p>
+                    <div class="box-title">REVIZNY TECHNIK / ORGANIZÁCIA</div>
+                    <div class="box-content">
+                        <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
+                        <div class="row-item"><span>Osvedčenie č.:</span> <strong id="out-tech-id">1234/5/2023</strong></div>
+                        <div class="row-item"><span>Evidenčné č.:</span> <span>SPE-26-001</span></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="section-tag">Namerané hodnoty a stav bodov kontroly</div>
+            <div class="info-grid">
+                <div class="box">
+                    <div class="box-title">TECHNICKÉ ZARIADENIE (VTZ)</div>
+                    <div class="box-content">
+                        <div class="row-item"><span>Názov:</span> <strong id="out-dev">Plynový kotol</strong></div>
+                        <div class="row-item"><span>Výr. číslo:</span> <span id="out-sn">-</span></div>
+                        <div class="row-item"><span>Rok/Výkon:</span> <span id="out-param">-</span></div>
+                        <div class="row-item"><span>Zatriedenie:</span> <strong id="out-grp">Skupina Bh</strong></div>
+                    </div>
+                </div>
+                <div class="box">
+                    <div class="box-title">ÚDAJE O PREHLIADKE</div>
+                    <div class="box-content">
+                        <div class="row-item"><span>Druh:</span> <strong id="out-type-small">Periodická</strong></div>
+                        <div class="row-item"><span>Dátum výkonu:</span> <strong id="out-date">13. 02. 2026</strong></div>
+                        <div class="row-item"><span>Merací prístroj:</span> <span id="out-tool">Testo</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">1. Výsledky meraní a skúšok</div>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 50%;">Bod kontroly</th>
-                        <th style="width: 25%;">Hodnota</th>
-                        <th style="width: 25%;">Limit / Stav</th>
+                        <th style="width:40%">Predmet merania / kontroly</th>
+                        <th style="width:20%">Predpísaná hodnota</th>
+                        <th style="width:20%">Nameraná hodnota</th>
+                        <th style="width:20%">Hodnotenie</th>
                     </tr>
                 </thead>
-                <tbody id="out-table"></tbody>
+                <tbody>
+                    <tr><td>Tlak plynu na vstupe (HUP)</td><td>1.8 - 2.5 kPa</td><td><strong>2.1 kPa</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Tesnosť plynových spojov (detektor)</td><td>0 ppm (bez úniku)</td><td><strong>0 ppm</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Koncentrácia CO v spalinách</td><td>max. 100 ppm</td><td><strong>14 ppm</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Ťah komína / Teplota spalín</td><td>min. 3 Pa / max 80°C</td><td><strong>12 Pa / 45°C</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Funkcia blokovacích prvkov</td><td>vypnutie &lt; 1s</td><td><strong>0.5s</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Tlak vo vykurovacej sústave</td><td>1.0 - 2.0 bar</td><td><strong>1.5 bar</strong></td><td>Vyhovuje</td></tr>
+                    <tr><td>Vizuálna kontrola umiestnenia</td><td>podľa TPP 704 01</td><td><strong>Bez závad</strong></td><td>Vyhovuje</td></tr>
+                </tbody>
             </table>
 
-            <div class="section-tag">Zistené vady a poznámky</div>
-            <div class="notes-box" id="out-notes">
-                Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Bola vykonaná funkčná skúška bezpečnostných prvkov a kontrola tesnosti spojov.
+            <div class="section-header">2. Zistené nedostatky a závady</div>
+            <div style="border:1px solid #ccc; height:40px; margin-top:5px; padding:5px; font-size:10px;">
+                V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.
             </div>
 
-            <div class="status-box" id="out-status-box">
-                ZARIADENIE: Schopné bezpečnej prevádzky
+            <div class="section-header">3. Celkové hodnotenie a záver</div>
+            <div class="text-area">
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu. <br>
+                Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>13. 02. 2027</strong>.
             </div>
 
             <div class="footer-area">
-                <div class="legal-text">
-                    Táto správa je vypracovaná v súlade so zákonom č. 314/2012 Z.z. a vyhláškou 508/2009 Z.z. Prevádzkovateľ je povinný odstrániť prípadné vady uvedené v poznámkach. Nasledujúca periodická kontrola sa odporúča po 12 mesiacoch.
+                
+                <div class="legal-small">
+                    Tento doklad je úradným záznamom v zmysle § 9 zákona č. 124/2006 Z. z. o bezpečnosti a ochrane zdravia pri práci. Prevádzkovateľ je povinný uchovávať túto správu do vykonania nasledujúcej odbornej prehliadky. Pri zistení nedostatkov je prevádzkovateľ povinný zabezpečiť ich odstránenie v stanovenom termíne.
+                </div>
+
+                <div class="status-box">
+                    ZARIADENIE JE SPÔSOBILÉ NA ĎALŠIU PREVÁDZKU
                 </div>
 
                 <div class="signatures">
-                    <div class="sig-col">Podpis prevádzkovateľa</div>
-                    <div class="sig-col">
+                    <div class="sig-box">
+                        <div class="sig-line">Dátum vyhotovenia</div>
+                        <strong id="out-date-sig">13. 02. 2026</strong>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line">Podpis prevádzkovateľa</div>
+                        (oboznámený s výsledkom)
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line">Revízny technik</div>
                         <strong>Pavol Pastorek</strong><br>
-                        Servisný technik
+                        <span style="font-size:8px;">(Pečiatka a podpis)</span>
                     </div>
                 </div>
-
-                <div style="text-align: center; font-size: 10px; color: #999; border-top: 1px solid #f3f4f6; padding-top: 8px;">
-                    Platnosť do: <span id="out-next-date">13. 2. 2027</span>
-                </div>
             </div>
+
         </div>
     </section>
 </div>
 
 <script>
-    const SYSTEMS = {
-        plyn: [
-            { l: "Vstupný tlak plynu", u: "mbar", lim: "18-25", def: "21" },
-            { l: "Koncentrácia CO emisií", u: "ppm", lim: "< 100", def: "12" },
-            { l: "Teplota spalín", u: "°C", lim: "max 80", def: "46" },
-            { l: "Tlak v expanznej nádobe", u: "bar", lim: "1.0-1.5", def: "1.2" },
-            { l: "Ionizačný prúd", u: "µA", lim: "> 5", def: "18" },
-            { l: "Tesnosť plynových spojov", u: "stav", lim: "OK", def: "Vyhovuje" },
-            { l: "Tlak vykurovacej vody", u: "bar", lim: "1.2-2.0", def: "1.6" }
-        ],
-        tc: [
-            { l: "Tesnosť okruhu chladiva", u: "stav", lim: "tesné", def: "OK" },
-            { l: "Prietok (Flow rate)", u: "l/min", lim: "min. 15", def: "22" },
-            { l: "Prúd kompresora", u: "A", lim: "I-nom", def: "7.2" },
-            { l: "Tlak vody", u: "bar", lim: "1.5", def: "1.6" }
-        ],
-        pelet: [
-            { l: "Komínový ťah", u: "Pa", lim: "15-25", def: "18" },
-            { l: "Obsah O2 v spalinách", u: "%", lim: "8-12", def: "9.5" }
-        ]
-    };
-
-    function updateSystem() {
-        const sys = document.getElementById('inp-sys').value;
-        const container = document.getElementById('dynamic-inputs');
-        container.innerHTML = '<label style="margin-top:10px; display:block; color:var(--primary)">Merania</label>';
-        SYSTEMS[sys].forEach((item, i) => {
-            container.innerHTML += `
-                <div class="form-group">
-                    <label>${item.l}</label>
-                    <input type="text" id="val-${i}" value="${item.def}" oninput="render()">
-                </div>`;
-        });
-        render();
-    }
-
     function render() {
+        // Mapovanie vstupov
         document.getElementById('out-no').textContent = "Číslo: " + document.getElementById('inp-no').value;
-        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "Meno Zákazníka";
-        document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "Adresa";
-        document.getElementById('out-model').textContent = document.getElementById('inp-model').value || "Model / SN";
-        
-        const sys = document.getElementById('inp-sys').value;
-        const tbody = document.getElementById('out-table');
-        tbody.innerHTML = '';
-        SYSTEMS[sys].forEach((item, i) => {
-            const v = document.getElementById(`val-${i}`) ? document.getElementById(`val-${i}`).value : item.def;
-            tbody.innerHTML += `<tr><td>${item.l}</td><td><strong>${v} ${item.u}</strong></td><td style="color:#666">${item.lim}</td></tr>`;
-        });
+        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
+        document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
+        document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
+        document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
+        document.getElementById('out-param').textContent = document.getElementById('inp-param').value || "—";
+        document.getElementById('out-grp').textContent = document.getElementById('inp-grp').value;
+        document.getElementById('out-tech-id').textContent = document.getElementById('inp-tech-id').value;
+        document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
+
+        // Dátum
+        const dVal = document.getElementById('inp-date').value;
+        if(dVal) {
+            const d = new Date(dVal);
+            const dateStr = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2, '0')}. ${d.getFullYear()}`;
+            document.getElementById('out-date').textContent = dateStr;
+            document.getElementById('out-date-sig').textContent = dateStr;
+        }
+
+        // Druh prehliadky
+        const type = document.getElementById('inp-type').value;
+        document.getElementById('out-type').innerHTML = "SPRÁVA O " + type.toUpperCase() + "<br>VYHRADENÉHO TECHNICKÉHO ZARIADENIA";
+        document.getElementById('out-type-small').textContent = type;
     }
 
-    updateSystem();
-    document.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', render));
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', render));
+    render();
 </script>
 
 </body>
