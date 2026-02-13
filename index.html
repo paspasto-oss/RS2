@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spektra Install – Revízna Správa v4.6 (Centered A4)</title>
+    <title>Spektra Install – Jednostránková Revízna Správa</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,115 +15,95 @@
             --success: #16a34a;
         }
 
-        /* GLOBÁLNE NASTAVENIA */
         body { 
             background-color: #cbd5e1; 
             font-family: 'Roboto', sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            display: flex;
-            justify-content: center; /* Centrovanie na šírku na PC */
+            margin: 0; padding: 0; 
+            display: flex; justify-content: center; 
         }
 
         .app-container { 
             display: grid; 
-            grid-template-columns: 380px 210mm; /* Fixná šírka náhľadu podľa A4 */
-            gap: 40px; 
+            grid-template-columns: 350px 210mm; 
+            gap: 20px; 
             padding: 20px; 
-            box-sizing: border-box;
             margin: 0 auto;
         }
 
         /* OVLÁDACÍ PANEL */
         .controls { 
-            background: white; 
-            padding: 25px; 
-            border-radius: 16px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            height: fit-content;
-            position: sticky;
-            top: 20px;
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: fit-content;
+            position: sticky; top: 10px; font-size: 13px;
         }
 
-        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 10px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; }
-        input, select, textarea { padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; }
-        .btn-print { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        .form-group { margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
+        label { font-size: 9px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; }
+        input, select, textarea { padding: 6px; border: 1px solid var(--gray-200); border-radius: 4px; font-size: 12px; }
+        .btn-print { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 10px; }
 
-        /* === DOKUMENT A4 - CENTROVANÝ === */
-        .preview-container { 
-            display: flex; 
-            justify-content: center; 
-        }
-
+        /* === DOKUMENT A4 === */
         .a4-page {
             width: 210mm;
             height: 297mm;
             background: white;
-            padding: 20mm 20mm; /* Štandardné okraje */
+            padding: 12mm 15mm; /* Optimalizované okraje */
             box-sizing: border-box;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
-            margin: 0 auto; /* Horizontálne centrovanie */
+            overflow: hidden; /* Zabezpečí, že nič nevytečie von */
         }
 
-        /* HLAVIČKA */
+        /* HLAVIČKA - ZMENŠENÁ */
         .header { 
-            display: flex; 
-            justify-content: space-between; 
-            border-bottom: 3px solid var(--primary); 
-            padding-bottom: 20px; 
-            margin-bottom: 30px; 
+            display: flex; justify-content: space-between; 
+            border-bottom: 2px solid var(--primary); 
+            padding-bottom: 10px; margin-bottom: 15px; 
         }
-        .brand h1 { color: var(--primary); margin: 0; font-size: 36px; font-weight: 900; letter-spacing: -1px; }
-        .brand .sub { font-size: 12px; color: #555; margin-top: 5px; font-weight: 500; }
+        .brand h1 { color: var(--primary); margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -1px; }
+        .brand .sub { font-size: 10px; color: #555; margin-top: 2px; }
         .doc-title { text-align: right; }
-        .doc-title h2 { color: var(--primary); margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; }
-        .doc-title .no { font-size: 18px; font-weight: 500; margin-top: 8px; }
+        .doc-title h2 { color: var(--primary); margin: 0; font-size: 16px; font-weight: 800; text-transform: uppercase; }
+        .doc-title .no { font-size: 14px; font-weight: 500; margin-top: 4px; }
 
         /* OBSAH */
-        .main-content { flex-grow: 1; }
-
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
-        .box { background: #F9FAFB; padding: 15px; border-left: 6px solid var(--primary); }
-        .box h3 { margin: 0 0 10px 0; font-size: 11px; color: var(--gray-700); text-transform: uppercase; letter-spacing: 0.5px; }
-        .box p { margin: 3px 0; font-size: 14px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .box { background: #F9FAFB; padding: 10px; border-left: 4px solid var(--primary); }
+        .box h3 { margin: 0 0 5px 0; font-size: 10px; color: var(--gray-700); text-transform: uppercase; }
+        .box p { margin: 2px 0; font-size: 12px; }
 
         .section-tag { 
-            background: #F3F4F6; padding: 10px 15px; font-weight: 900; font-size: 12px; 
-            text-transform: uppercase; margin-top: 30px; border-left: 6px solid var(--primary); 
+            background: #F3F4F6; padding: 6px 10px; font-weight: 900; font-size: 10px; 
+            text-transform: uppercase; margin-top: 15px; border-left: 4px solid var(--primary); 
         }
 
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        .data-table th, .data-table td { border: 1px solid #E5E7EB; padding: 12px 15px; font-size: 13px; text-align: left; }
-        .data-table th { background: #fff; color: #6B7280; font-size: 10px; text-transform: uppercase; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .data-table th, .data-table td { border: 1px solid #E5E7EB; padding: 6px 10px; font-size: 11px; text-align: left; }
+        .data-table th { background: #fff; color: #6B7280; font-size: 9px; }
 
+        /* STATUS BOX - ZMENŠENÝ PODĽA POŽIADAVKY */
         .status-box { 
-            margin: 45px auto; border: 4px solid var(--success); padding: 20px; 
-            text-align: center; font-size: 22px; font-weight: 900; color: var(--success); 
-            width: 80%; border-radius: 6px; text-transform: uppercase; 
+            margin: 15px auto; border: 2px solid var(--success); padding: 8px; 
+            text-align: center; font-size: 14px; font-weight: 700; color: var(--success); 
+            width: 70%; border-radius: 4px; text-transform: uppercase; 
+        }
+
+        .notes-box {
+            border: 1px solid #eee; padding: 10px; min-height: 50px; font-size: 11px; line-height: 1.4; margin-top: 5px;
         }
 
         /* PÄTA */
-        .footer-area { margin-top: auto; }
-        .legal-text { font-size: 10px; color: #6B7280; text-align: justify; margin-bottom: 35px; line-height: 1.6; }
-        .signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .sig-col { width: 240px; text-align: center; font-size: 12px; border-top: 2px solid #000; padding-top: 10px; }
+        .footer-area { margin-top: auto; padding-top: 10px; }
+        .legal-text { font-size: 9px; color: #6B7280; text-align: justify; margin-bottom: 20px; line-height: 1.4; }
+        .signatures { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .sig-col { width: 200px; text-align: center; font-size: 11px; border-top: 1.5px solid #000; padding-top: 5px; }
 
-        /* TLAČ */
         @media print {
-            body { background: white; justify-content: center; }
+            body { background: white; }
             .app-container { display: block; width: 100%; margin: 0; padding: 0; }
             .controls { display: none !important; }
-            .preview-container { width: 100%; display: flex; justify-content: center; }
-            .a4-page { 
-                box-shadow: none; 
-                margin: 0 auto; /* Nútené centrovanie na papieri */
-                width: 210mm;
-                height: 297mm;
-                padding: 15mm 20mm;
-            }
+            .a4-page { box-shadow: none; margin: 0 auto; width: 210mm; height: 297mm; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -132,24 +112,23 @@
 
 <div class="app-container">
     <section class="controls">
-        <h2 style="color:var(--primary); margin-top:0;">Nastavenia Správy</h2>
+        <h2 style="color:var(--primary); margin-top:0; font-size: 16px;">Ovládací Panel</h2>
         <div class="form-group">
-            <label>Typ zariadenia</label>
+            <label>Zdroj tepla</label>
             <select id="inp-sys" onchange="updateSystem()">
                 <option value="plyn">Plynový kondenzačný kotol</option>
-                <option value="tc">Tepelné čerpadlo (Vzduch-Voda)</option>
+                <option value="tc">Tepelné čerpadlo</option>
                 <option value="pelet">Peletový kotol</option>
             </select>
         </div>
         <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" value="REV-2026-001"></div>
-        <div class="form-group"><label>Dátum kontroly</label><input type="date" id="inp-date"></div>
         <div class="form-group"><label>Zákazník</label><input type="text" id="inp-name" placeholder="Meno a Priezvisko"></div>
-        <div class="form-group"><label>Adresa inštalácie</label><textarea id="inp-addr" rows="2"></textarea></div>
-        <div class="form-group"><label>Model a S/N</label><input type="text" id="inp-model" placeholder="Značka, model, S/N"></div>
+        <div class="form-group"><label>Adresa</label><textarea id="inp-addr" rows="2"></textarea></div>
+        <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-model" placeholder="Značka, model, S/N"></div>
+        
+        <div id="dynamic-inputs"></div>
 
-        <div id="dynamic-inputs" style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;"></div>
-
-        <button class="btn-print" onclick="window.print()">TLAČIŤ DOKUMENT (PDF)</button>
+        <button class="btn-print" onclick="window.print()">TLAČIŤ (1 STRANA A4)</button>
     </section>
 
     <section class="preview-container">
@@ -165,56 +144,56 @@
                 </div>
             </div>
 
-            <div class="main-content">
-                <div class="info-grid">
-                    <div class="box">
-                        <h3>Prevádzkovateľ / Adresa</h3>
-                        <p><strong id="out-name" style="font-size:16px;">—</strong></p>
-                        <p id="out-addr" style="white-space: pre-line;">—</p>
-                    </div>
-                    <div class="box">
-                        <h3>Identifikácia Zariadenia</h3>
-                        <p>Model: <strong id="out-model">—</strong></p>
-                        <p>Dátum výkonu: <span id="out-date">13. 2. 2026</span></p>
-                        <p>Legislatíva: <span>Vyhláška 508/2009 Z.z.</span></p>
-                    </div>
+            <div class="info-grid">
+                <div class="box">
+                    <h3>Prevádzkovateľ</h3>
+                    <p><strong id="out-name" style="font-size:13px;">—</strong></p>
+                    <p id="out-addr" style="white-space: pre-line;">—</p>
                 </div>
-
-                <div class="section-tag">Namerané hodnoty a stav bezpečnostných prvkov</div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 45%;">Parameter kontroly</th>
-                            <th style="width: 25%;">Hodnota</th>
-                            <th style="width: 30%;">Limitná hodnota</th>
-                        </tr>
-                    </thead>
-                    <tbody id="out-table"></tbody>
-                </table>
-
-                <div class="section-tag">Zhodnotenie a poznámky</div>
-                <div style="border:1px solid #eee; padding:20px; min-height:100px; font-size:13px; line-height:1.6; margin-top:10px;">
-                    Zariadenie bolo skontrolované v súlade s predpismi výrobcu a platnou legislatívou SR. Bola vykonaná funkčná skúška bezpečnostných termostatov, kontrola tesnosti plynového traktu a meranie emisií. Zariadenie pracuje v predpísaných toleranciách.
+                <div class="box">
+                    <h3>Identifikácia Zariadenia</h3>
+                    <p>Model/SN: <strong id="out-model">—</strong></p>
+                    <p>Dátum kontroly: <span id="out-date">13. 2. 2026</span></p>
+                    <p>Technik: <span>Pavol Pastorek</span></p>
                 </div>
+            </div>
 
-                <div class="status-box">Zariadenie: Schopné bezpečnej prevádzky</div>
+            <div class="section-tag">Namerané hodnoty a stav bodov kontroly</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Bod kontroly</th>
+                        <th style="width: 25%;">Hodnota</th>
+                        <th style="width: 25%;">Limit / Stav</th>
+                    </tr>
+                </thead>
+                <tbody id="out-table"></tbody>
+            </table>
+
+            <div class="section-tag">Zistené vady a poznámky</div>
+            <div class="notes-box" id="out-notes">
+                Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Bola vykonaná funkčná skúška bezpečnostných prvkov a kontrola tesnosti spojov.
+            </div>
+
+            <div class="status-box" id="out-status-box">
+                ZARIADENIE: Schopné bezpečnej prevádzky
             </div>
 
             <div class="footer-area">
                 <div class="legal-text">
-                    Táto správa je dokladom o vykonaní odbornej prehliadky a skúšky (revízie) v zmysle zákona o bezpečnosti a ochrane zdravia pri práci. Prevádzkovateľ je povinný zabezpečiť odstránenie prípadných drobných nedostatkov uvedených v poznámkach. Nasledujúca kontrola sa odporúča po uplynutí 12 mesiacov.
+                    Táto správa je vypracovaná v súlade so zákonom č. 314/2012 Z.z. a vyhláškou 508/2009 Z.z. Prevádzkovateľ je povinný odstrániť prípadné vady uvedené v poznámkach. Nasledujúca periodická kontrola sa odporúča po 12 mesiacoch.
                 </div>
 
                 <div class="signatures">
                     <div class="sig-col">Podpis prevádzkovateľa</div>
                     <div class="sig-col">
                         <strong>Pavol Pastorek</strong><br>
-                        Servisný technik (Spektra Install)
+                        Servisný technik
                     </div>
                 </div>
 
-                <div style="text-align: center; font-size: 11px; color: #999; border-top: 1px solid #f3f4f6; padding-top: 10px;">
-                    Platnosť tejto správy do: <span id="out-next-date">13. 2. 2027</span>
+                <div style="text-align: center; font-size: 10px; color: #999; border-top: 1px solid #f3f4f6; padding-top: 8px;">
+                    Platnosť do: <span id="out-next-date">13. 2. 2027</span>
                 </div>
             </div>
         </div>
@@ -224,36 +203,34 @@
 <script>
     const SYSTEMS = {
         plyn: [
-            { l: "Tlak plynu na vstupe", u: "mbar", lim: "18 - 25", def: "21.2" },
-            { l: "Koncentrácia CO (emisie)", u: "ppm", lim: "< 100", def: "14" },
-            { l: "Účinnosť spaľovania", u: "%", lim: "> 95", def: "98.2" },
-            { l: "Teplota spalín (pri max.)", u: "°C", lim: "max 80", def: "46" },
-            { l: "Tlak vykurovacej vody", u: "bar", lim: "1.2 - 2.0", def: "1.6" },
-            { l: "Tlak v expanznej nádobe", u: "bar", lim: "1.0 - 1.5", def: "1.2" },
-            { l: "Ionizačný prúd", u: "µA", lim: "> 5", def: "19" },
-            { l: "Skúška tesnosti plynu", u: "stav", lim: "bez úniku", def: "Vyhovuje" }
+            { l: "Vstupný tlak plynu", u: "mbar", lim: "18-25", def: "21" },
+            { l: "Koncentrácia CO emisií", u: "ppm", lim: "< 100", def: "12" },
+            { l: "Teplota spalín", u: "°C", lim: "max 80", def: "46" },
+            { l: "Tlak v expanznej nádobe", u: "bar", lim: "1.0-1.5", def: "1.2" },
+            { l: "Ionizačný prúd", u: "µA", lim: "> 5", def: "18" },
+            { l: "Tesnosť plynových spojov", u: "stav", lim: "OK", def: "Vyhovuje" },
+            { l: "Tlak vykurovacej vody", u: "bar", lim: "1.2-2.0", def: "1.6" }
         ],
         tc: [
-            { l: "Tesnosť chladiaceho okruhu", u: "stav", lim: "tesné", def: "OK" },
-            { l: "Prietok vykurovacej vody", u: "l/min", lim: "min. 15", def: "24.5" },
-            { l: "Teplota primár (vstup/výstup)", u: "°C", lim: "v norme", def: "7 / 3" },
-            { l: "Odber prúdu kompresora", u: "A", lim: "I-nom", def: "8.1" }
+            { l: "Tesnosť okruhu chladiva", u: "stav", lim: "tesné", def: "OK" },
+            { l: "Prietok (Flow rate)", u: "l/min", lim: "min. 15", def: "22" },
+            { l: "Prúd kompresora", u: "A", lim: "I-nom", def: "7.2" },
+            { l: "Tlak vody", u: "bar", lim: "1.5", def: "1.6" }
         ],
         pelet: [
-            { l: "Komínový ťah", u: "Pa", lim: "15 - 25", def: "18" },
-            { l: "Obsah O2 v spalinách", u: "%", lim: "8 - 12", def: "9.5" },
-            { l: "Funkcia podávača", u: "stav", lim: "plynulá", def: "OK" }
+            { l: "Komínový ťah", u: "Pa", lim: "15-25", def: "18" },
+            { l: "Obsah O2 v spalinách", u: "%", lim: "8-12", def: "9.5" }
         ]
     };
 
     function updateSystem() {
         const sys = document.getElementById('inp-sys').value;
         const container = document.getElementById('dynamic-inputs');
-        container.innerHTML = '<label style="color:var(--primary); margin-bottom:10px; display:block">Doplnkové Merania</label>';
+        container.innerHTML = '<label style="margin-top:10px; display:block; color:var(--primary)">Merania</label>';
         SYSTEMS[sys].forEach((item, i) => {
             container.innerHTML += `
-                <div class="form-group" style="margin-bottom:6px">
-                    <label style="color:#555; text-transform:none">${item.l} (${item.u})</label>
+                <div class="form-group">
+                    <label>${item.l}</label>
                     <input type="text" id="val-${i}" value="${item.def}" oninput="render()">
                 </div>`;
         });
@@ -266,14 +243,6 @@
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "Adresa";
         document.getElementById('out-model').textContent = document.getElementById('inp-model').value || "Model / SN";
         
-        const dateVal = document.getElementById('inp-date').value;
-        if(dateVal) {
-            const d = new Date(dateVal);
-            document.getElementById('out-date').textContent = `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
-            d.setFullYear(d.getFullYear() + 1);
-            document.getElementById('out-next-date').textContent = `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
-        }
-
         const sys = document.getElementById('inp-sys').value;
         const tbody = document.getElementById('out-table');
         tbody.innerHTML = '';
@@ -283,7 +252,6 @@
         });
     }
 
-    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
     updateSystem();
     document.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', render));
 </script>
