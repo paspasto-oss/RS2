@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (S Poznámkami)</title>
+    <title>Spektra Install - Revízny Systém (Master + Notes)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -38,8 +38,13 @@
         .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
         .form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; }
-        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; width: 100%; box-sizing: border-box; background: #fff; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; }
+        
+        input, select, textarea { 
+            padding: 10px; border: 1px solid #ccc; border-radius: 6px; 
+            font-size: 16px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+        
         .btn-print { 
             width: 100%; background: var(--primary); color: white; border: none; 
             padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; 
@@ -72,15 +77,25 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        /* KANVAS PRE POZNÁMKY (PREVIEW) */
-        .notes-canvas-container {
-            width: 100%;
-            height: 100px; /* Výška pre poznámky */
-            border: 2px dashed #999;
+        /* SEKCIA POZNÁMKY V A4 */
+        .notes-section {
+            border: 1px solid #ccc;
+            min-height: 80px;
             margin-top: 5px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+        .notes-text { font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
+        
+        /* KANVAS V PREVIEW */
+        .notes-canvas-container {
+            flex-grow: 1;
+            border: 1px dashed #ddd;
             cursor: pointer;
             position: relative;
             background: #fffafa;
+            min-height: 60px;
         }
         #preview-notes-canvas { width: 100%; height: 100%; display: block; }
 
@@ -93,7 +108,7 @@
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
 
-        /* KANVAS PRE PODPIS (PREVIEW) */
+        /* PODPIS PREVIEW */
         .sig-canvas-container {
             width: 100%; height: 50px;
             border: 2px dashed #D60000;
@@ -105,7 +120,7 @@
         .tap-hint { font-size: 9px; color: #D60000; display: block; text-align: center; margin-top: 2px; pointer-events: none; }
         .tap-hint-notes { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 10px; pointer-events: none; }
 
-        /* MODAL (FULL SCREEN DRAWING) */
+        /* MODAL */
         #drawing-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 9999; flex-direction: column;
@@ -172,6 +187,12 @@
         <div class="form-group"><label>Adresa</label><input type="text" id="inp-addr" placeholder="Miesto"></div>
         <div class="form-group"><label>Zariadenie</label><input type="text" id="inp-dev" placeholder="Model"></div>
         <div class="form-group"><label>Prístroj</label><input type="text" id="inp-tool" value="Testo 330-2 LL"></div>
+        
+        <div class="form-group">
+            <label style="color:var(--primary);">📝 Poznámky / Zistené nedostatky</label>
+            <textarea id="inp-notes" rows="4" placeholder="Tu napíšte závady, ak nejaké sú. Ak necháte prázdne, použije sa predvolený text 'Bez závad'." oninput="renderNotes()"></textarea>
+        </div>
+
         <button class="btn-print" onclick="window.print()">🖨️ Tlačiť / PDF</button>
     </section>
 
@@ -220,10 +241,16 @@
                 <tbody id="out-table-body"></tbody>
             </table>
 
-            <div class="section-header">2. Zistené nedostatky (Náčrt / Poznámka)</div>
-            <div class="notes-canvas-container" onclick="openModal('notes')">
-                <canvas id="preview-notes-canvas"></canvas>
-                <div class="tap-hint-notes" id="notes-hint">🖊️ Kliknite pre vpisovanie poznámok (Ručne)</div>
+            <div class="section-header">2. Zistené nedostatky</div>
+            <div class="notes-section">
+                <div class="notes-text" id="out-notes-text">
+                    Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.
+                </div>
+                
+                <div class="notes-canvas-container" onclick="openModal('notes')">
+                    <canvas id="preview-notes-canvas"></canvas>
+                    <div class="tap-hint-notes" id="notes-hint">🖊️ Kliknite pre kreslenie / náčrt</div>
+                </div>
             </div>
 
             <div class="footer-area">
@@ -260,7 +287,7 @@
 </div>
 
 <script>
-    // === 1. DÁTA A SCENÁRE ===
+    // DÁTA
     const SCENARIOS = {
         plyn: {
             title: "SPRÁVA O ODBORNEJ PREHLIADKE<br>A SKÚŠKE PLYNOVÉHO ZARIADENIA",
@@ -305,6 +332,7 @@
         document.getElementById('out-addr').textContent = document.getElementById('inp-addr').value || "—";
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-tool').textContent = document.getElementById('inp-tool').value;
+        
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
             const d = new Date(dVal);
@@ -314,32 +342,35 @@
         }
     }
 
-    // === 2. UNIVERZÁLNY MODAL PRE KRESLENIE (PODPIS aj POZNÁMKY) ===
-    let currentTarget = ''; // 'sig' alebo 'notes'
-    
+    // Funkcia na prenos textu poznámok
+    function renderNotes() {
+        const txt = document.getElementById('inp-notes').value;
+        const defaultTxt = "Zariadenie nevykazuje žiadne zjavné vady brániace bezpečnej prevádzke. Všetky bezpečnostné prvky sú funkčné.";
+        document.getElementById('out-notes-text').innerText = txt.trim() ? txt : defaultTxt;
+    }
+
+    // === KRESLENIE ===
+    let currentTarget = '';
     const modal = document.getElementById('drawing-modal');
     const fullCanvas = document.getElementById('full-screen-canvas');
     const ctx = fullCanvas.getContext('2d');
     let isDrawing = false;
 
-    // Otvorenie modalu
     function openModal(target) {
         currentTarget = target;
         modal.style.display = 'flex';
-        document.getElementById('modal-title').innerText = target === 'sig' ? '✍️ Podpis zákazníka' : '🖊️ Poznámka / Náčrt';
+        document.getElementById('modal-title').innerText = target==='sig' ? '✍️ Podpis zákazníka' : '🖊️ Náčrt';
         
-        // Nastavenie rozmerov
         fullCanvas.width = fullCanvas.offsetWidth;
         fullCanvas.height = fullCanvas.offsetHeight;
-        ctx.lineWidth = target === 'sig' ? 3 : 2; 
+        ctx.lineWidth = target==='sig' ? 3 : 2; 
         ctx.lineCap = 'round'; 
-        ctx.strokeStyle = target === 'sig' ? '#000' : '#D60000'; // Podpis čierny, poznámky červené
+        ctx.strokeStyle = target==='sig' ? '#000' : '#D60000';
     }
 
     function closeModal() { modal.style.display = 'none'; }
     function clearFullCanvas() { ctx.clearRect(0,0,fullCanvas.width, fullCanvas.height); ctx.beginPath(); }
 
-    // Kresliace funkcie
     function getPos(e) {
         const r = fullCanvas.getBoundingClientRect();
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
@@ -353,16 +384,12 @@
     fullCanvas.addEventListener('mousedown', start); fullCanvas.addEventListener('mousemove', move); fullCanvas.addEventListener('mouseup', end);
     fullCanvas.addEventListener('touchstart', start, {passive:false}); fullCanvas.addEventListener('touchmove', move, {passive:false}); fullCanvas.addEventListener('touchend', end);
 
-    // ULOŽENIE (CROP + RESIZE)
     function saveDrawing() {
-        // Nájdi cieľový malý canvas
-        let previewCanvasId = currentTarget === 'sig' ? 'preview-sig-canvas' : 'preview-notes-canvas';
-        let previewCanvas = document.getElementById(previewCanvasId);
+        let prevId = currentTarget === 'sig' ? 'preview-sig-canvas' : 'preview-notes-canvas';
+        let previewCanvas = document.getElementById(prevId);
         let pCtx = previewCanvas.getContext('2d');
 
-        // Logic pre orezanie (Crop)
-        const w = fullCanvas.width;
-        const h = fullCanvas.height;
+        const w = fullCanvas.width; const h = fullCanvas.height;
         const pixels = ctx.getImageData(0, 0, w, h).data;
         let minX=w, minY=h, maxX=0, maxY=0, found=false;
 
@@ -376,18 +403,13 @@
             }
         }
 
-        if(!found) { 
-            // Ak je prázdny a ide o poznámky, len vymaž hint ak tam bol, resp nechaj tak
-            closeModal(); return; 
-        }
+        if(!found) { closeModal(); return; }
 
-        // Padding
         const pad = 10;
         minX = Math.max(0, minX-pad); minY = Math.max(0, minY-pad);
         maxX = Math.min(w, maxX+pad); maxY = Math.min(h, maxY+pad);
         const trimW = maxX - minX; const trimH = maxY - minY;
 
-        // Resize do cieľa
         previewCanvas.width = previewCanvas.offsetWidth;
         previewCanvas.height = previewCanvas.offsetHeight;
         pCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
@@ -398,13 +420,10 @@
 
         pCtx.drawImage(fullCanvas, minX, minY, trimW, trimH, cx, cy, trimW*scale, trimH*scale);
         
-        // Ak sú to poznámky, skryjeme text "Kliknite..."
         if(currentTarget === 'notes') document.getElementById('notes-hint').style.display = 'none';
-        
         closeModal();
     }
 
-    // === 3. PEČIATKA ===
     function loadTechSig(e) {
         if(e.target.files && e.target.files[0]) {
             const r = new FileReader();
@@ -413,7 +432,7 @@
         }
     }
 
-    // === INIT ===
+    // INIT
     document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('input').forEach(el => el.addEventListener('input', render));
     changeScenario();
