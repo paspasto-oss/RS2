@@ -68,7 +68,7 @@
         /* TOP INFO GRID */
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
-        .box-title { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
+        .box-title { font-size: 10px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
         .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; align-items: baseline; }
         .row-item span:first-child { color: #555; margin-right: 5px; }
         .row-item strong { text-align: right; }
@@ -97,8 +97,8 @@
 
         /* FOOTER & CONCLUSION */
         .footer-area { margin-top: auto; }
-        .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
-        .status-box { margin: 10px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 12px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; letter-spacing: 0.5px; }
+        .conclusion-text { font-size: 11px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
+        .status-box { margin: 10px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; letter-spacing: 0.5px; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
         .legal-text { font-size: 7px; color: #555; text-align: justify; margin-bottom: 5px; border-top: 1px solid #eee; padding-top: 5px; }
 
@@ -222,29 +222,29 @@
         </div>
 
         <div class="section-title">Údaje Prevádzkovateľa</div>
-        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma s.r.o."></div>
-        <div class="form-group"><input type="text" id="inp-name" placeholder="Meno a priezvisko"></div>
+        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma s.r.o." oninput="render()"></div>
+        <div class="form-group"><input type="text" id="inp-name" placeholder="Meno a priezvisko" oninput="render()"></div>
         <div class="form-row">
-            <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica 123"></div>
-            <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto a PSČ"></div>
+            <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica 123" oninput="render()"></div>
+            <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto a PSČ" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><input type="text" id="inp-phone" placeholder="Telefón"></div>
-            <div class="form-group"><input type="text" id="inp-email" placeholder="Email"></div>
+            <div class="form-group"><input type="text" id="inp-phone" placeholder="Telefón" oninput="render()"></div>
+            <div class="form-group"><input type="text" id="inp-email" placeholder="Email" oninput="render()"></div>
         </div>
         
         <div class="section-title">Technické zariadenie</div>
         <div class="form-row">
-            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev"></div>
-            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf"></div>
+            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev" oninput="render()"></div>
+            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>S/N</label><input type="text" id="inp-sn"></div>
-            <div class="form-group"><label>Rok</label><input type="text" id="inp-year"></div>
+            <div class="form-group"><label>S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
+            <div class="form-group"><label>Rok</label><input type="text" id="inp-year" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power"></div>
-            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel"></div>
+            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
+            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" oninput="render()"></div>
         </div>
         
         <div class="section-title">Výsledok</div>
@@ -343,7 +343,7 @@
 
             <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
             <div class="conclusion-text" id="out-conclusion">
-                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: ....
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: ....
             </div>
 
             <div class="footer-area">
@@ -491,13 +491,21 @@
     }
 
     function render() {
-        document.getElementById('out-company').textContent = document.getElementById('inp-company').value || "—";
-        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
-        document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
-        document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
-        const tel = document.getElementById('inp-phone').value; const mail = document.getElementById('inp-email').value;
+        // Mapovanie údajov prevádzkovateľa
+        const comp = document.getElementById('inp-company').value || "—";
+        const name = document.getElementById('inp-name').value || "—";
+        const street = document.getElementById('inp-street').value || "—";
+        const city = document.getElementById('inp-city').value || "—";
+        document.getElementById('out-company').textContent = comp;
+        document.getElementById('out-name').textContent = name;
+        document.getElementById('out-street').textContent = street;
+        document.getElementById('out-city').textContent = city;
+        
+        const tel = document.getElementById('inp-phone').value; 
+        const mail = document.getElementById('inp-email').value;
         document.getElementById('out-contact').textContent = (tel ? tel : "") + (tel && mail ? " / " : "") + (mail ? mail : "");
         
+        // Mapovanie údajov zariadenia
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
@@ -684,6 +692,10 @@
         generateReportNumber();
         initQR();
         loadAutoSave();
+        // Pridanie globálneho sledovania zmien pre všetky polia
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('input', render);
+        });
         if(!localStorage.getItem('autosave_rev_v5')) changeScenario();
     }
 </script>
