@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (Foto + Sketch)</title>
+    <title>Spektra Install - Revízny Systém (Pelety)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -75,14 +75,11 @@
         .notes-section { border: 1px solid #ccc; min-height: 50px; margin-top: 5px; padding: 5px; display: flex; flex-direction: column; }
         .notes-text { font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
         
-        /* Kontajner pre rozdelenie na dve polovice */
         .notes-media-row { display: flex; gap: 5px; height: 130px; margin-top: 5px; }
         
-        /* Ľavá strana - Kreslenie */
         .notes-canvas-container { flex: 1; border: 1px dashed #ddd; cursor: pointer; position: relative; background: #fffafa; }
         #preview-notes-canvas { width: 100%; height: 100%; display: block; }
         
-        /* Pravá strana - Foto */
         .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; background: #fdfdfd; overflow: hidden; }
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
         .upload-overlay-label { position: absolute; width: 100%; height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; color: #999; flex-direction: column; }
@@ -155,6 +152,7 @@
             <label style="color:#c2410c;">KATEGÓRIA ZARIADENIA</label>
             <select id="inp-scenario" onchange="changeScenario()" style="font-weight:bold; color:#c2410c;">
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
+                <option value="pellet">🪵 PELETOVÝ KOTOL (Biomasa)</option>
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
             </select>
         </div>
@@ -191,7 +189,7 @@
         </div>
         <div class="form-row">
             <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" placeholder="kW"></div>
-            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" placeholder="Napr. ZP"></div>
+            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" placeholder="Napr. ZP, Pelety A1"></div>
         </div>
         
         <div class="section-title">Výsledok</div>
@@ -279,6 +277,7 @@
             <div class="notes-section">
                 <div class="notes-text" id="out-notes-text">V čase prehliadky neboli na zariadení zistené závady.</div>
                 
+                <!-- SPLIT SEKCIA: VĽAVO KRESLENIE, VPRAVO FOTO -->
                 <div class="notes-media-row">
                     <div class="notes-canvas-container" onclick="openModal('notes')">
                         <canvas id="preview-notes-canvas"></canvas>
@@ -341,7 +340,7 @@
 </div>
 
 <script>
-    // === FOTO ZARIADENIA LOGIKA ===
+    // === FOTO LOGIKA ===
     function loadDevicePhoto(e) {
         if(e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -350,7 +349,6 @@
             reader.onload = function(evt) {
                 const img = new Image();
                 img.onload = function() {
-                    // Resize logic (aby sme nezahltili localStorage)
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     const MAX_WIDTH = 800;
@@ -358,22 +356,17 @@
                     let width = img.width;
                     let height = img.height;
 
-                    if (width > height) {
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    } else {
-                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Kompresia
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     
-                    // Zobraz a ulož
                     const preview = document.getElementById('device-photo-preview');
                     preview.src = dataUrl;
                     preview.style.display = 'block';
-                    document.getElementById('photo-label').style.opacity = '0'; // Skry label
+                    document.getElementById('photo-label').style.opacity = '0';
                     autoSave();
                 }
                 img.src = evt.target.result;
@@ -388,7 +381,6 @@
         const statusBox = document.getElementById('out-status-box');
         const conclusion = document.getElementById('out-conclusion');
         
-        // Dátum
         const dVal = document.getElementById('inp-date').value;
         let nextD = "...";
         if(dVal) {
@@ -455,15 +447,14 @@
             scenario: document.getElementById('inp-scenario').value,
             type: document.getElementById('inp-type').value,
             status: document.getElementById('inp-status').value,
-            // Uložíme aj fotku (base64)
             devicePhoto: photoPreview.src.startsWith('data:') ? photoPreview.src : null
         };
-        localStorage.setItem('autosave_photo_v1', JSON.stringify(data));
+        localStorage.setItem('autosave_pellet', JSON.stringify(data));
         showToast();
     }
 
     function loadAutoSave() {
-        const saved = localStorage.getItem('autosave_photo_v1');
+        const saved = localStorage.getItem('autosave_pellet');
         if (saved) {
             const data = JSON.parse(saved);
             if(data.name) document.getElementById('inp-name').value = data.name;
@@ -483,14 +474,12 @@
                 document.getElementById('inp-scenario').value = data.scenario;
                 changeScenario();
             }
-            // Load Photo
             if(data.devicePhoto) {
                 const preview = document.getElementById('device-photo-preview');
                 preview.src = data.devicePhoto;
                 preview.style.display = 'block';
                 document.getElementById('photo-label').style.opacity = '0';
             }
-
             render();
             renderNotes();
         }
@@ -498,17 +487,15 @@
 
     function clearAllData() {
         if(confirm("Nová správa?")) {
-            localStorage.removeItem('autosave_photo_v1');
+            localStorage.removeItem('autosave_pellet');
             document.querySelectorAll('input:not(#inp-no), textarea').forEach(el => el.value = '');
             document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('inp-status').value = 'ok';
             
-            // Clear photo
             const preview = document.getElementById('device-photo-preview');
             preview.src = ''; preview.style.display = 'none';
             document.getElementById('photo-label').style.opacity = '1';
             
-            // Clear canvases
             const sigCtx = document.getElementById('preview-sig-canvas').getContext('2d');
             sigCtx.clearRect(0,0,300,150);
             const noteCtx = document.getElementById('preview-notes-canvas').getContext('2d');
@@ -554,6 +541,21 @@
                 { l: "Tlak vykurovacej vody", n: "1.0 - 2.0 bar", v: "1.5 bar" }
             ]
         },
+        pellet: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA TUHÉ PALIVO (PELETY)",
+            lawShort: "STN EN 303-5 / Vyhl. 410/2012",
+            group: "Kotol na tuhé palivo (Biomasa)",
+            rows: [
+                { l: "Vizuálna kontrola telesa/výmenníka", n: "Bez poškodenia, čisté", v: "Vyhovuje" },
+                { l: "Funkčnosť podávača a horáka", n: "Plynulý chod", v: "Vyhovuje" },
+                { l: "Bezpečnostný prvok (Turniket/Klapka)", n: "Funkčné", v: "Vyhovuje" },
+                { l: "Ťah komína", n: "10 - 20 Pa (podľa výrobu)", v: "15 Pa" },
+                { l: "Teplota spalín", n: "100 - 180 °C", v: "140 °C" },
+                { l: "Obsah CO v spalinách", n: "Max. povolené hodnoty", v: "150 ppm" },
+                { l: "Obsah O2", n: "6 - 10 %", v: "8.5 %" },
+                { l: "Účinnosť spaľovania", n: "> 85 %", v: "91 %" }
+            ]
+        },
         tc: {
             title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV",
             lawShort: "Zákon č. 286/2009",
@@ -588,7 +590,7 @@
         autoSave();
     }
 
-    // Drawing Logic
+    // Canvas Logic
     let currentTarget = ''; const modal = document.getElementById('drawing-modal'); const fullCanvas = document.getElementById('full-screen-canvas'); const ctx = fullCanvas.getContext('2d'); let isDrawing = false;
     function openModal(t) { currentTarget = t; modal.style.display = 'flex'; document.getElementById('modal-title').innerText = t==='sig' ? '✍️ Podpis zákazníka' : '🖊️ Náčrt'; fullCanvas.width = fullCanvas.offsetWidth; fullCanvas.height = fullCanvas.offsetHeight; ctx.lineWidth = t==='sig' ? 3 : 2; ctx.lineCap = 'round'; ctx.strokeStyle = t==='sig' ? '#000' : '#D60000'; }
     function closeModal() { modal.style.display = 'none'; }
