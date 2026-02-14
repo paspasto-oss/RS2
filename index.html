@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Revízny Systém (VTZ v sekcii 2)</title>
+    <title>Spektra Install - Revízia + Platba (DPH)</title>
+    <!-- Knižnica pre QR kód -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -13,6 +15,7 @@
             --danger: #dc2626;
             --bg-color: #e5e7eb;
             --preview-bg: #525252;
+            --vat-rate: 1.23; /* 23% DPH */
         }
 
         body { background-color: var(--bg-color); font-family: 'Roboto', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s; }
@@ -20,7 +23,7 @@
         .app-container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; align-items: start; transition: all 0.3s ease; }
 
         /* OVLÁDACÍ PANEL */
-        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; z-index: 50; }
+        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; z-index: 50; max-height: 95vh; overflow-y: auto; }
         .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
         .form-group { margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
         .form-row { display: flex; gap: 10px; }
@@ -41,8 +44,8 @@
         .btn-reset { background: #eee; color: #333; border: 1px solid #ccc; padding: 5px; border-radius: 4px; font-size: 10px; cursor: pointer; }
 
         /* NÁHĽAD A4 */
-        .preview-container { display: flex; justify-content: center; transition: all 0.3s ease; }
-        .a4-page { width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; }
+        .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transition: all 0.3s ease; }
+        .a4-page { width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
         /* PREVIEW MODE */
         body.preview-mode { background-color: var(--preview-bg); }
@@ -53,7 +56,8 @@
         #save-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 2000; }
 
         /* DOKUMENT STYLES */
-        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 50px; display: flex; justify-content: space-between; align-items: flex-end; }
+        
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.3; }
@@ -61,7 +65,7 @@
         .report-type { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #000; line-height: 1.2; white-space: nowrap; }
         .report-no { font-size: 11px; margin-top: 4px; font-weight: 500; }
 
-        /* TOP INFO GRID (Prevádzkovateľ & Technik) */
+        /* TOP INFO GRID */
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
         .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
@@ -78,27 +82,20 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
-        /* SECTION 2 LAYOUT: VTZ Info (Left) + Photo (Right) */
+        /* SECTION 2 & PHOTO */
         .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 140px; }
-        
-        /* VTZ BOX v sekcii 2 */
         .vtz-box { flex: 1; border: 1px solid #ddd; padding: 8px; font-size: 9px; display: flex; flex-direction: column; justify-content: space-around; background: #fff; }
         .vtz-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; padding-bottom: 2px; margin-bottom: 2px; }
         .vtz-row:last-child { border-bottom: none; }
         .vtz-label { color: #666; font-weight: bold; }
         .vtz-val { font-weight: bold; color: #000; text-align: right; }
 
-        /* PHOTO BOX */
         .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; background: #fdfdfd; overflow: hidden; }
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
         .upload-overlay-label { position: absolute; width: 100%; height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; color: #999; flex-direction: column; }
         .upload-overlay-label:hover { background: rgba(0,0,0,0.02); }
 
-        /* OTHER SECTIONS */
-        .notes-section-plain { border: 1px solid #ccc; min-height: 40px; margin-top: 5px; padding: 5px; }
-        .notes-text { font-size: 10px; white-space: pre-wrap; }
-
-        .conclusion-text { font-size: 10px; margin-top: 5px; text-align: justify; line-height: 1.3; }
+        /* FOOTER */
         .footer-area { margin-top: auto; }
         .status-box { margin: 5px auto 10px auto; border: 2px solid var(--success); padding: 5px; text-align: center; font-size: 11px; font-weight: 800; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
@@ -109,7 +106,20 @@
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
         .sig-canvas-container { width: 100%; height: 40px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
-        .tap-hint { font-size: 8px; color: #D60000; display: block; text-align: center; margin-top: 1px; pointer-events: none; }
+        
+        /* QR PAGE STYLES */
+        .qr-page-content { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; }
+        .qr-title { font-size: 18px; font-weight: 900; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; width: 100%; }
+        .qr-box { border: 4px solid #000; padding: 15px; background: white; margin-bottom: 20px; border-radius: 10px; }
+        .payment-details { width: 100%; max-width: 500px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9fafb; text-align: left; }
+        .pay-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .pay-row:last-child { border: none; }
+        .pay-label { color: #666; font-weight: bold; }
+        .pay-val { font-weight: bold; color: #000; font-family: monospace; font-size: 15px; }
+        .pay-total { font-size: 24px; color: var(--primary); text-align: right; font-weight: 900; margin-top: 5px; }
+
+        /* DPH BADGE */
+        .vat-badge { font-size: 9px; padding: 2px 5px; background: #eee; border-radius: 3px; font-weight: 700; color: #555; }
 
         /* MODAL */
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
@@ -126,9 +136,10 @@
         input[type="file"] { display: none; }
 
         @media print {
-            .controls, #drawing-modal, .upload-label, .upload-overlay-label, .tap-hint, .btn-group, .btn-reset, #floating-edit-btn, #save-toast { display: none !important; }
+            .controls, #drawing-modal, .upload-label, .upload-overlay-label, .btn-group, .btn-reset, #floating-edit-btn, #save-toast { display: none !important; }
             .app-container, .preview-container { display: block; padding: 0; margin: 0; background: white; }
-            .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; }
+            .a4-page { margin: 0 auto; box-shadow: none; width: 210mm; height: 297mm; page-break-after: always; }
+            .a4-page:last-child { page-break-after: avoid; }
             body { background: white; }
             canvas { border: none !important; }
             .sig-canvas-container { border: none; background: transparent; }
@@ -169,15 +180,33 @@
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
             </select>
         </div>
+
+        <div class="form-group" style="background:#f0f9ff; padding:10px; border:1px solid #bae6fd; border-radius:6px; margin-top:10px;">
+            <label style="color:#0369a1; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="inp-vat-payer" onchange="renderQR()" style="width:auto;"> Som platca DPH (23 %)
+            </label>
+            <div style="margin-top:5px;">
+                <label id="label-price">Základná cena (€)</label>
+                <input type="number" id="inp-price" value="80" oninput="renderQR()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Číslo faktúry (Variabilný symbol)</label>
+            <input type="text" id="inp-invoice" placeholder="Ak zostane prázdne, VS bude prázdny" oninput="renderQR()">
+        </div>
+
         <div class="form-group">
             <label>Druh prehliadky</label>
             <select id="inp-type" onchange="render()">
                 <option value="Periodická odborná prehliadka">Periodická odborná prehliadka</option>
                 <option value="Východisková odborná prehliadka">Východisková odborná prehliadka</option>
+                <option value="Servis zariadenia">Servis zariadenia</option>
                 <option value="Mimoriadna odborná prehliadka">Mimoriadna odborná prehliadka</option>
                 <option value="Odborná skúška (Tlaková)">Odborná skúška (Tlaková)</option>
             </select>
         </div>
+
         <div class="form-row">
             <div class="form-group">
                 <div style="display:flex; justify-content:space-between;">
@@ -189,49 +218,48 @@
             <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
         </div>
 
-        <div class="section-title">Údaje Prevádzkovateľa (Rozšírené)</div>
-        <div class="form-group"><label>Názov (Firma / Inštitúcia)</label><input type="text" id="inp-company" placeholder="Napr. Firma s.r.o."></div>
-        <div class="form-group"><label>Meno (Kontakt / Majiteľ)</label><input type="text" id="inp-name" placeholder="Ján Novák"></div>
+        <div class="section-title">Údaje Prevádzkovateľa</div>
+        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma s.r.o."></div>
+        <div class="form-group"><input type="text" id="inp-name" placeholder="Meno a priezvisko"></div>
         <div class="form-row">
-            <div class="form-group"><label>Ulica a číslo</label><input type="text" id="inp-street" placeholder="Ulica 123"></div>
-            <div class="form-group"><label>Mesto a PSČ</label><input type="text" id="inp-city" placeholder="010 01 Žilina"></div>
+            <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica 123"></div>
+            <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto a PSČ"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Telefón</label><input type="text" id="inp-phone" placeholder="+421 ..."></div>
-            <div class="form-group"><label>Email</label><input type="text" id="inp-email" placeholder="@"></div>
+            <div class="form-group"><input type="text" id="inp-phone" placeholder="Telefón"></div>
+            <div class="form-group"><input type="text" id="inp-email" placeholder="Email"></div>
         </div>
         
         <div class="section-title">Technické zariadenie</div>
         <div class="form-row">
-            <div class="form-group"><label>Zariadenie (Typ)</label><input type="text" id="inp-dev" placeholder="Napr. Plynový kotol"></div>
-            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" placeholder="Výrobca"></div>
+            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev"></div>
+            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Sériové číslo (S/N)</label><input type="text" id="inp-sn" placeholder="Výr. číslo"></div>
-            <div class="form-group"><label>Rok výroby</label><input type="text" id="inp-year" placeholder="Rok"></div>
+            <div class="form-group"><label>S/N</label><input type="text" id="inp-sn"></div>
+            <div class="form-group"><label>Rok</label><input type="text" id="inp-year"></div>
         </div>
+        <!-- Oprava: Doplnené chýbajúce polia pre výkon a palivo -->
         <div class="form-row">
-            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" placeholder="kW"></div>
-            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" placeholder="Napr. ZP, Pelety"></div>
+            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power"></div>
+            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel"></div>
         </div>
         
         <div class="section-title">Výsledok</div>
-        
         <div class="form-group">
-            <label style="color:var(--primary);">Popis nedostatkov (ak sú)</label>
+            <label style="color:var(--primary);">Nedostatky</label>
             <input type="text" id="inp-notes" placeholder="V čase prehliadky neboli zistené..." oninput="renderNotes()">
         </div>
-
         <div class="form-group">
-            <label style="color:#000;">3. Umiestnenie / Trasa / Poznámka</label>
-            <textarea id="inp-location-note" rows="3" placeholder="Popis umiestnenia, dĺžka potrubia, trasa..." oninput="render()"></textarea>
+            <label>Umiestnenie / Poznámka</label>
+            <textarea id="inp-location-note" rows="2" oninput="render()"></textarea>
         </div>
 
-        <div class="form-group" style="background: #fffbe6; padding: 10px; border: 1px solid #ffe58f; border-radius: 6px;">
-            <label style="color: #d48806;">⚖️ CELKOVÉ HODNOTENIE</label>
-            <select id="inp-status" onchange="renderStatus()" style="font-weight:bold;">
-                <option value="ok" style="color:green">✅ Zariadenie je SPÔSOBILÉ</option>
-                <option value="fail" style="color:red">❌ Zariadenie NIE JE SPÔSOBILÉ</option>
+        <div class="form-group">
+            <label>Celkové hodnotenie</label>
+            <select id="inp-status" onchange="renderStatus()">
+                <option value="ok">✅ SPÔSOBILÉ</option>
+                <option value="fail">❌ NESPÔSOBILÉ</option>
             </select>
         </div>
 
@@ -239,12 +267,13 @@
             <button class="btn-new" onclick="clearAllData()">🗑️ NOVÁ SPRÁVA</button>
             <div class="btn-row">
                 <button class="btn-preview" onclick="togglePreviewMode()">👁️ Náhľad</button>
-                <button class="btn-print" onclick="window.print()">📄 Uložiť PDF</button>
+                <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
             </div>
         </div>
     </section>
 
     <section class="preview-container">
+        <!-- STRANA 1 -->
         <div class="a4-page">
             <div class="header">
                 <div class="brand">
@@ -257,26 +286,22 @@
                 </div>
             </div>
 
-            <!-- TOP GRID: PREVÁDZKOVATEĽ A TECHNIK -->
             <div class="info-grid">
-                <!-- BOX 1: DETAILNÝ PREVÁDZKOVATEĽ -->
                 <div class="box">
                     <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
                     <div class="row-item"><span>Názov:</span> <strong id="out-company">-</strong></div>
-                    <div class="row-item"><span>Meno:</span> <strong id="out-name">Ján Novák</strong></div>
+                    <div class="row-item"><span>Meno:</span> <strong id="out-name">-</strong></div>
                     <div class="row-item"><span>Ulica:</span> <strong id="out-street">-</strong></div>
-                    <div class="row-item"><span>Mesto:</span> <strong id="out-city">Žilina</strong></div>
-                    <div class="row-item"><span>Tel / Email:</span> <strong id="out-contact">-</strong></div>
+                    <div class="row-item"><span>Mesto:</span> <strong id="out-city">-</strong></div>
+                    <div class="row-item"><span>Kontakt:</span> <strong id="out-contact">-</strong></div>
                 </div>
-
-                <!-- BOX 2: TECHNIK A ÚDAJE O PREHLIADKE -->
                 <div class="box">
                     <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
                     <div class="row-item"><span>Technik:</span> <strong>Pavol Pastorek</strong></div>
                     <div class="row-item"><span>Osvedčenie:</span> <strong>1234/5/2023</strong></div>
                     <div class="row-item"><span>Druh:</span> <strong id="out-type">Periodická</strong></div>
-                    <div class="row-item"><span>Dátum:</span> <strong id="out-date">13. 02. 2026</strong></div>
-                    <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">Vyhl. 508/2009</strong></div>
+                    <div class="row-item"><span>Dátum:</span> <strong id="out-date">-</strong></div>
+                    <div class="row-item"><span>Legislatíva:</span> <strong id="out-law-short">-</strong></div>
                 </div>
             </div>
 
@@ -286,14 +311,12 @@
                 <tbody id="out-table-body"></tbody>
             </table>
 
-            <!-- SEKICIA 2: TEXT V HLAVIČKE + VTZ VĽAVO + FOTO VPRAVO -->
             <div class="section-header">
                 2. ZISTENÉ NEDOSTATKY A ZÁVADY
                 <span class="header-note" id="out-notes-text">V čase prehliadky neboli zistené závady.</span>
             </div>
             
             <div class="section-2-container">
-                <!-- ĽAVÁ STRANA: VTZ (Presunuté zhora) -->
                 <div class="vtz-box">
                     <div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:4px;">TECHNICKÉ ZARIADENIE (VTZ)</div>
                     <div class="vtz-row"><span class="vtz-label">Zariadenie:</span> <span class="vtz-val" id="out-dev">-</span></div>
@@ -303,56 +326,64 @@
                     <div class="vtz-row"><span class="vtz-label">Parametre:</span> <span class="vtz-val" id="out-params">-</span></div>
                     <div class="vtz-row"><span class="vtz-label">Zatriedenie:</span> <span class="vtz-val" id="out-group">-</span></div>
                 </div>
-                
-                <!-- PRAVÁ STRANA: FOTO -->
                 <div class="notes-photo-container">
-                    <img id="device-photo-preview" alt="Foto zariadenia">
+                    <img id="device-photo-preview" alt="Foto">
                     <label for="device-photo-upload" class="upload-overlay-label" id="photo-label">
                         <span style="font-size:24px">📸</span>
-                        <span>VLOŽIŤ FOTO<br>ZARIADENIA</span>
+                        <span>VLOŽIŤ FOTO</span>
                     </label>
                     <input type="file" id="device-photo-upload" accept="image/*" onchange="loadDevicePhoto(event)">
                 </div>
             </div>
 
-            <div class="section-header">3. OSTATNÉ ZISTENIA / UMIESTNENIE / POZNÁMKY</div>
-            <div class="notes-section-plain">
-                <div class="notes-text" id="out-location-note">-</div>
-            </div>
+            <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
+            <div class="notes-section-plain"><div class="notes-text" id="out-location-note">-</div></div>
 
             <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-            <div class="conclusion-text" id="out-conclusion">
-                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky...
-            </div>
+            <div class="conclusion-text" id="out-conclusion">Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky...</div>
 
             <div class="footer-area">
                 <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY</div>
-
-                <div class="legal-text">
-                    Doklad je vydaný v súlade s § 16 a § 19 Vyhlášky MPSVR SR č. 508/2009 Z. z. na zaistenie bezpečnosti a ochrany zdravia pri práci.
-                </div>
-
                 <div class="signatures">
+                    <div class="sig-box"><br><br><br><strong id="out-date-sig">-</strong><div class="sig-line">Dátum</div></div>
                     <div class="sig-box">
-                        <br><br><br>
-                        <strong id="out-date-sig">13. 02. 2026</strong>
-                        <div class="sig-line">Dátum</div>
-                    </div>
-                    <div class="sig-box">
-                        <div class="sig-canvas-container" onclick="openModal('sig')">
-                            <canvas id="preview-sig-canvas"></canvas>
-                        </div>
-                        <span class="tap-hint">👆 Kliknite pre podpis</span>
+                        <div class="sig-canvas-container" onclick="openModal('sig')"><canvas id="preview-sig-canvas"></canvas></div>
                         <div class="sig-line">Podpis prevádzkovateľa</div>
                     </div>
                     <div class="sig-box">
                         <div style="height:40mm; display:flex; align-items:flex-end; justify-content:center;">
-                            <img id="tech-sig-preview" class="tech-sig-img" src="Razitko Technika.png" alt="Pečiatka">
+                            <img id="tech-sig-preview" class="tech-sig-img" src="Razitko Technika.png">
                         </div>
-                        <label for="tech-sig-upload" class="upload-label">📸 Pečiatka</label>
-                        <input type="file" id="tech-sig-upload" accept="image/*" onchange="loadTechSig(event)">
                         <div class="sig-line">Revízny technik</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STRANA 2 -->
+        <div class="a4-page">
+            <div class="header">
+                <div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div>
+                <div class="report-meta"><div class="report-type">PODKLADY PRE PLATBU</div><div class="report-no" id="out-no-2">-</div></div>
+            </div>
+
+            <div class="qr-page-content">
+                <div class="qr-title">Naskenujte QR kód pre úhradu</div>
+                <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
+
+                <div class="payment-details">
+                    <div class="pay-row"><span class="pay-label">Príjemca:</span><span class="pay-val">Spektra Install s.r.o.</span></div>
+                    <div class="pay-row"><span class="pay-label">IBAN:</span><span class="pay-val">SK58 7500 0000 0040 3445 0550</span></div>
+                    
+                    <!-- DYNAMICKÉ DPH POLIA -->
+                    <div id="dph-breakdown" style="display:none;">
+                        <div class="pay-row"><span class="pay-label">Základ dane:</span><span class="pay-val" id="out-pay-base">-</span></div>
+                        <div class="pay-row"><span class="pay-label">DPH (23 %):</span><span class="pay-val" id="out-pay-vat">-</span></div>
+                    </div>
+
+                    <div class="pay-row"><span class="pay-label">Variabilný symbol:</span><span class="pay-val" id="out-pay-vs">-</span></div>
+                    <div class="pay-row"><span class="pay-label">Poznámka (Číslo revízie):</span><span class="pay-val" id="out-pay-note">-</span></div>
+                    <div class="pay-row"><span class="pay-label">Suma celkom:</span><div class="pay-total" id="out-pay-amount">-</div></div>
                 </div>
             </div>
         </div>
@@ -360,48 +391,79 @@
 </div>
 
 <script>
-    // === FOTO LOGIKA ===
+    let qr;
+    function initQR() { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 250, level: 'M' }); }
+
+    function renderQR() {
+        if(!qr) initQR();
+        
+        const isVatPayer = document.getElementById('inp-vat-payer').checked;
+        const basePrice = parseFloat(document.getElementById('inp-price').value) || 0;
+        const reportNo = document.getElementById('inp-no').value; 
+        const invoiceNo = document.getElementById('inp-invoice').value.trim();
+        
+        let totalPrice = basePrice;
+        if (isVatPayer) {
+            totalPrice = basePrice * 1.23;
+            document.getElementById('dph-breakdown').style.display = 'block';
+            document.getElementById('out-pay-base').textContent = basePrice.toFixed(2).replace('.', ',') + " €";
+            document.getElementById('out-pay-vat').textContent = (totalPrice - basePrice).toFixed(2).replace('.', ',') + " €";
+        } else {
+            document.getElementById('dph-breakdown').style.display = 'none';
+        }
+
+        const vsNumeric = invoiceNo.replace(/\D/g, ''); 
+        const iban = "SK5875000000004034450550";
+        const name = "Spektra Install";
+        const finalAmountStr = totalPrice.toFixed(2);
+        
+        // QR String: BCD\nVersion\nCharset\nIdentification\nBIC\nName\nIBAN\nEURAmount\nPurposeCode\nStructuredRef (VS)\nUnstructuredNote (Poznámka)
+        const qrString = `BCD\n002\n1\nSCT\n\n${name}\n${iban}\nEUR${finalAmountStr}\n\n${vsNumeric}\n${reportNo}`;
+        qr.value = qrString;
+
+        document.getElementById('out-pay-amount').textContent = finalAmountStr.replace('.', ',') + " €";
+        document.getElementById('out-pay-vs').textContent = invoiceNo || "Prázdny";
+        document.getElementById('out-pay-note').textContent = reportNo;
+        document.getElementById('out-no-2').textContent = "Číslo: " + reportNo;
+        
+        autoSave();
+    }
+
     function loadDevicePhoto(e) {
         if(e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 800; const MAX_HEIGHT = 600;
-                    let width = img.width; let height = img.height;
-                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
-                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
-                    canvas.width = width; canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const MAX = 800;
+                    let w = img.width, h = img.height;
+                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                    canvas.width = w; canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
                     const preview = document.getElementById('device-photo-preview');
-                    preview.src = dataUrl; preview.style.display = 'block';
+                    preview.src = canvas.toDataURL('image/jpeg', 0.7);
+                    preview.style.display = 'block';
                     document.getElementById('photo-label').style.opacity = '0';
                     autoSave();
                 }
                 img.src = evt.target.result;
             }
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(e.target.files[0]);
         }
     }
 
-    // === LOGIKA STAVU ===
     function renderStatus() {
         const status = document.getElementById('inp-status').value;
         const statusBox = document.getElementById('out-status-box');
         const conclusion = document.getElementById('out-conclusion');
-        
         const dVal = document.getElementById('inp-date').value;
         let nextD = "...";
         if(dVal) {
-            const d = new Date(dVal);
-            d.setFullYear(d.getFullYear() + 1);
+            const d = new Date(dVal); d.setFullYear(d.getFullYear() + 1);
             nextD = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
         }
-
         if (status === 'ok') {
             statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY";
             statusBox.className = "status-box"; 
@@ -409,62 +471,50 @@
         } else {
             statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
             statusBox.className = "status-box danger"; 
-            conclusion.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky.<br><strong>NÁVRH OPATRENÍ:</strong> Zariadenie je nutné bezodkladne odstaviť z prevádzky do odstránenia zistených nedostatkov uvedených v bode 2.`;
+            conclusion.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky.<br><strong>OPATRENIA:</strong> Odstaviť zariadenie do odstránenia závad v bode 2.`;
         }
         autoSave();
     }
 
-    // === RENDER ===
     function render() {
-        // Prevádzkovateľ
         document.getElementById('out-company').textContent = document.getElementById('inp-company').value || "—";
         document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
         document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
-        
-        const tel = document.getElementById('inp-phone').value;
-        const mail = document.getElementById('inp-email').value;
+        const tel = document.getElementById('inp-phone').value; const mail = document.getElementById('inp-email').value;
         document.getElementById('out-contact').textContent = (tel ? tel : "") + (tel && mail ? " / " : "") + (mail ? mail : "");
-
-        // VTZ
+        
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
         document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
         
-        const power = document.getElementById('inp-power').value;
-        const fuel = document.getElementById('inp-fuel').value;
-        document.getElementById('out-params').textContent = (power ? power + " " : "") + (fuel ? "/ " + fuel : "");
+        // Získanie hodnôt výkon a palivo
+        const powerEl = document.getElementById('inp-power');
+        const fuelEl = document.getElementById('inp-fuel');
+        const power = powerEl ? powerEl.value : "";
+        const fuel = fuelEl ? fuelEl.value : "";
         
-        // Ostatné
+        document.getElementById('out-params').textContent = (power ? power + " kW " : "") + (fuel ? "/ " + fuel : "");
         document.getElementById('out-type').textContent = document.getElementById('inp-type').value;
-        
         const locNote = document.getElementById('inp-location-note').value;
         document.getElementById('out-location-note').innerText = locNote.trim() ? locNote : "-";
-        
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
-            const d = new Date(dVal);
-            const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
-            document.getElementById('out-date').textContent = ds;
-            document.getElementById('out-date-sig').textContent = ds;
+            const d = new Date(dVal); const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
+            document.getElementById('out-date').textContent = ds; document.getElementById('out-date-sig').textContent = ds;
         }
         renderStatus();
+        renderQR();
     }
 
     function renderNotes() {
         const txt = document.getElementById('inp-notes').value;
-        const defaultTxt = "V čase prehliadky neboli zistené závady.";
-        document.getElementById('out-notes-text').innerText = txt.trim() ? txt : defaultTxt;
+        document.getElementById('out-notes-text').innerText = txt.trim() ? txt : "V čase prehliadky neboli zistené závady.";
         autoSave();
     }
 
-    // === AUTOSAVE ===
     function autoSave() {
-        const photoPreview = document.getElementById('device-photo-preview');
-        const techSigImg = document.getElementById('tech-sig-preview');
-        const techSigSrc = techSigImg.src.startsWith('data:') ? techSigImg.src : null;
-
         const data = {
             company: document.getElementById('inp-company').value,
             name: document.getElementById('inp-name').value,
@@ -482,140 +532,70 @@
             locNote: document.getElementById('inp-location-note').value,
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
+            price: document.getElementById('inp-price').value,
+            isVat: document.getElementById('inp-vat-payer').checked,
+            invoice: document.getElementById('inp-invoice').value,
             type: document.getElementById('inp-type').value,
             status: document.getElementById('inp-status').value,
-            devicePhoto: photoPreview.src.startsWith('data:') ? photoPreview.src : null,
-            techSig: techSigSrc
+            devicePhoto: document.getElementById('device-photo-preview').src.startsWith('data:') ? document.getElementById('device-photo-preview').src : null
         };
-        localStorage.setItem('autosave_vtz_v2', JSON.stringify(data));
-        showToast();
+        localStorage.setItem('autosave_rev_dph', JSON.stringify(data));
     }
 
     function loadAutoSave() {
-        const saved = localStorage.getItem('autosave_vtz_v2');
+        const saved = localStorage.getItem('autosave_rev_dph');
         if (saved) {
             const data = JSON.parse(saved);
-            if(data.company) document.getElementById('inp-company').value = data.company;
-            if(data.name) document.getElementById('inp-name').value = data.name;
-            if(data.street) document.getElementById('inp-street').value = data.street;
-            if(data.city) document.getElementById('inp-city').value = data.city;
-            if(data.phone) document.getElementById('inp-phone').value = data.phone;
-            if(data.email) document.getElementById('inp-email').value = data.email;
-            
-            if(data.dev) document.getElementById('inp-dev').value = data.dev;
-            if(data.manuf) document.getElementById('inp-manuf').value = data.manuf;
-            if(data.year) document.getElementById('inp-year').value = data.year;
+            document.getElementById('inp-company').value = data.company || '';
+            document.getElementById('inp-name').value = data.name || '';
+            document.getElementById('inp-street').value = data.street || '';
+            document.getElementById('inp-city').value = data.city || '';
+            document.getElementById('inp-phone').value = data.phone || '';
+            document.getElementById('inp-email').value = data.email || '';
+            document.getElementById('inp-dev').value = data.dev || '';
+            document.getElementById('inp-manuf').value = data.manuf || '';
+            document.getElementById('inp-year').value = data.year || '';
             if(data.power) document.getElementById('inp-power').value = data.power;
             if(data.fuel) document.getElementById('inp-fuel').value = data.fuel;
-            if(data.sn) document.getElementById('inp-sn').value = data.sn;
-            
-            if(data.notes) document.getElementById('inp-notes').value = data.notes;
-            if(data.locNote) document.getElementById('inp-location-note').value = data.locNote;
-            if(data.date) document.getElementById('inp-date').value = data.date;
-            if(data.type) document.getElementById('inp-type').value = data.type;
-            if(data.status) document.getElementById('inp-status').value = data.status;
-            if(data.scenario) {
-                document.getElementById('inp-scenario').value = data.scenario;
-                changeScenario();
-            }
+            document.getElementById('inp-power').value = data.power || '';
+            document.getElementById('inp-fuel').value = data.fuel || '';
+            document.getElementById('inp-sn').value = data.sn || '';
+            document.getElementById('inp-notes').value = data.notes || '';
+            document.getElementById('inp-location-note').value = data.locNote || '';
+            document.getElementById('inp-date').value = data.date || new Date().toISOString().split('T')[0];
+            document.getElementById('inp-price').value = data.price || 80;
+            document.getElementById('inp-vat-payer').checked = data.isVat || false;
+            document.getElementById('inp-invoice').value = data.invoice || '';
+            document.getElementById('inp-type').value = data.type || 'Periodická odborná prehliadka';
+            document.getElementById('inp-status').value = data.status || 'ok';
+            if(data.scenario) document.getElementById('inp-scenario').value = data.scenario;
             if(data.devicePhoto) {
                 const preview = document.getElementById('device-photo-preview');
-                preview.src = data.devicePhoto;
-                preview.style.display = 'block';
+                preview.src = data.devicePhoto; preview.style.display = 'block';
                 document.getElementById('photo-label').style.opacity = '0';
             }
-            if(data.techSig) document.getElementById('tech-sig-preview').src = data.techSig;
-            else document.getElementById('tech-sig-preview').src = "Razitko Technika.png";
-            
-            render();
-            renderNotes();
+            changeScenario();
         }
     }
 
-    function clearAllData() {
-        if(confirm("Nová správa?")) {
-            localStorage.removeItem('autosave_vtz_v2');
-            document.querySelectorAll('input:not(#inp-no), textarea').forEach(el => el.value = '');
-            document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('inp-status').value = 'ok';
-            
-            const preview = document.getElementById('device-photo-preview');
-            preview.src = ''; preview.style.display = 'none';
-            document.getElementById('photo-label').style.opacity = '1';
-            
-            document.getElementById('tech-sig-preview').src = "Razitko Technika.png";
+    function clearAllData() { if(confirm("Nová správa?")) { localStorage.removeItem('autosave_rev_dph'); location.reload(); } }
 
-            const sigCtx = document.getElementById('preview-sig-canvas').getContext('2d');
-            sigCtx.clearRect(0,0,300,150);
-            
-            generateReportNumber();
-            render();
-            renderNotes();
-        }
-    }
-
-    // === UTILS ===
-    function showToast() { const t = document.getElementById('save-toast'); t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 1500); }
-    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
     function generateReportNumber() {
         const year = new Date().getFullYear();
-        let count = localStorage.getItem(`rev_count_${year}`);
-        if(!count) count = 0; 
+        let count = localStorage.getItem(`rev_count_${year}`) || 0;
         count = parseInt(count) + 1;
         localStorage.setItem(`rev_count_${year}`, count);
-        const padded = String(count).padStart(3, '0');
-        const numStr = `OPaS-${year}/${padded}`;
+        const numStr = `OPaS-${year}/${String(count).padStart(3, '0')}`;
         document.getElementById('inp-no').value = numStr;
         document.getElementById('out-no').textContent = "Číslo: " + numStr;
     }
     function resetCounter() { if(confirm("Reset?")) { localStorage.setItem(`rev_count_${new Date().getFullYear()}`, 0); location.reload(); } }
 
     const SCENARIOS = {
-        plyn: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA",
-            lawShort: "Vyhl. 508/2009 Z.z.",
-            group: "Skupina Bh (do 0,5 MW)",
-            rows: [
-                { l: "Tlak plynu na vstupe (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },
-                { l: "Tesnosť plynových spojov", n: "0 ppm (bez úniku)", v: "0 ppm" },
-                { l: "Hlavný uzáver plynu (HUP)", n: "Označený, prístupný", v: "Vyhovuje" },
-                { l: "Vetranie miestnosti (TPP 704)", n: "Nezakryté", v: "Vyhovuje" },
-                { l: "Koncentrácia CO v spalinách", n: "max. 100 ppm", v: "14 ppm" },
-                { l: "Ťah komína / Teplota spalín", n: "> 3 Pa / < 120°C", v: "12 Pa / 45°C" },
-                { l: "Bezpečnostné prvky (Termopoistka)", n: "Funkčné", v: "Vyhovuje" },
-                { l: "Funkcia blokovacích prvkov", n: "vypnutie < 1s", v: "0.5s" },
-                { l: "Tlak vykurovacej vody", n: "1.0 - 2.0 bar", v: "1.5 bar" }
-            ]
-        },
-        pellet: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA TUHÉ PALIVO (PELETY)",
-            lawShort: "STN EN 303-5 / Vyhl. 410/2012",
-            group: "Kotol na tuhé palivo (Biomasa)",
-            rows: [
-                { l: "Vizuálna kontrola telesa/výmenníka", n: "Bez poškodenia, čisté", v: "Vyhovuje" },
-                { l: "Funkčnosť podávača a horáka", n: "Plynulý chod", v: "Vyhovuje" },
-                { l: "Bezpečnostný prvok (Turniket/Klapka)", n: "Funkčné", v: "Vyhovuje" },
-                { l: "Ťah komína", n: "10 - 20 Pa (podľa výrobu)", v: "15 Pa" },
-                { l: "Teplota spalín", n: "100 - 180 °C", v: "140 °C" },
-                { l: "Obsah CO v spalinách", n: "Max. povolené hodnoty", v: "150 ppm" },
-                { l: "Obsah O2", n: "6 - 10 %", v: "8.5 %" },
-                { l: "Účinnosť spaľovania", n: "> 85 %", v: "91 %" }
-            ]
-        },
-        tc: {
-            title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV",
-            lawShort: "Zákon č. 286/2009",
-            group: "Chladiace zariadenie",
-            rows: [
-                { l: "Kontrola úniku (Detektor)", n: "Bez úniku", v: "Negatívny" },
-                { l: "Vizuálna kontrola okruhu", n: "Bez oleja", v: "OK" },
-                { l: "Kontrola bezpečnostných prvkov", n: "Funkčné", v: "Vyhovuje" },
-                { l: "Prúd kompresora", n: "I-nom", v: "Podľa štítku" },
-                { l: "Tlak chladiva", n: "Podľa T-ok", v: "V norme" },
-                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" },
-                { l: "Tlak vo vykurovacej sústave", n: "> 1.0 bar", v: "1.5 bar" }
-            ]
-        }
+        plyn: { title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA", lawShort: "Vyhl. 508/2009 Z.z.", group: "Skupina Bh (do 0,5 MW)", price: 80, rows: [{ l: "Tlak plynu (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },{ l: "Tesnosť spojov", n: "0 ppm", v: "0 ppm" },{ l: "HUP prístup", n: "Prístupný", v: "OK" },{ l: "Koncentrácia CO", n: "max. 100 ppm", v: "14 ppm" },{ l: "Ťah komína", n: "> 3 Pa", v: "12 Pa" }] },
+        pellet: { title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY", lawShort: "STN EN 303-5 / Vyhl. 410/2012", group: "Biomasa", price: 100, rows: [{ l: "Vizuálna kontrola", n: "Čisté", v: "OK" },{ l: "Podávač / Horák", n: "Plynulý", v: "OK" },{ l: "Bezpečnostný prvok", n: "Funkčný", v: "OK" },{ l: "Ťah komína", n: "10 - 20 Pa", v: "15 Pa" },{ l: "Obsah O2", n: "6 - 10 %", v: "8.5 %" }] },
+        tc: { title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV", lawShort: "Zákon č. 286/2009", group: "Chladiaci okruh", price: 120, rows: [{ l: "Detekcia úniku", n: "Negatívny", v: "OK" },{ l: "Vizuálna kontrola", n: "Bez oleja", v: "OK" },{ l: "Bezpečnostné prvky", n: "Funkčné", v: "OK" },{ l: "Prúd kompresora", n: "V norme", v: "OK" },{ l: "Tlak chladiva", n: "V norme", v: "OK" }] }
     };
 
     function changeScenario() {
@@ -624,42 +604,32 @@
         document.getElementById('out-title').innerText = data.title;
         document.getElementById('out-law-short').textContent = data.lawShort;
         document.getElementById('out-group').textContent = data.group;
-        const tbody = document.getElementById('out-table-body');
-        tbody.innerHTML = '';
-        data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r.l}</td><td style="color:#555">${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`);
+        document.getElementById('inp-price').value = data.price;
+        const tbody = document.getElementById('out-table-body'); tbody.innerHTML = '';
+        data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r.l}</td><td>${r.n}</td><td><strong>${r.v}</strong></td><td>Vyhovuje</td></tr>`);
+        render();
     }
 
-    // Canvas & Signatures
-    let currentTarget = ''; const modal = document.getElementById('drawing-modal'); const fullCanvas = document.getElementById('full-screen-canvas'); const ctx = fullCanvas.getContext('2d'); let isDrawing = false;
-    function openModal(t) { currentTarget = t; modal.style.display = 'flex'; document.getElementById('modal-title').innerText = '✍️ Podpis'; fullCanvas.width = fullCanvas.offsetWidth; fullCanvas.height = fullCanvas.offsetHeight; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#000'; }
-    function closeModal() { modal.style.display = 'none'; }
-    function clearFullCanvas() { ctx.clearRect(0,0,fullCanvas.width, fullCanvas.height); ctx.beginPath(); }
-    function getPos(e) { const r = fullCanvas.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; return { x: cx - r.left, y: cy - r.top }; }
-    function start(e) { e.preventDefault(); isDrawing=true; ctx.beginPath(); ctx.moveTo(getPos(e).x, getPos(e).y); }
-    function move(e) { if(!isDrawing) return; e.preventDefault(); ctx.lineTo(getPos(e).x, getPos(e).y); ctx.stroke(); }
-    function end() { isDrawing=false; }
-    fullCanvas.addEventListener('mousedown', start); fullCanvas.addEventListener('mousemove', move); fullCanvas.addEventListener('mouseup', end); fullCanvas.addEventListener('touchstart', start, {passive:false}); fullCanvas.addEventListener('touchmove', move, {passive:false}); fullCanvas.addEventListener('touchend', end);
+    // Modal Drawing
+    let modalCtx = document.getElementById('full-screen-canvas').getContext('2d'), isDrawing = false;
+    function openModal() { document.getElementById('drawing-modal').style.display='flex'; const c = document.getElementById('full-screen-canvas'); c.width=c.offsetWidth; c.height=c.offsetHeight; modalCtx.lineWidth=3; modalCtx.lineCap='round'; }
+    function closeModal() { document.getElementById('drawing-modal').style.display='none'; }
+    function clearFullCanvas() { modalCtx.clearRect(0,0,9999,9999); }
     function saveDrawing() {
-        let previewCanvas = document.getElementById('preview-sig-canvas'); let pCtx = previewCanvas.getContext('2d');
-        const w = fullCanvas.width; const h = fullCanvas.height; const pixels = ctx.getImageData(0, 0, w, h).data;
-        let minX=w, minY=h, maxX=0, maxY=0, found=false;
-        for(let y=0; y<h; y++) { for(let x=0; x<w; x++) { if(pixels[(y*w+x)*4+3] > 0) { if(x<minX) minX=x; if(x>maxX) maxX=x; if(y<minY) minY=y; if(y>maxY) maxY=y; found=true; } } }
-        if(!found) { closeModal(); return; }
-        const pad = 10; minX = Math.max(0, minX-pad); minY = Math.max(0, minY-pad); maxX = Math.min(w, maxX+pad); maxY = Math.min(h, maxY+pad); const trimW = maxX - minX; const trimH = maxY - minY;
-        previewCanvas.width = previewCanvas.offsetWidth; previewCanvas.height = previewCanvas.offsetHeight; pCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
-        const scale = Math.min(previewCanvas.width / trimW, previewCanvas.height / trimH); const cx = (previewCanvas.width - trimW * scale) / 2; const cy = (previewCanvas.height - trimH * scale) / 2;
-        pCtx.drawImage(fullCanvas, minX, minY, trimW, trimH, cx, cy, trimW*scale, trimH*scale);
-        closeModal();
+        const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
+        pc.width=pc.offsetWidth; pc.height=pc.offsetHeight;
+        pctx.drawImage(document.getElementById('full-screen-canvas'), 0,0, pc.width, pc.height);
+        closeModal(); autoSave();
     }
-    function loadTechSig(e) { if(e.target.files && e.target.files[0]) { const r = new FileReader(); r.onload = function(evt){ document.getElementById('tech-sig-preview').src = evt.target.result; autoSave(); }; r.readAsDataURL(e.target.files[0]); } }
+    const getPos = (e) => { const r = document.getElementById('full-screen-canvas').getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; return { x: cx - r.left, y: cy - r.top }; };
+    document.getElementById('full-screen-canvas').onmousedown = document.getElementById('full-screen-canvas').ontouchstart = (e) => { e.preventDefault(); isDrawing=true; modalCtx.beginPath(); const p = getPos(e); modalCtx.moveTo(p.x, p.y); };
+    document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => { if(isDrawing) { e.preventDefault(); const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); } };
+    document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    // Init
-    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-    document.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', render));
     generateReportNumber();
-    changeScenario();
+    initQR();
     loadAutoSave();
-    render();
+    if(!localStorage.getItem('autosave_rev_dph')) changeScenario();
 </script>
 </body>
 </html>
