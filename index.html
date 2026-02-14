@@ -19,7 +19,30 @@
         }
 
         body { background-color: var(--bg-color); font-family: 'Roboto', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s; }
-        .app-container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; align-items: start; }
+        
+        /* RESPONZÍVNY KONTAJNER */
+        .app-container { 
+            display: grid; 
+            grid-template-columns: 350px 1fr; 
+            gap: 20px; 
+            padding: 20px; 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            align-items: start; 
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            .controls {
+                position: static !important;
+                max-height: none !important;
+                width: 100% !important;
+                box-sizing: border-box;
+            }
+        }
 
         /* OVLÁDACÍ PANEL */
         .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; z-index: 50; max-height: 95vh; overflow-y: auto; }
@@ -29,29 +52,72 @@
         .form-row .form-group { flex: 1; }
         
         label { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; }
-        input, select, textarea { padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit; }
+        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit; }
         
         .section-title { font-size: 11px; font-weight: 800; color: var(--primary); margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #eee; }
 
         /* TLAČIDLÁ */
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .btn-row { display: flex; gap: 10px; }
-        .btn-print { flex: 1; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .btn-preview { flex: 1; background: #374151; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .btn-share { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-print, .btn-preview, .btn-share, .btn-new { 
+            border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-print { flex: 1; background: var(--primary); color: white; }
+        .btn-preview { flex: 1; background: #374151; color: white; }
+        .btn-share { background: #2563eb; color: white; width: 100%; }
+        .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
 
-        /* NÁHĽAD A4 */
-        .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; }
-        .a4-page { width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        /* ŠKÁLOVANIE NÁHĽADU PRE MOBIL */
+        .preview-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            padding-bottom: 20px;
+        }
+
+        .preview-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 30px; 
+            transform-origin: top center;
+        }
+
+        @media (max-width: 800px) {
+            .preview-container {
+                transform: scale(0.45); /* Prispôsobenie šírke mobilu */
+                margin-bottom: -600px; /* Kompenzácia prázdneho miesta po scale */
+            }
+        }
+        @media (max-width: 500px) {
+            .preview-container {
+                transform: scale(0.38);
+                margin-bottom: -750px;
+            }
+        }
+
+        .a4-page { 
+            width: 210mm; 
+            min-height: 297mm; 
+            background: white; 
+            padding: 10mm 15mm; 
+            box-sizing: border-box; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            overflow: hidden; 
+        }
 
         /* DOKUMENT STYLES */
         .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.3; }
-        .report-meta { text-align: right; max-width: 60%; }
+        .report-meta { text-align: right; max-width: 65%; }
         
-        /* ZVÄČŠENÝ NADPIS */
         .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
         .report-no { font-size: 11px; margin-top: 4px; font-weight: 500; }
 
@@ -62,7 +128,6 @@
         .row-item span { color: #555; }
 
         .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; }
-        .header-note { font-weight: 400; text-transform: none; font-size: 10px; }
 
         .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9px; }
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
@@ -88,7 +153,6 @@
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        /* Razítko technika fixne 40mm */
         .tech-sig-img { width: 40mm !important; height: 40mm !important; object-fit: contain; display: block; margin: 0 auto; }
 
         /* QR STRANA */
@@ -103,36 +167,37 @@
 
         /* MODAL */
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
-        .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; }
+        .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
         .modal-canvas-area { flex-grow: 1; touch-action: none; background: #fff; }
         #full-screen-canvas { width: 100%; height: 100%; }
         .modal-footer { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        .btn-modal { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-modal { flex: 1; padding: 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
 
         body.preview-mode .controls { display: none; }
         body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
-        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; }
+        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         body.preview-mode #floating-edit-btn { display: block; }
 
         @media print {
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset { display: none !important; }
+            .preview-container { transform: none !important; margin: 0 !important; }
+            .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; }
-            canvas { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
             @page { size: A4; margin: 0; }
         }
     </style>
 </head>
 <body>
 
-<div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
+<div id="save-toast">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
 
 <div id="drawing-modal">
-    <div class="modal-header"><span>✍️ Podpis zákazníka</span><button onclick="closeModal()" style="font-size:24px; border:none; background:none;">&times;</button></div>
+    <div class="modal-header"><span>✍️ Podpis zákazníka</span><button onclick="closeModal()" style="font-size:32px; border:none; background:none;">&times;</button></div>
     <div class="modal-canvas-area"><canvas id="full-screen-canvas"></canvas></div>
     <div class="modal-footer">
-        <button class="btn-modal" style="background:#fee2e2" onclick="clearFullCanvas()">Vymazať</button>
-        <button class="btn-modal" style="background:var(--success); color:white" onclick="saveDrawing()">✅ POUŽIŤ PODPIS</button>
+        <button class="btn-modal" style="background:#fee2e2; color:#b91c1c;" onclick="clearFullCanvas()">Vymazať</button>
+        <button class="btn-modal" style="background:var(--success); color:white" onclick="saveDrawing()">✅ Uložiť</button>
     </div>
 </div>
 
@@ -152,7 +217,7 @@
         </div>
 
         <div class="form-group" style="background:#f0f9ff; padding:10px; border-radius:6px;">
-            <label><input type="checkbox" id="inp-vat-payer" onchange="render()"> Platca DPH (23 %)</label>
+            <label><input type="checkbox" id="inp-vat-payer" onchange="render()" style="width:auto;"> Platca DPH (23 %)</label>
             <div style="margin-top:5px;">
                 <label>Cena (€)</label>
                 <input type="number" id="inp-price" value="80" oninput="render()">
@@ -203,10 +268,9 @@
             </select>
         </div>
 
-        <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF (WhatsApp / Mail)</button>
-        
         <div class="btn-group">
-            <button class="btn-new" onclick="if(confirm('Nová správa?')) location.reload()">🗑️ NOVÁ SPRÁVA</button>
+            <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF (WhatsApp / Mail)</button>
+            <button class="btn-new" onclick="if(confirm('Zmazať všetky údaje?')) location.reload()">🗑️ NOVÁ SPRÁVA</button>
             <div class="btn-row">
                 <button class="btn-preview" onclick="togglePreviewMode()">👁️ Náhľad</button>
                 <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
@@ -214,96 +278,98 @@
         </div>
     </section>
 
-    <section class="preview-container" id="printable-content">
-        <!-- STRANA 1 -->
-        <div class="a4-page">
-            <div class="header">
-                <div class="brand">
-                    <h1>SPEKTRA <span>INSTALL</span></h1>
-                    <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
-                </div>
-                <div class="report-meta">
-                    <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
-                    <div class="report-no" id="out-no">Číslo: -</div>
-                </div>
-            </div>
-
-            <div class="info-grid">
-                <div class="box">
-                    <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
-                    <div class="row-item"><span>Názov:</span> <strong id="out-company">—</strong></div>
-                    <div class="row-item"><span>Meno:</span> <strong id="out-name">—</strong></div>
-                    <div class="row-item"><span>Ulica:</span> <strong id="out-street">—</strong></div>
-                    <div class="row-item"><span>Mesto:</span> <strong id="out-city">—</strong></div>
-                    <div class="row-item"><span>Kontakt:</span> <strong id="out-contact">—</strong></div>
-                </div>
-                <div class="box">
-                    <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
-                    <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                    <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
-                    <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
-                    <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
-                </div>
-            </div>
-
-            <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
-            <table class="data-table">
-                <thead><tr><th>Predmet kontroly</th><th>Predpísané</th><th>Namerané</th><th>Výsledok</th></tr></thead>
-                <tbody id="out-table-body"></tbody>
-            </table>
-
-            <div class="section-header">2. ZARIADENIE A NEDOSTATKY <span class="header-note" id="out-notes-text">Bez závad.</span></div>
-            <div class="section-2-container">
-                <div class="vtz-box">
-                    <div class="vtz-row"><span class="vtz-label">Typ:</span> <span class="vtz-val" id="out-dev">—</span></div>
-                    <div class="vtz-row"><span class="vtz-label">Výrobca:</span> <span class="vtz-val" id="out-manuf">—</span></div>
-                    <div class="vtz-row"><span class="vtz-label">S/N:</span> <span class="vtz-val" id="out-sn">—</span></div>
-                    <div class="vtz-row"><span class="vtz-label">Rok:</span> <span class="vtz-val" id="out-year">—</span></div>
-                    <div class="vtz-row"><span class="vtz-label">Parametre:</span> <span class="vtz-val" id="out-params">—</span></div>
-                    <div class="vtz-row"><span class="vtz-label">Skupina:</span> <span class="vtz-val" id="out-group">—</span></div>
-                </div>
-                <div class="notes-photo-container">
-                    <img id="device-photo-preview" alt="Foto">
-                    <button class="btn-reset" style="position:absolute; bottom:5px;" onclick="document.getElementById('photo-upload').click()">+ FOTO</button>
-                    <input type="file" id="photo-upload" style="display:none" accept="image/*" onchange="loadPhoto(event)">
-                </div>
-            </div>
-
-            <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
-            <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
-
-            <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-            <div class="conclusion-text" id="out-conclusion">—</div>
-            <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
-
-            <div class="footer-area">
-                <div class="signatures">
-                    <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
-                    <div class="sig-box">
-                        <div class="sig-canvas-container" onclick="openModal()"><canvas id="preview-sig-canvas"></canvas></div>
-                        <div class="sig-line">Podpis prevádzkovateľa</div>
+    <section class="preview-scroll-wrapper">
+        <div class="preview-container" id="printable-content">
+            <!-- STRANA 1 -->
+            <div class="a4-page">
+                <div class="header">
+                    <div class="brand">
+                        <h1>SPEKTRA <span>INSTALL</span></h1>
+                        <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
                     </div>
-                    <div class="sig-box">
-                        <img src="Razitko Technika.png" class="tech-sig-img">
-                        <div class="sig-line">Revízny technik</div>
+                    <div class="report-meta">
+                        <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
+                        <div class="report-no" id="out-no">Číslo: -</div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- STRANA 2 -->
-        <div class="a4-page">
-            <div class="header"><div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div></div>
-            <div class="qr-page-content">
-                <div class="qr-title">PODKLADY PRE PLATBU</div>
-                <div class="qr-flex-row">
-                    <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
-                    <div class="payment-details">
-                        <div class="pay-row"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
-                        <div class="pay-row"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
-                        <div class="pay-row"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
-                        <div class="pay-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
-                        <div class="pay-total" id="out-pay-amount">—</div>
+                <div class="info-grid">
+                    <div class="box">
+                        <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
+                        <div class="row-item"><span>Názov:</span> <strong id="out-company">—</strong></div>
+                        <div class="row-item"><span>Meno:</span> <strong id="out-name">—</strong></div>
+                        <div class="row-item"><span>Ulica:</span> <strong id="out-street">—</strong></div>
+                        <div class="row-item"><span>Mesto:</span> <strong id="out-city">—</strong></div>
+                        <div class="row-item"><span>Kontakt:</span> <strong id="out-contact">—</strong></div>
+                    </div>
+                    <div class="box">
+                        <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
+                        <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
+                        <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
+                        <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
+                        <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
+                    </div>
+                </div>
+
+                <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
+                <table class="data-table">
+                    <thead><tr><th>Predmet kontroly</th><th>Predpísané</th><th>Namerané</th><th>Výsledok</th></tr></thead>
+                    <tbody id="out-table-body"></tbody>
+                </table>
+
+                <div class="section-header">2. ZARIADENIE A NEDOSTATKY <span class="header-note" id="out-notes-text">Bez závad.</span></div>
+                <div class="section-2-container">
+                    <div class="vtz-box">
+                        <div class="vtz-row"><span class="vtz-label">Typ:</span> <span class="vtz-val" id="out-dev">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">Výrobca:</span> <span class="vtz-val" id="out-manuf">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">S/N:</span> <span class="vtz-val" id="out-sn">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">Rok:</span> <span class="vtz-val" id="out-year">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">Parametre:</span> <span class="vtz-val" id="out-params">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">Skupina:</span> <span class="vtz-val" id="out-group">—</span></div>
+                    </div>
+                    <div class="notes-photo-container">
+                        <img id="device-photo-preview" alt="Foto">
+                        <button class="btn-reset" style="position:absolute; bottom:5px; padding:5px; font-size:10px;" onclick="document.getElementById('photo-upload').click()">+ FOTO</button>
+                        <input type="file" id="photo-upload" style="display:none" accept="image/*" onchange="loadPhoto(event)">
+                    </div>
+                </div>
+
+                <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
+                <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
+
+                <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
+                <div class="conclusion-text" id="out-conclusion">—</div>
+                <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
+
+                <div class="footer-area">
+                    <div class="signatures">
+                        <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
+                        <div class="sig-box">
+                            <div class="sig-canvas-container" onclick="openModal()"><canvas id="preview-sig-canvas"></canvas></div>
+                            <div class="sig-line">Podpis prevádzkovateľa</div>
+                        </div>
+                        <div class="sig-box">
+                            <img src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'">
+                            <div class="sig-line">Revízny technik</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STRANA 2 -->
+            <div class="a4-page">
+                <div class="header"><div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div></div>
+                <div class="qr-page-content">
+                    <div class="qr-title">PODKLADY PRE PLATBU</div>
+                    <div class="qr-flex-row">
+                        <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
+                        <div class="payment-details">
+                            <div class="pay-row"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
+                            <div class="pay-row"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
+                            <div class="pay-row"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
+                            <div class="pay-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
+                            <div class="pay-total" id="out-pay-amount">—</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -316,7 +382,6 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
-    // SCENÁRE S 10 MERANÝMI BODMI
     const SCENARIOS = {
         plyn: { 
             title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", 
@@ -450,8 +515,6 @@
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = vs || "—";
         document.getElementById('out-pay-note').textContent = reportNo;
-        
-        autoSave();
     }
 
     async function shareAsPDF() {
@@ -538,10 +601,7 @@
         document.getElementById('out-no').textContent = "Číslo: " + n;
     }
 
-    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); }
-    function autoSave() {
-        // Logika pre auto-save dát do localStorage
-    }
+    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
     
     window.onload = () => { generateNo(); initQR(); changeScenario(); };
 </script>
