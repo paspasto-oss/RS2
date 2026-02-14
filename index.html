@@ -56,7 +56,7 @@
         #save-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 2000; }
 
         /* DOKUMENT STYLES */
-        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 50px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
         
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
@@ -68,8 +68,8 @@
         /* TOP INFO GRID */
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
-        .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
-        .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 9px; align-items: baseline; }
+        .box-title { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
+        .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; align-items: baseline; }
         .row-item span:first-child { color: #555; margin-right: 5px; }
         .row-item strong { text-align: right; }
 
@@ -78,13 +78,13 @@
         .header-note { font-weight: 400; text-transform: none; color: #000; font-size: 10px; margin-left: 10px; }
 
         /* TABLES */
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9px; }
-        .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10px; }
+        .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 700; }
 
         /* SECTION 2 & PHOTO */
         .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 140px; }
-        .vtz-box { flex: 1; border: 1px solid #ddd; padding: 8px; font-size: 9px; display: flex; flex-direction: column; justify-content: space-around; background: #fff; }
+        .vtz-box { flex: 1; border: 1px solid #ddd; padding: 8px; font-size: 10px; display: flex; flex-direction: column; justify-content: space-around; background: #fff; }
         .vtz-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; padding-bottom: 2px; margin-bottom: 2px; }
         .vtz-row:last-child { border-bottom: none; }
         .vtz-label { color: #666; font-weight: bold; }
@@ -95,31 +95,34 @@
         .upload-overlay-label { position: absolute; width: 100%; height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; color: #999; flex-direction: column; }
         .upload-overlay-label:hover { background: rgba(0,0,0,0.02); }
 
-        /* FOOTER */
+        /* FOOTER & CONCLUSION */
         .footer-area { margin-top: auto; }
-        .status-box { margin: 5px auto 10px auto; border: 2px solid var(--success); padding: 5px; text-align: center; font-size: 11px; font-weight: 800; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
+        .status-box { margin: 10px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 12px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; letter-spacing: 0.5px; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
         .legal-text { font-size: 7px; color: #555; text-align: justify; margin-bottom: 5px; border-top: 1px solid #eee; padding-top: 5px; }
 
-        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
-        .sig-box { width: 32%; text-align: center; font-size: 8px; position: relative; }
+        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+        .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        .sig-canvas-container { width: 100%; height: 40px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
+        .sig-canvas-container { width: 100%; height: 45px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
         /* QR PAGE STYLES */
-        .qr-page-content { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; }
-        .qr-title { font-size: 18px; font-weight: 900; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; width: 100%; }
-        .qr-box { border: 4px solid #000; padding: 15px; background: white; margin-bottom: 20px; border-radius: 10px; }
-        .payment-details { width: 100%; max-width: 500px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9fafb; text-align: left; }
-        .pay-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .qr-page-content { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding-top: 20px; }
+        .qr-title { font-size: 16px; font-weight: 900; color: var(--primary); margin-bottom: 15px; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; width: 100%; }
+        
+        .qr-flex-row { display: flex; flex-direction: row; align-items: flex-start; justify-content: center; gap: 40px; width: 100%; max-height: 35%; margin-top: 20px; }
+        
+        .qr-box { border: 2px solid #000; padding: 10px; background: white; margin-bottom: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        #qr-canvas { width: 180px !important; height: 180px !important; }
+
+        .payment-details { flex: 1; max-width: 420px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9fafb; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .pay-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; border-bottom: 1px solid #eee; padding-bottom: 3px; }
         .pay-row:last-child { border: none; }
         .pay-label { color: #666; font-weight: bold; }
-        .pay-val { font-weight: bold; color: #000; font-family: monospace; font-size: 15px; }
-        .pay-total { font-size: 24px; color: var(--primary); text-align: right; font-weight: 900; margin-top: 5px; }
-
-        /* DPH BADGE */
-        .vat-badge { font-size: 9px; padding: 2px 5px; background: #eee; border-radius: 3px; font-weight: 700; color: #555; }
+        .pay-val { font-weight: bold; color: #000; font-family: monospace; font-size: 13px; }
+        .pay-total { font-size: 20px; color: var(--primary); text-align: right; font-weight: 900; margin-top: 5px; }
 
         /* MODAL */
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
@@ -215,7 +218,7 @@
                 </div>
                 <input type="text" id="inp-no" readonly style="background:#f9fafb; color:#666;">
             </div>
-            <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date"></div>
+            <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date" onchange="render()"></div>
         </div>
 
         <div class="section-title">Údaje Prevádzkovateľa</div>
@@ -239,7 +242,6 @@
             <div class="form-group"><label>S/N</label><input type="text" id="inp-sn"></div>
             <div class="form-group"><label>Rok</label><input type="text" id="inp-year"></div>
         </div>
-        <!-- Oprava: Doplnené chýbajúce polia pre výkon a palivo -->
         <div class="form-row">
             <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power"></div>
             <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel"></div>
@@ -340,10 +342,12 @@
             <div class="notes-section-plain"><div class="notes-text" id="out-location-note">-</div></div>
 
             <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-            <div class="conclusion-text" id="out-conclusion">Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky...</div>
+            <div class="conclusion-text" id="out-conclusion">
+                Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: ....
+            </div>
 
             <div class="footer-area">
-                <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY</div>
+                <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                 <div class="signatures">
                     <div class="sig-box"><br><br><br><strong id="out-date-sig">-</strong><div class="sig-line">Dátum</div></div>
                     <div class="sig-box">
@@ -351,7 +355,7 @@
                         <div class="sig-line">Podpis prevádzkovateľa</div>
                     </div>
                     <div class="sig-box">
-                        <div style="height:40mm; display:flex; align-items:flex-end; justify-content:center;">
+                        <div style="height:45mm; display:flex; align-items:flex-end; justify-content:center;">
                             <img id="tech-sig-preview" class="tech-sig-img" src="Razitko Technika.png">
                         </div>
                         <div class="sig-line">Revízny technik</div>
@@ -360,7 +364,7 @@
             </div>
         </div>
 
-        <!-- STRANA 2 -->
+        <!-- STRANA 2: PLATBA -->
         <div class="a4-page">
             <div class="header">
                 <div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div>
@@ -369,21 +373,29 @@
 
             <div class="qr-page-content">
                 <div class="qr-title">Naskenujte QR kód pre úhradu</div>
-                <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
-
-                <div class="payment-details">
-                    <div class="pay-row"><span class="pay-label">Príjemca:</span><span class="pay-val">Spektra Install s.r.o.</span></div>
-                    <div class="pay-row"><span class="pay-label">IBAN:</span><span class="pay-val">SK58 7500 0000 0040 3445 0550</span></div>
-                    
-                    <!-- DYNAMICKÉ DPH POLIA -->
-                    <div id="dph-breakdown" style="display:none;">
-                        <div class="pay-row"><span class="pay-label">Základ dane:</span><span class="pay-val" id="out-pay-base">-</span></div>
-                        <div class="pay-row"><span class="pay-label">DPH (23 %):</span><span class="pay-val" id="out-pay-vat">-</span></div>
+                
+                <div class="qr-flex-row">
+                    <div class="qr-box">
+                        <canvas id="qr-canvas"></canvas>
                     </div>
-
-                    <div class="pay-row"><span class="pay-label">Variabilný symbol:</span><span class="pay-val" id="out-pay-vs">-</span></div>
-                    <div class="pay-row"><span class="pay-label">Poznámka (Číslo revízie):</span><span class="pay-val" id="out-pay-note">-</span></div>
-                    <div class="pay-row"><span class="pay-label">Suma celkom:</span><div class="pay-total" id="out-pay-amount">-</div></div>
+                    <div class="payment-details">
+                        <div class="pay-row"><span class="pay-label">Príjemca:</span><span class="pay-val">Spektra Install s.r.o.</span></div>
+                        <div class="pay-row"><span class="pay-label">IBAN:</span><span class="pay-val">SK58 7500 0000 0040 3445 0550</span></div>
+                        <div id="dph-breakdown" style="display:none;">
+                            <div class="pay-row"><span class="pay-label">Základ dane:</span><span class="pay-val" id="out-pay-base">-</span></div>
+                            <div class="pay-row"><span class="pay-label">DPH (23 %):</span><span class="pay-val" id="out-pay-vat">-</span></div>
+                        </div>
+                        <div class="pay-row"><span class="pay-label">Variabilný symbol:</span><span class="pay-val" id="out-pay-vs">-</span></div>
+                        <div class="pay-row"><span class="pay-label">Poznámka (Revízia):</span><span class="pay-val" id="out-pay-note">-</span></div>
+                        <div class="pay-row"><span class="pay-label">Suma celkom:</span><div class="pay-total" id="out-pay-amount">-</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-area" style="margin-bottom: 20px;">
+                <div class="legal-text" style="text-align: center;">
+                    QR kód je kompatibilný so štandardom SEPA / EPC pre platobné aplikácie slovenských bánk.<br>
+                    Doklad slúži ako podklad pre platbu revízie. Ďakujeme za spoluprácu.
                 </div>
             </div>
         </div>
@@ -392,11 +404,12 @@
 
 <script>
     let qr;
-    function initQR() { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 250, level: 'M' }); }
+    function initQR() { 
+        qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' }); 
+    }
 
     function renderQR() {
         if(!qr) initQR();
-        
         const isVatPayer = document.getElementById('inp-vat-payer').checked;
         const basePrice = parseFloat(document.getElementById('inp-price').value) || 0;
         const reportNo = document.getElementById('inp-no').value; 
@@ -417,7 +430,6 @@
         const name = "Spektra Install";
         const finalAmountStr = totalPrice.toFixed(2);
         
-        // QR String: BCD\nVersion\nCharset\nIdentification\nBIC\nName\nIBAN\nEURAmount\nPurposeCode\nStructuredRef (VS)\nUnstructuredNote (Poznámka)
         const qrString = `BCD\n002\n1\nSCT\n\n${name}\n${iban}\nEUR${finalAmountStr}\n\n${vsNumeric}\n${reportNo}`;
         qr.value = qrString;
 
@@ -425,7 +437,6 @@
         document.getElementById('out-pay-vs').textContent = invoiceNo || "Prázdny";
         document.getElementById('out-pay-note').textContent = reportNo;
         document.getElementById('out-no-2').textContent = "Číslo: " + reportNo;
-        
         autoSave();
     }
 
@@ -459,19 +470,22 @@
         const statusBox = document.getElementById('out-status-box');
         const conclusion = document.getElementById('out-conclusion');
         const dVal = document.getElementById('inp-date').value;
-        let nextD = "...";
+        
+        let nextD = "....";
         if(dVal) {
-            const d = new Date(dVal); d.setFullYear(d.getFullYear() + 1);
+            const d = new Date(dVal); 
+            d.setFullYear(d.getFullYear() + 1);
             nextD = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
         }
+
         if (status === 'ok') {
-            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ PREVÁDZKY";
+            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
             statusBox.className = "status-box"; 
-            conclusion.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky č. 508/2009 Z.z.<br>Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
+            conclusion.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a technických podmienok výrobcu. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
         } else {
             statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
             statusBox.className = "status-box danger"; 
-            conclusion.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky.<br><strong>OPATRENIA:</strong> Odstaviť zariadenie do odstránenia závad v bode 2.`;
+            conclusion.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky.<br><strong>OPATRENIA:</strong> Odstaviť zariadenie do odstránenia závad uvedených v bode 2.`;
         }
         autoSave();
     }
@@ -489,28 +503,29 @@
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
         document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
         
-        // Získanie hodnôt výkon a palivo
-        const powerEl = document.getElementById('inp-power');
-        const fuelEl = document.getElementById('inp-fuel');
-        const power = powerEl ? powerEl.value : "";
-        const fuel = fuelEl ? fuelEl.value : "";
-        
+        const power = document.getElementById('inp-power').value;
+        const fuel = document.getElementById('inp-fuel').value;
         document.getElementById('out-params').textContent = (power ? power + " kW " : "") + (fuel ? "/ " + fuel : "");
+        
         document.getElementById('out-type').textContent = document.getElementById('inp-type').value;
         const locNote = document.getElementById('inp-location-note').value;
         document.getElementById('out-location-note').innerText = locNote.trim() ? locNote : "-";
+        
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
-            const d = new Date(dVal); const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
-            document.getElementById('out-date').textContent = ds; document.getElementById('out-date-sig').textContent = ds;
+            const d = new Date(dVal); 
+            const ds = `${d.getDate()}. ${(d.getMonth()+1).toString().padStart(2,'0')}. ${d.getFullYear()}`;
+            document.getElementById('out-date').textContent = ds; 
+            document.getElementById('out-date-sig').textContent = ds;
         }
+        
         renderStatus();
         renderQR();
     }
 
     function renderNotes() {
         const txt = document.getElementById('inp-notes').value;
-        document.getElementById('out-notes-text').innerText = txt.trim() ? txt : "V čase prehliadky neboli zistené závady.";
+        document.getElementById('out-notes-text').innerText = txt.trim() ? txt : "V čase prehliadky neboli na zariadení zistené závady brániace jeho bezpečnej prevádzke. Zariadenie je čisté, prístupné a označené.";
         autoSave();
     }
 
@@ -539,11 +554,11 @@
             status: document.getElementById('inp-status').value,
             devicePhoto: document.getElementById('device-photo-preview').src.startsWith('data:') ? document.getElementById('device-photo-preview').src : null
         };
-        localStorage.setItem('autosave_rev_dph', JSON.stringify(data));
+        localStorage.setItem('autosave_rev_v5', JSON.stringify(data));
     }
 
     function loadAutoSave() {
-        const saved = localStorage.getItem('autosave_rev_dph');
+        const saved = localStorage.getItem('autosave_rev_v5');
         if (saved) {
             const data = JSON.parse(saved);
             document.getElementById('inp-company').value = data.company || '';
@@ -555,8 +570,6 @@
             document.getElementById('inp-dev').value = data.dev || '';
             document.getElementById('inp-manuf').value = data.manuf || '';
             document.getElementById('inp-year').value = data.year || '';
-            if(data.power) document.getElementById('inp-power').value = data.power;
-            if(data.fuel) document.getElementById('inp-fuel').value = data.fuel;
             document.getElementById('inp-power').value = data.power || '';
             document.getElementById('inp-fuel').value = data.fuel || '';
             document.getElementById('inp-sn').value = data.sn || '';
@@ -578,8 +591,7 @@
         }
     }
 
-    function clearAllData() { if(confirm("Nová správa?")) { localStorage.removeItem('autosave_rev_dph'); location.reload(); } }
-
+    function clearAllData() { if(confirm("Nová správa?")) { localStorage.removeItem('autosave_rev_v5'); location.reload(); } }
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
     function generateReportNumber() {
         const year = new Date().getFullYear();
@@ -593,9 +605,52 @@
     function resetCounter() { if(confirm("Reset?")) { localStorage.setItem(`rev_count_${new Date().getFullYear()}`, 0); location.reload(); } }
 
     const SCENARIOS = {
-        plyn: { title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA", lawShort: "Vyhl. 508/2009 Z.z.", group: "Skupina Bh (do 0,5 MW)", price: 80, rows: [{ l: "Tlak plynu (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },{ l: "Tesnosť spojov", n: "0 ppm", v: "0 ppm" },{ l: "HUP prístup", n: "Prístupný", v: "OK" },{ l: "Koncentrácia CO", n: "max. 100 ppm", v: "14 ppm" },{ l: "Ťah komína", n: "> 3 Pa", v: "12 Pa" }] },
-        pellet: { title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY", lawShort: "STN EN 303-5 / Vyhl. 410/2012", group: "Biomasa", price: 100, rows: [{ l: "Vizuálna kontrola", n: "Čisté", v: "OK" },{ l: "Podávač / Horák", n: "Plynulý", v: "OK" },{ l: "Bezpečnostný prvok", n: "Funkčný", v: "OK" },{ l: "Ťah komína", n: "10 - 20 Pa", v: "15 Pa" },{ l: "Obsah O2", n: "6 - 10 %", v: "8.5 %" }] },
-        tc: { title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV", lawShort: "Zákon č. 286/2009", group: "Chladiaci okruh", price: 120, rows: [{ l: "Detekcia úniku", n: "Negatívny", v: "OK" },{ l: "Vizuálna kontrola", n: "Bez oleja", v: "OK" },{ l: "Bezpečnostné prvky", n: "Funkčné", v: "OK" },{ l: "Prúd kompresora", n: "V norme", v: "OK" },{ l: "Tlak chladiva", n: "V norme", v: "OK" }] }
+        plyn: { 
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE A SKÚŠKE PLYNOVÉHO ZARIADENIA", 
+            lawShort: "Vyhl. MPSVR SR č. 508/2009 Z.z.", 
+            group: "Skupina Bh (do 0,5 MW)", 
+            price: 80, 
+            rows: [
+                { l: "Tlak plynu na vstupe (HUP)", n: "1.8 - 2.5 kPa", v: "2.1 kPa" },
+                { l: "Tesnosť plynových spojov (detektor)", n: "0 ppm (bez úniku)", v: "0 ppm" },
+                { l: "Koncentrácia CO v spalinách", n: "max. 100 ppm", v: "14 ppm" },
+                { l: "Ťah komína / Teplota spalín", n: "min. 3 Pa / max 80°C", v: "12 Pa / 45°C" },
+                { l: "Funkcia blokovacích prvkov", n: "vypnutie < 1s", v: "0.5s" },
+                { l: "Tlak vo vykurovacej sústave", n: "1.0 - 2.0 bar", v: "1.5 bar" },
+                { l: "Vizuálna kontrola umiestnenia", n: "podľa TPP 704 01", v: "Bez závad" }
+            ] 
+        },
+        pellet: { 
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY", 
+            lawShort: "STN EN 303-5 / Vyhl. 410/2012", 
+            group: "Biomasa", 
+            price: 100, 
+            rows: [
+                { l: "Vizuálna kontrola telesa/výmenníka", n: "Bez poškodenia, čisté", v: "Vyhovuje" },
+                { l: "Funkčnosť podávača a horáka", n: "Plynulý chod", v: "Vyhovuje" },
+                { l: "Bezpečnostný prvok (Turniket/Klapka)", n: "Funkčné", v: "Vyhovuje" },
+                { l: "Ťah komína", n: "10 - 20 Pa (podľa výrobcu)", v: "15 Pa" },
+                { l: "Teplota spalín", n: "100 - 180 °C", v: "140 °C" },
+                { l: "Obsah CO v spalinách", n: "Max. povolené hodnoty", v: "150 ppm" },
+                { l: "Obsah O2", n: "6 - 10 %", v: "8.5 %" },
+                { l: "Účinnosť spaľovania", n: "> 85 %", v: "91 %" }
+            ] 
+        },
+        tc: { 
+            title: "SPRÁVA O KONTROLE ÚNIKU FLUÓROVANÝCH PLYNOV", 
+            lawShort: "Zákon č. 286/2009", 
+            group: "Chladiaci okruh", 
+            price: 120, 
+            rows: [
+                { l: "Kontrola úniku (Detektor)", n: "Bez úniku", v: "Negatívny" },
+                { l: "Vizuálna kontrola okruhu", n: "Bez oleja", v: "OK" },
+                { l: "Kontrola bezpečnostných prvkov", n: "Funkčné", v: "Vyhovuje" },
+                { l: "Prúd kompresora", n: "I-nom", v: "Podľa štítku" },
+                { l: "Tlak chladiva", n: "Podľa T-ok", v: "V norme" },
+                { l: "Funkčná skúška", n: "Chlad/Teplo", v: "Funkčné" },
+                { l: "Tlak vo vykurovacej sústave", n: "> 1.0 bar", v: "1.5 bar" }
+            ] 
+        }
     };
 
     function changeScenario() {
@@ -610,7 +665,6 @@
         render();
     }
 
-    // Modal Drawing
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d'), isDrawing = false;
     function openModal() { document.getElementById('drawing-modal').style.display='flex'; const c = document.getElementById('full-screen-canvas'); c.width=c.offsetWidth; c.height=c.offsetHeight; modalCtx.lineWidth=3; modalCtx.lineCap='round'; }
     function closeModal() { document.getElementById('drawing-modal').style.display='none'; }
@@ -626,10 +680,12 @@
     document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => { if(isDrawing) { e.preventDefault(); const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); } };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    generateReportNumber();
-    initQR();
-    loadAutoSave();
-    if(!localStorage.getItem('autosave_rev_dph')) changeScenario();
+    window.onload = function() {
+        generateReportNumber();
+        initQR();
+        loadAutoSave();
+        if(!localStorage.getItem('autosave_rev_v5')) changeScenario();
+    }
 </script>
 </body>
 </html>
