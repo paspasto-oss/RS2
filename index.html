@@ -327,7 +327,8 @@
                     </div>
                     <div class="sig-box">
                         <div style="height:50px; display:flex; align-items:flex-end; justify-content:center;">
-                            <img id="tech-sig-preview" class="tech-sig-img" src="" alt="">
+                            <!-- ZMENA: PREDVOLENÝ ZDROJ OBRÁZKA -->
+                            <img id="tech-sig-preview" class="tech-sig-img" src="Razitko Technika.png" alt="Pečiatka">
                         </div>
                         <label for="tech-sig-upload" class="upload-label">📸 Pečiatka</label>
                         <input type="file" id="tech-sig-upload" accept="image/*" onchange="loadTechSig(event)">
@@ -432,6 +433,10 @@
     // === AUTOSAVE ===
     function autoSave() {
         const photoPreview = document.getElementById('device-photo-preview');
+        // ZMENA: Ukladáme aj pečiatku, ak bola zmenená (data URI), inak null (a použije sa predvolená)
+        const techSigImg = document.getElementById('tech-sig-preview');
+        const techSigSrc = techSigImg.src.startsWith('data:') ? techSigImg.src : null;
+
         const data = {
             name: document.getElementById('inp-name').value,
             addr: document.getElementById('inp-addr').value,
@@ -447,7 +452,8 @@
             scenario: document.getElementById('inp-scenario').value,
             type: document.getElementById('inp-type').value,
             status: document.getElementById('inp-status').value,
-            devicePhoto: photoPreview.src.startsWith('data:') ? photoPreview.src : null
+            devicePhoto: photoPreview.src.startsWith('data:') ? photoPreview.src : null,
+            techSig: techSigSrc
         };
         localStorage.setItem('autosave_pellet', JSON.stringify(data));
         showToast();
@@ -480,6 +486,13 @@
                 preview.style.display = 'block';
                 document.getElementById('photo-label').style.opacity = '0';
             }
+            // ZMENA: Načítanie pečiatky
+            if(data.techSig) {
+                document.getElementById('tech-sig-preview').src = data.techSig;
+            } else {
+                // Ak nie je uložená, nastavíme predvolenú
+                document.getElementById('tech-sig-preview').src = "Razitko Technika.png";
+            }
             render();
             renderNotes();
         }
@@ -496,6 +509,9 @@
             preview.src = ''; preview.style.display = 'none';
             document.getElementById('photo-label').style.opacity = '1';
             
+            // ZMENA: Reset pečiatky na predvolený súbor
+            document.getElementById('tech-sig-preview').src = "Razitko Technika.png";
+
             const sigCtx = document.getElementById('preview-sig-canvas').getContext('2d');
             sigCtx.clearRect(0,0,300,150);
             const noteCtx = document.getElementById('preview-notes-canvas').getContext('2d');
