@@ -45,12 +45,14 @@
         .a4-page { width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
         /* DOKUMENT STYLES */
-        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.3; }
-        .report-meta { text-align: right; }
-        .report-type { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #000; }
+        .report-meta { text-align: right; max-width: 60%; }
+        
+        /* ZVÄČŠENÝ NADPIS */
+        .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
         .report-no { font-size: 11px; margin-top: 4px; font-weight: 500; }
 
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
@@ -76,7 +78,6 @@
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
 
         .footer-area { margin-top: auto; }
-        /* Väčšie písmo v závere pre lepšiu viditeľnosť */
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
         .status-box { margin: 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
@@ -84,7 +85,6 @@
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        /* Podpisové plátno */
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
@@ -147,6 +147,7 @@
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
                 <option value="pellet">🪵 PELETOVÝ KOTOL (Biomasa)</option>
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
+                <option value="rozvod">🌐 ROZVOD PLYNU (Skupina Bg)</option>
             </select>
         </div>
 
@@ -222,7 +223,7 @@
                     <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
                 </div>
                 <div class="report-meta">
-                    <div class="report-type" id="out-title">SPRÁVA O PREHLIADKE</div>
+                    <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
                     <div class="report-no" id="out-no">Číslo: -</div>
                 </div>
             </div>
@@ -364,6 +365,22 @@
                 ["Čistota vonkajšej jednotky", "Priechodná", "Bez závad"],
                 ["Kontrola el. spojov", "Pevné", "OK"]
             ]
+        },
+        rozvod: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU",
+            law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bg",
+            rows: [
+                ["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"],
+                ["Kontrola upevnenia potrubia", "Pevné", "OK"],
+                ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"],
+                ["Stav protikoróznej ochrany", "Bez korózie", "OK"],
+                ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"],
+                ["Kontrola označenia potrubia", "Jasné", "OK"],
+                ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"],
+                ["Ochrana pred mech. poškodením", "Dostatočná", "OK"],
+                ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"],
+                ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]
+            ]
         }
     };
 
@@ -415,7 +432,7 @@
         if(status === 'ok') {
             statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
             statusBox.className = "status-box";
-            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a pokynov výrobcu. Ďalšia odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
+            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a pokynov výrobcu. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
         } else {
             statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
             statusBox.className = "status-box danger";
@@ -443,7 +460,6 @@
         const opt = { 
             margin: 0, 
             filename: `Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
-            // Zvýšená kvalita generovania pre hladký podpis
             html2canvas: { scale: 3, useCORS: true, logging: false }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
         };
@@ -479,19 +495,13 @@
     function closeModal() { document.getElementById('drawing-modal').style.display='none'; }
     function clearFullCanvas() { modalCtx.clearRect(0,0,9999,9999); }
     
-    // OPRAVA VIDITEĽNOSTI PODPISU - VYSOKÉ ROZLÍŠENIE PLÁTNA
     function saveDrawing() {
         const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
         const source = document.getElementById('full-screen-canvas');
-        
-        // Nastavenie vnútorného rozlíšenia na 4-násobok veľkosti pre hladkosť
         pc.width = pc.offsetWidth * 4;
         pc.height = pc.offsetHeight * 4;
-        
-        // Vyhladenie pri kopírovaní
         pctx.imageSmoothingEnabled = true;
         pctx.imageSmoothingQuality = 'high';
-        
         pctx.drawImage(source, 0, 0, pc.width, pc.height);
         closeModal(); 
         render();
