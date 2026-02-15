@@ -118,7 +118,20 @@
 
         .footer-area { margin-top: auto; }
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
-        .status-box { margin: 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        
+        /* ZELENÝ RÁMIK - POSUNUTÝ O 30mm DOLE */
+        .status-box { 
+            margin: 30mm auto 10px auto; 
+            border: 2px solid var(--success); 
+            padding: 8px; 
+            text-align: center; 
+            font-size: 11px; 
+            font-weight: 900; 
+            color: var(--success); 
+            width: 90%; 
+            background: #f0fdf4; 
+            text-transform: uppercase; 
+        }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
 
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
@@ -314,9 +327,9 @@
 
                 <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
                 <div class="conclusion-text" id="out-conclusion">—</div>
-                <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
-
+                
                 <div class="footer-area">
+                    <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
                         <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
                         <div class="sig-box">
