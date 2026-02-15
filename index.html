@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spektra Install - Profesionálny Revízny Systém</title>
+    <title>RS2 - Spektra Install</title>
+    
+    <!-- FAVICON / IKONA PRE PLOCHU MOBILU (RS2) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RS2 Revízie">
+
     <!-- Knižnice pre QR kód a PDF generovanie -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #D60000;
@@ -20,7 +29,7 @@
 
         body { background-color: var(--bg-color); font-family: 'Roboto', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s; }
         
-        /* RESPONZÍVNY KONTAJNER */
+        /* KONTAJNER PRE RESPONSIVITU */
         .app-container { 
             display: grid; 
             grid-template-columns: 350px 1fr; 
@@ -32,16 +41,8 @@
         }
 
         @media (max-width: 1024px) {
-            .app-container {
-                grid-template-columns: 1fr;
-                padding: 10px;
-            }
-            .controls {
-                position: static !important;
-                max-height: none !important;
-                width: 100% !important;
-                box-sizing: border-box;
-            }
+            .app-container { grid-template-columns: 1fr; padding: 10px; }
+            .controls { position: static !important; max-height: none !important; width: 100% !important; }
         }
 
         /* OVLÁDACÍ PANEL */
@@ -69,46 +70,19 @@
         .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
 
         /* ŠKÁLOVANIE NÁHĽADU PRE MOBIL */
-        .preview-scroll-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            display: flex;
-            justify-content: center;
-            padding-bottom: 20px;
-        }
-
-        .preview-container { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 30px; 
-            transform-origin: top center;
-        }
+        .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
+        .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
 
         @media (max-width: 800px) {
-            .preview-container {
-                transform: scale(0.45); /* Prispôsobenie šírke mobilu */
-                margin-bottom: -600px; /* Kompenzácia prázdneho miesta po scale */
-            }
+            .preview-container { transform: scale(0.45); margin-bottom: -600px; }
         }
         @media (max-width: 500px) {
-            .preview-container {
-                transform: scale(0.38);
-                margin-bottom: -750px;
-            }
+            .preview-container { transform: scale(0.38); margin-bottom: -750px; }
         }
 
         .a4-page { 
-            width: 210mm; 
-            min-height: 297mm; 
-            background: white; 
-            padding: 10mm 15mm; 
-            box-sizing: border-box; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            overflow: hidden; 
+            width: 210mm; min-height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; 
         }
 
         /* DOKUMENT STYLES */
@@ -189,9 +163,10 @@
 </head>
 <body>
 
-<div id="save-toast">Uložené 💾</div>
+<div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
 
+<!-- MODAL PRE PODPIS -->
 <div id="drawing-modal">
     <div class="modal-header"><span>✍️ Podpis zákazníka</span><button onclick="closeModal()" style="font-size:32px; border:none; background:none;">&times;</button></div>
     <div class="modal-canvas-area"><canvas id="full-screen-canvas"></canvas></div>
@@ -203,7 +178,7 @@
 
 <div class="app-container">
     <section class="controls">
-        <h2>⚙️ Nastavenia Revízie</h2>
+        <h2>⚙️ RS2 Nastavenia</h2>
         
         <div class="section-title">Základné údaje</div>
         <div class="form-group">
@@ -269,7 +244,7 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF (WhatsApp / Mail)</button>
+            <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF</button>
             <button class="btn-new" onclick="if(confirm('Zmazať všetky údaje?')) location.reload()">🗑️ NOVÁ SPRÁVA</button>
             <div class="btn-row">
                 <button class="btn-preview" onclick="togglePreviewMode()">👁️ Náhľad</button>
@@ -356,7 +331,7 @@
                 </div>
             </div>
 
-            <!-- STRANA 2 -->
+            <!-- STRANA 2: PLATBA -->
             <div class="a4-page">
                 <div class="header"><div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div></div>
                 <div class="qr-page-content">
@@ -382,6 +357,7 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
+    // SCENÁRE S 10 MERANÝMI BODMI
     const SCENARIOS = {
         plyn: { 
             title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", 
@@ -453,7 +429,7 @@
 
     function render() {
         if(!qr) initQR();
-        // Základné údaje
+        // Mapovanie hodnôt
         const comp = document.getElementById('inp-company').value || "—";
         const name = document.getElementById('inp-name').value || "—";
         const tel = document.getElementById('inp-phone').value || "";
@@ -464,7 +440,6 @@
         document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
         document.getElementById('out-contact').textContent = `${tel} ${tel && mail ? '/' : ''} ${mail}`;
 
-        // Zariadenie
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
         document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
@@ -473,12 +448,10 @@
         const fl = document.getElementById('inp-fuel').value;
         document.getElementById('out-params').textContent = (pwr ? pwr + " kW " : "") + (fl ? "/ " + fl : "");
 
-        // Výsledok
         const note = document.getElementById('inp-notes').value;
         document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
         document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
 
-        // Status a Dátum
         const status = document.getElementById('inp-status').value;
         const dVal = document.getElementById('inp-date').value;
         const statusBox = document.getElementById('out-status-box');
@@ -504,7 +477,6 @@
             conc.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky. <strong>OPATRENIA:</strong> Odstaviť zariadenie z prevádzky do odstránenia zistených závad.`;
         }
 
-        // Platba a QR
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
@@ -522,7 +494,7 @@
         const reportNo = document.getElementById('inp-no').value;
         const opt = { 
             margin: 0, 
-            filename: `Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
+            filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
             html2canvas: { scale: 3, useCORS: true, logging: false }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
         };
@@ -530,7 +502,7 @@
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
             if (navigator.share) {
-                await navigator.share({ files: [file], title: 'Revízna správa', text: `Posielam revíznu správu č. ${reportNo}` });
+                await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Posielam revíznu správu č. ${reportNo}` });
             } else {
                 window.open(URL.createObjectURL(pdfBlob));
             }
@@ -561,13 +533,10 @@
     function saveDrawing() {
         const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
         const source = document.getElementById('full-screen-canvas');
-        pc.width = pc.offsetWidth * 4;
-        pc.height = pc.offsetHeight * 4;
-        pctx.imageSmoothingEnabled = true;
-        pctx.imageSmoothingQuality = 'high';
+        pc.width = pc.offsetWidth * 4; pc.height = pc.offsetHeight * 4;
+        pctx.imageSmoothingEnabled = true; pctx.imageSmoothingQuality = 'high';
         pctx.drawImage(source, 0, 0, pc.width, pc.height);
-        closeModal(); 
-        render();
+        closeModal(); render();
     }
 
     const getPos = (e) => {
@@ -596,7 +565,7 @@
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
         c++; localStorage.setItem('rev_c_v5', c);
-        const n = `REV-${year}/${String(c).padStart(3,'0')}`;
+        const n = `RS2-${year}/${String(c).padStart(3,'0')}`;
         document.getElementById('inp-no').value = n;
         document.getElementById('out-no').textContent = "Číslo: " + n;
     }
