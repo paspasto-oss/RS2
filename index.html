@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RS2 Revízie">
 
-    <!-- Knižnice pre QR kód a PDF generovanie -->
+    <!-- Knižnice -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -57,7 +57,7 @@
 
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .btn-row { display: flex; gap: 10px; }
-        .btn-print, .btn-preview, .btn-share, .btn-new { 
+        .btn-print, .btn-preview, .btn-share, .btn-new, .btn-archive-op { 
             border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
@@ -65,6 +65,9 @@
         .btn-preview { flex: 1; background: #374151; color: white; }
         .btn-share { background: #2563eb; color: white; width: 100%; }
         .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
+        .btn-archive-save { background: #059669; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; }
+        .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
+        .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
@@ -88,16 +91,7 @@
         .report-meta { text-align: right; max-width: 65%; }
         
         .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
-        
-        /* ČÍSLO SPRÁVY V TENKOM RÁMIKU */
-        .report-no { 
-            font-size: 11px; 
-            margin-top: 6px; 
-            font-weight: 700; 
-            border: 0.5pt solid #000; 
-            padding: 2px 8px; 
-            display: inline-block; 
-        }
+        .report-no { font-size: 11px; margin-top: 6px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
 
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
@@ -123,45 +117,30 @@
         .footer-area { margin-top: auto; padding-bottom: 5mm; }
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
         
-        .status-box { 
-            margin: 15mm auto 8px auto; 
-            border: 2px solid var(--success); 
-            padding: 8px; 
-            text-align: center; 
-            font-size: 11px; 
-            font-weight: 900; 
-            color: var(--success); 
-            width: 90%; 
-            background: #f0fdf4; 
-            text-transform: uppercase; 
-        }
+        .status-box { margin: 15mm auto 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
 
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        .tech-sig-img { 
-            width: 42mm !important; 
-            height: 42mm !important; 
-            object-fit: contain; 
-            display: block; 
-            margin: 0 auto -5mm auto; 
-            position: relative;
-            z-index: 10;
-        }
+        .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
 
-        .qr-page-content { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; flex: 1; padding-top: 10px; }
-        .qr-title { font-size: 16px; font-weight: 900; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #eee; width: 100%; text-align: center; padding-bottom: 5px; margin-bottom: 10px; }
-        .qr-flex-row { display: flex; gap: 40px; width: 100%; justify-content: center; align-items: flex-start; }
-        .qr-box { border: 2px solid #000; padding: 10px; border-radius: 8px; }
-        #qr-canvas { width: 180px !important; height: 180px !important; }
-        .payment-details { flex: 1; max-width: 420px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9fafb; font-size: 12px; }
-        .pay-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0; }
-        .pay-total { font-size: 20px; color: var(--primary); font-weight: 900; text-align: right; margin-top: 10px; }
+        /* ARCHÍV MODAL */
+        #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
+        .archive-info { display: flex; flex-direction: column; gap: 2px; }
+        .archive-no { font-weight: 900; color: var(--primary); }
+        .archive-cust { font-size: 14px; font-weight: 600; }
+        .archive-date { font-size: 12px; color: #666; }
+        .archive-actions { display: flex; gap: 8px; }
+        .btn-load { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
         .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
@@ -178,7 +157,7 @@
         body.preview-mode #floating-edit-btn { display: block; }
 
         @media print {
-            .controls, #drawing-modal, #floating-edit-btn, .btn-reset { display: none !important; }
+            .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
             .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
@@ -191,6 +170,19 @@
 
 <div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
+
+<!-- ARCHÍV MODAL -->
+<div id="archive-modal">
+    <div class="archive-content">
+        <div class="archive-header">
+            <h2 style="margin:0">📚 Archív revízií</h2>
+            <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
+        </div>
+        <div class="archive-list" id="archive-list-container">
+            <div style="text-align:center; padding:20px; color:#666;">Načítavam...</div>
+        </div>
+    </div>
+</div>
 
 <div id="drawing-modal">
     <div class="modal-header"><span>✍️ Podpis zákazníka</span><button onclick="closeModal()" style="font-size:32px; border:none; background:none;">&times;</button></div>
@@ -205,6 +197,10 @@
     <section class="controls">
         <h2>⚙️ RS2 Nastavenia</h2>
         
+        <div class="section-title">Archív a úložisko</div>
+        <button class="btn-archive-save" onclick="saveToArchive()">💾 Uložiť do archívu</button>
+        <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
+
         <div class="section-title">Základné údaje</div>
         <div class="form-group">
             <label>KATEGÓRIA</label>
@@ -273,7 +269,8 @@
 
         <div class="btn-group">
             <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF</button>
-            <button class="btn-new" onclick="if(confirm('Zmazať všetky údaje?')) location.reload()">🗑️ NOVÁ SPRÁVA</button>
+            <button class="btn-new" onclick="startNewReport()">🗑️ NOVÁ SPRÁVA</button>
+            <button class="btn-reset-counter" onclick="resetCounter()">🔄 Vynulovať počítadlo</button>
             <div class="btn-row">
                 <button class="btn-preview" onclick="togglePreviewMode()">👁️ Náhľad</button>
                 <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
@@ -379,6 +376,184 @@
         </div>
     </section>
 </div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    const firebaseConfig = JSON.parse(__firebase_config);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-app';
+
+    let user = null;
+
+    // RULE 3 - Auth first
+    const initAuth = async () => {
+        try {
+            await signInAnonymously(auth);
+        } catch (e) {
+            console.error("Auth error", e);
+        }
+    };
+    initAuth();
+
+    onAuthStateChanged(auth, (u) => {
+        user = u;
+        if (user) {
+            console.log("Prihlásený ako:", user.uid);
+        }
+    });
+
+    // ARCHÍV LOGIKA
+    window.saveToArchive = async () => {
+        if (!user) { alert("Chyba pripojenia k úložisku."); return; }
+        const reportNo = document.getElementById('inp-no').value;
+        const toast = document.getElementById('save-toast');
+        
+        const data = {
+            id: reportNo.replace(/\//g, '-'),
+            reportNo: reportNo,
+            date: document.getElementById('inp-date').value,
+            scenario: document.getElementById('inp-scenario').value,
+            customer: {
+                company: document.getElementById('inp-company').value,
+                name: document.getElementById('inp-name').value,
+                street: document.getElementById('inp-street').value,
+                city: document.getElementById('inp-city').value,
+                phone: document.getElementById('inp-phone').value,
+                email: document.getElementById('inp-email').value,
+            },
+            device: {
+                dev: document.getElementById('inp-dev').value,
+                manuf: document.getElementById('inp-manuf').value,
+                sn: document.getElementById('inp-sn').value,
+                year: document.getElementById('inp-year').value,
+                power: document.getElementById('inp-power').value,
+                fuel: document.getElementById('inp-fuel').value,
+            },
+            result: {
+                notes: document.getElementById('inp-notes').value,
+                locationNote: document.getElementById('inp-location-note').value,
+                status: document.getElementById('inp-status').value,
+                price: document.getElementById('inp-price').value,
+                vat: document.getElementById('inp-vat-payer').checked,
+                invoice: document.getElementById('inp-invoice').value
+            },
+            timestamp: Date.now()
+        };
+
+        try {
+            // RULE 1 - Private Path
+            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', data.id), data);
+            toast.textContent = "Uložené do archívu ✅";
+            toast.style.opacity = "1";
+            setTimeout(() => toast.style.opacity = "0", 2000);
+        } catch (e) {
+            alert("Chyba pri ukladaní: " + e.message);
+        }
+    };
+
+    window.openArchive = async () => {
+        if (!user) { alert("Chyba pripojenia."); return; }
+        document.getElementById('archive-modal').style.display = 'flex';
+        const container = document.getElementById('archive-list-container');
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Načítavam zoznam...</div>';
+
+        try {
+            // RULE 2 - Simple query
+            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
+            const querySnapshot = await getDocs(q);
+            
+            let list = [];
+            querySnapshot.forEach(doc => list.push(doc.data()));
+            
+            // Sort in memory (Rule 2)
+            list.sort((a,b) => b.timestamp - a.timestamp);
+
+            if (list.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px;">Archív je prázdny.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'archive-item';
+                div.innerHTML = `
+                    <div class="archive-info">
+                        <span class="archive-no">${item.reportNo}</span>
+                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Neznámy klient'}</span>
+                        <span class="archive-date">${item.date || 'Bez dátumu'} - ${item.device.dev || 'Zariadenie'}</span>
+                    </div>
+                    <div class="archive-actions">
+                        <button class="btn-load" onclick="loadFromArchive('${item.id}')">Otvoriť</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        } catch (e) {
+            container.innerHTML = `<div style="color:red; padding:20px;">Chyba: ${e.message}</div>`;
+        }
+    };
+
+    window.loadFromArchive = async (docId) => {
+        const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Pýtať sa či chce novú revíziu alebo len upraviť starú
+            const isNew = confirm("Chcete použiť tieto údaje pre NOVÚ revíziu?\n(Ak kliknete ZRUŠIŤ, otvorí sa pôvodná správa pre úpravu.)");
+
+            // Naplnenie formy
+            document.getElementById('inp-scenario').value = data.scenario;
+            document.getElementById('inp-company').value = data.customer.company;
+            document.getElementById('inp-name').value = data.customer.name;
+            document.getElementById('inp-street').value = data.customer.street;
+            document.getElementById('inp-city').value = data.customer.city;
+            document.getElementById('inp-phone').value = data.customer.phone;
+            document.getElementById('inp-email').value = data.customer.email;
+
+            document.getElementById('inp-dev').value = data.device.dev;
+            document.getElementById('inp-manuf').value = data.device.manuf;
+            document.getElementById('inp-sn').value = data.device.sn;
+            document.getElementById('inp-year').value = data.device.year;
+            document.getElementById('inp-power').value = data.device.power;
+            document.getElementById('inp-fuel').value = data.device.fuel;
+
+            document.getElementById('inp-notes').value = data.result.notes;
+            document.getElementById('inp-location-note').value = data.result.locationNote;
+            document.getElementById('inp-status').value = data.result.status;
+            document.getElementById('inp-price').value = data.result.price;
+            document.getElementById('inp-vat-payer').checked = data.result.vat;
+            document.getElementById('inp-invoice').value = data.result.invoice;
+
+            if (isNew) {
+                // Pre novú revíziu dáme dnešný dátum a nové číslo
+                document.getElementById('inp-date').valueAsDate = new Date();
+                // Pokračujeme v číslovaní
+                let c = localStorage.getItem('rev_c_v5') || 0;
+                c++;
+                localStorage.setItem('rev_c_v5', c);
+                
+                const year = new Date().getFullYear();
+                document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
+            } else {
+                // Pre úpravu staršej necháme pôvodné údaje
+                document.getElementById('inp-date').value = data.date;
+                document.getElementById('inp-no').value = data.reportNo;
+            }
+
+            window.changeScenario(); // Aktualizuje merania
+            window.closeArchive();
+        }
+    };
+</script>
 
 <script>
     let qr;
@@ -512,11 +687,7 @@
     async function shareAsPDF() {
         const element = document.getElementById('printable-content');
         const reportNo = document.getElementById('inp-no').value;
-        const opt = { 
-            margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
-            html2canvas: { scale: 3, useCORS: true, logging: false }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
-        };
+        const opt = { margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, html2canvas: { scale: 3, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } };
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
@@ -574,14 +745,43 @@
             reader.readAsDataURL(event.target.files[0]);
         }
     }
+
+    function extractNumberFromText(text) {
+        const match = text.match(/\/(\d+)/);
+        return match ? parseInt(match[1]) : null;
+    }
+
     function generateNo() {
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
-        c++; localStorage.setItem('rev_c_v5', c);
-        const n = `RS2-${year}/${String(c).padStart(3,'0')}`;
+        const currentCount = parseInt(c) + 1;
+        const n = `RS2-${year}/${String(currentCount).padStart(3,'0')}`;
         document.getElementById('inp-no').value = n;
         render();
     }
+
+    window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
+
+    function resetCounter() {
+        if(confirm('Naozaj chcete vynulovať počítadlo správ? Nasledujúca správa bude začínať od 001.')) {
+            localStorage.setItem('rev_c_v5', 0);
+            generateNo();
+        }
+    }
+
+    function startNewReport() {
+        if(confirm('Zmazať všetky údaje a vytvoriť novú správu?')) {
+            const currentInputValue = document.getElementById('inp-no').value;
+            const parsedNumber = extractNumberFromText(currentInputValue);
+            if (parsedNumber !== null) localStorage.setItem('rev_c_v5', parsedNumber);
+            else {
+                let c = localStorage.getItem('rev_c_v5') || 0;
+                c++; localStorage.setItem('rev_c_v5', c);
+            }
+            location.reload();
+        }
+    }
+
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
     window.onload = () => { generateNo(); initQR(); changeScenario(); };
 </script>
