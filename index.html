@@ -215,7 +215,11 @@
         <div class="form-group"><label>VS (Číslo faktúry)</label><input type="text" id="inp-invoice" oninput="render()"></div>
 
         <div class="form-row">
-            <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" readonly></div>
+            <div class="form-group">
+                <label>Číslo správy</label>
+                <!-- OSTRÁNENÉ READONLY - MOŽNOSŤ ÚPRAVY -->
+                <input type="text" id="inp-no" oninput="render()">
+            </div>
             <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date" onchange="render()"></div>
         </div>
 
@@ -370,7 +374,6 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
-    // SCENÁRE S 10 MERANÝMI BODMI
     const SCENARIOS = {
         plyn: { 
             title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", 
@@ -442,7 +445,13 @@
 
     function render() {
         if(!qr) initQR();
-        // Mapovanie hodnôt
+        
+        // Číslo správy (editovateľné)
+        const reportNo = document.getElementById('inp-no').value;
+        document.getElementById('out-no').textContent = "Číslo: " + reportNo;
+        document.getElementById('out-pay-note').textContent = reportNo;
+
+        // Ostatné údaje
         const comp = document.getElementById('inp-company').value || "—";
         const name = document.getElementById('inp-name').value || "—";
         const tel = document.getElementById('inp-phone').value || "";
@@ -494,12 +503,10 @@
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
         const vs = document.getElementById('inp-invoice').value || "";
-        const reportNo = document.getElementById('inp-no').value;
 
         qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = vs || "—";
-        document.getElementById('out-pay-note').textContent = reportNo;
     }
 
     async function shareAsPDF() {
@@ -580,7 +587,8 @@
         c++; localStorage.setItem('rev_c_v5', c);
         const n = `RS2-${year}/${String(c).padStart(3,'0')}`;
         document.getElementById('inp-no').value = n;
-        document.getElementById('out-no').textContent = "Číslo: " + n;
+        // Spustíme render hneď po vygenerovaní
+        render();
     }
 
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
