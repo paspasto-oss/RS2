@@ -114,7 +114,6 @@
         .footer-area { margin-top: auto; padding-bottom: 5mm; }
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
         
-        /* ZELENÝ RÁMIK - UPRAVENÝ POSUN */
         .status-box { 
             margin: 15mm auto 8px auto; 
             border: 2px solid var(--success); 
@@ -132,16 +131,17 @@
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; }
+        /* Rámček podpisu */
+        .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        /* RAZÍTKO - FIXNÉ A PRITLAČENÉ K LINKE */
+        /* PEČIATKA TECHNIKA - AKTUALIZOVANÁ NA 42mm */
         .tech-sig-img { 
-            width: 40mm !important; 
-            height: 40mm !important; 
+            width: 42mm !important; 
+            height: 42mm !important; 
             object-fit: contain; 
             display: block; 
-            margin: 0 auto -5mm auto; /* Záporný margin ho pritlačí k linke */
+            margin: 0 auto -5mm auto; 
             position: relative;
             z-index: 10;
         }
@@ -164,6 +164,8 @@
 
         body.preview-mode .controls { display: none; }
         body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
+        body.preview-mode .sig-canvas-container { border: none !important; }
+
         #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         body.preview-mode #floating-edit-btn { display: block; }
 
@@ -171,7 +173,8 @@
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
             .preview-scroll-wrapper { overflow: visible !important; }
-            .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; }
+            .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
+            .sig-canvas-container { border: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -530,7 +533,7 @@
         document.getElementById('drawing-modal').style.display='flex';
         const c = document.getElementById('full-screen-canvas');
         c.width=c.offsetWidth; c.height=c.offsetHeight;
-        modalCtx.lineWidth=5; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000';
+        modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000';
     }
     function closeModal() { document.getElementById('drawing-modal').style.display='none'; }
     function clearFullCanvas() { modalCtx.clearRect(0,0,9999,9999); }
