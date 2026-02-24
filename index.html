@@ -65,14 +65,14 @@
         .btn-share { background: #2563eb; color: white; width: 100%; }
         .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
         
-        /* CLOUD ARCHÍV */
         .btn-archive-save { background: #059669; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; }
         .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
         .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
 
-        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 5px; border-radius: 5px; background: #f8fafc; font-weight: bold; }
+        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; }
         .status-on { color: #16a34a; }
         .status-off { color: #f59e0b; }
+        .status-error { color: #dc2626; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
@@ -394,34 +394,47 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5';
 
     let user = null;
+    const statusEl = document.getElementById('cloud-status-text');
 
-    // RULE 3 - Auth Before Queries (Anonymously = Bez registrácie)
+    // RULE 3 - Auth Before Queries
     const initAuth = async () => {
         try {
+            // Skúsime prioritne token, inak anonymne
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
         } catch (e) {
-            console.error("Cloud Error", e);
+            console.error("Cloud Connection Failed", e);
+            statusEl.innerHTML = '<span class="status-error">Chyba cloudu ❌</span>';
         }
     };
+
+    // Spustíme prihlásenie okamžite
     initAuth();
 
+    // Sledovanie stavu
     onAuthStateChanged(auth, (u) => {
         user = u;
-        const statusEl = document.getElementById('cloud-status-text');
         if (user) {
             statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
+            console.log("Authenticated as:", user.uid);
         } else {
             statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
         }
     });
 
+    // Diagnostický timeout pre pomalé pripojenie
+    setTimeout(() => {
+        if (!user) {
+            statusEl.innerHTML = '<span class="status-error">Pripojenie trvá dlho... ⚠️</span>';
+        }
+    }, 10000);
+
     // ARCHÍV V CLOUDE
     window.saveToCloudArchive = async () => {
-        if (!user) return alert("Počkajte na pripojenie k cloudu.");
+        if (!user) return alert("Počkajte na pripojenie k cloudu (stav ✅).");
         const reportNo = document.getElementById('inp-no').value;
         if (!reportNo) return alert("Zadajte číslo správy.");
 
@@ -459,23 +472,28 @@
         };
 
         try {
-            // RULE 1 - Private Path
-            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId), data);
+            // RULE 1 - Mandatory Path Structure
+            const path = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
+            await setDoc(path, data);
+            
             const toast = document.getElementById('save-toast');
-            toast.textContent = "Uložené do cloudu ✅";
+            toast.textContent = "Archivované do cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { alert("Chyba pri ukladaní."); }
+        } catch (e) { 
+            console.error("Save failed", e);
+            alert("Chyba pri ukladaní do cloudu. Skontrolujte internet."); 
+        }
     };
 
     window.openArchive = async () => {
-        if (!user) return;
+        if (!user) return alert("Počkajte na pripojenie k cloudu.");
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Hľadám správy...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam vaše správy...</div>';
 
         try {
-            // RULE 1 & 2
+            // RULE 2 - Simple query
             const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
             const querySnapshot = await getDocs(q);
             
@@ -484,7 +502,7 @@
             list.sort((a,b) => b.timestamp - a.timestamp);
 
             if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">Archív je prázdny.</div>';
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">V cloude nemáte žiadne správy.</div>';
                 return;
             }
 
@@ -501,47 +519,54 @@
                 `;
                 container.appendChild(div);
             });
-        } catch (e) { container.innerHTML = '<div style="padding:20px;">Nepodarilo sa načítať archív.</div>'; }
+        } catch (e) { 
+            console.error("Fetch failed", e);
+            container.innerHTML = '<div style="padding:20px; color:red;">Chyba pri načítaní archívu.</div>'; 
+        }
     };
 
     window.loadFromCloud = async (docId) => {
-        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?");
+        try {
+            const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const isNew = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa zmenia.)");
 
-            document.getElementById('inp-scenario').value = data.scenario;
-            document.getElementById('inp-company').value = data.customer.company;
-            document.getElementById('inp-name').value = data.customer.name;
-            document.getElementById('inp-street').value = data.customer.street;
-            document.getElementById('inp-city').value = data.customer.city;
-            document.getElementById('inp-phone').value = data.customer.phone;
-            document.getElementById('inp-email').value = data.customer.email;
-            document.getElementById('inp-dev').value = data.device.dev;
-            document.getElementById('inp-manuf').value = data.device.manuf;
-            document.getElementById('inp-sn').value = data.device.sn;
-            document.getElementById('inp-year').value = data.device.year;
-            document.getElementById('inp-power').value = data.device.power;
-            document.getElementById('inp-fuel').value = data.device.fuel;
-            document.getElementById('inp-price').value = data.result.price;
-            document.getElementById('inp-vat-payer').checked = data.result.vat;
+                document.getElementById('inp-scenario').value = data.scenario;
+                document.getElementById('inp-company').value = data.customer.company || "";
+                document.getElementById('inp-name').value = data.customer.name || "";
+                document.getElementById('inp-street').value = data.customer.street || "";
+                document.getElementById('inp-city').value = data.customer.city || "";
+                document.getElementById('inp-phone').value = data.customer.phone || "";
+                document.getElementById('inp-email').value = data.customer.email || "";
+                document.getElementById('inp-dev').value = data.device.dev || "";
+                document.getElementById('inp-manuf').value = data.device.manuf || "";
+                document.getElementById('inp-sn').value = data.device.sn || "";
+                document.getElementById('inp-year').value = data.device.year || "";
+                document.getElementById('inp-power').value = data.device.power || "";
+                document.getElementById('inp-fuel').value = data.device.fuel || "";
+                document.getElementById('inp-price').value = data.result.price || 80;
+                document.getElementById('inp-vat-payer').checked = data.result.vat || false;
 
-            if (isNew) {
-                document.getElementById('inp-date').valueAsDate = new Date();
-                document.getElementById('inp-notes').value = "";
-                document.getElementById('inp-status').value = "ok";
-                let c = localStorage.getItem('rev_c_v5') || 0;
-                c++; localStorage.setItem('rev_c_v5', c);
-                const year = new Date().getFullYear();
-                document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
-            } else {
-                document.getElementById('inp-date').value = data.date;
-                document.getElementById('inp-no').value = data.reportNo;
-                document.getElementById('inp-notes').value = data.result.notes;
-                document.getElementById('inp-status').value = data.result.status;
+                if (isNew) {
+                    document.getElementById('inp-date').valueAsDate = new Date();
+                    document.getElementById('inp-notes').value = "";
+                    document.getElementById('inp-status').value = "ok";
+                    let c = localStorage.getItem('rev_c_v5') || 0;
+                    c++; localStorage.setItem('rev_c_v5', c);
+                    const year = new Date().getFullYear();
+                    document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
+                } else {
+                    document.getElementById('inp-date').value = data.date;
+                    document.getElementById('inp-no').value = data.reportNo;
+                    document.getElementById('inp-notes').value = data.result.notes || "";
+                    document.getElementById('inp-status').value = data.result.status || "ok";
+                }
+                window.changeScenario();
+                window.closeArchive();
             }
-            window.changeScenario();
-            window.closeArchive();
+        } catch (e) {
+            alert("Nepodarilo sa načítať dáta.");
         }
     };
 </script>
