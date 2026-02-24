@@ -375,164 +375,156 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    const firebaseConfig = JSON.parse(__firebase_config);
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5';
+    /* DÔLEŽITÉ: Tieto premenné fungujú len v tomto prostredí (Canvas).
+       Ak nahrávate súbor na GITHUB, musíte premennú 'firebaseConfig' 
+       nahradiť vašimi údajmi z Firebase konzoly (apiKey, authDomain, atď.).
+    */
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+        ? JSON.parse(__firebase_config) 
+        : { /* TU VLOŽTE SVOJ KONFIG PRE GITHUB PAGES */ };
 
-    let user = null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'vlastny-app-id';
+
     const statusEl = document.getElementById('cloud-status-text');
 
-    // RULE 3 - Auth Before Queries
-    const initAuth = async () => {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+    // Ak nie je konfig, upozorníme užívateľa na GitHubu
+    if (!firebaseConfig.apiKey) {
+        statusEl.innerHTML = '<span class="status-error">Chýba Firebase Config ❌</span>';
+        console.warn("RS2: Na GitHube musíte v kóde doplniť firebaseConfig.");
+    } else {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let user = null;
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Cloud Error", e);
+                statusEl.innerHTML = '<span class="status-error">Chyba pripojenia ❌</span>';
             }
-        } catch (e) {
-            console.error("Cloud Error", e);
-            statusEl.innerHTML = '<span class="status-error">Chyba cloudu ❌</span>';
-        }
-    };
-    initAuth();
+        };
+        initAuth();
 
-    onAuthStateChanged(auth, (u) => {
-        user = u;
-        if (user) {
-            statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
-        } else {
-            statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
-        }
-    });
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
+            } else {
+                statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
+            }
+        });
 
-    // ARCHÍV FUNKCIE
-    window.saveToCloud = async () => {
-        if (!user) return alert("Počkajte na pripojenie k cloudu.");
-        const reportNo = document.getElementById('inp-no').value;
-        if (!reportNo) return alert("Zadajte číslo správy.");
+        // GLOBÁLNE FUNKCIE PRE TLAČIDLÁ
+        window.saveToCloud = async () => {
+            if (!user) return alert("Počkajte na pripojenie k cloudu.");
+            const reportNo = document.getElementById('inp-no').value;
+            if (!reportNo) return alert("Zadajte číslo správy.");
 
-        const docId = reportNo.replace(/\//g, '-');
-        const data = {
-            id: docId, reportNo,
-            date: document.getElementById('inp-date').value,
-            scenario: document.getElementById('inp-scenario').value,
-            customer: {
-                company: document.getElementById('inp-company').value,
-                name: document.getElementById('inp-name').value,
-                street: document.getElementById('inp-street').value,
-                city: document.getElementById('inp-city').value,
-                phone: document.getElementById('inp-phone').value,
-                email: document.getElementById('inp-email').value,
-            },
-            device: {
-                dev: document.getElementById('inp-dev').value,
-                manuf: document.getElementById('inp-manuf').value,
-                sn: document.getElementById('inp-sn').value,
-                year: document.getElementById('inp-year').value,
-                power: document.getElementById('inp-power').value,
-                fuel: document.getElementById('inp-fuel').value,
-            },
-            result: {
-                notes: document.getElementById('inp-notes').value,
-                locationNote: document.getElementById('inp-location-note').value,
-                status: document.getElementById('inp-status').value,
-                price: document.getElementById('inp-price').value,
-                vat: document.getElementById('inp-vat-payer').checked,
-                invoice: document.getElementById('inp-invoice').value
-            },
-            timestamp: Date.now()
+            const docId = reportNo.replace(/\//g, '-');
+            const data = {
+                id: docId, reportNo,
+                date: document.getElementById('inp-date').value,
+                scenario: document.getElementById('inp-scenario').value,
+                customer: {
+                    company: document.getElementById('inp-company').value,
+                    name: document.getElementById('inp-name').value,
+                    street: document.getElementById('inp-street').value,
+                    city: document.getElementById('inp-city').value,
+                    phone: document.getElementById('inp-phone').value,
+                    email: document.getElementById('inp-email').value,
+                },
+                device: {
+                    dev: document.getElementById('inp-dev').value,
+                    manuf: document.getElementById('inp-manuf').value,
+                    sn: document.getElementById('inp-sn').value,
+                    year: document.getElementById('inp-year').value,
+                    power: document.getElementById('inp-power').value,
+                    fuel: document.getElementById('inp-fuel').value,
+                },
+                result: {
+                    notes: document.getElementById('inp-notes').value,
+                    locationNote: document.getElementById('inp-location-note').value,
+                    status: document.getElementById('inp-status').value,
+                    price: document.getElementById('inp-price').value,
+                    vat: document.getElementById('inp-vat-payer').checked,
+                    invoice: document.getElementById('inp-invoice').value
+                },
+                timestamp: Date.now()
+            };
+
+            try {
+                const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
+                await setDoc(docPath, data);
+                const toast = document.getElementById('save-toast');
+                toast.textContent = "Archivované ✅"; toast.style.opacity = "1";
+                setTimeout(() => toast.style.opacity = "0", 2000);
+            } catch (e) { alert("Chyba pri ukladaní."); }
         };
 
-        try {
-            // RULE 1 - Mandatory path structure
-            const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
-            await setDoc(docPath, data);
-            
-            const toast = document.getElementById('save-toast');
-            toast.textContent = "Archivované do cloudu ✅";
-            toast.style.opacity = "1";
-            setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { alert("Chyba pri ukladaní."); }
-    };
+        window.openArchive = async () => {
+            if (!user) return;
+            document.getElementById('archive-modal').style.display = 'flex';
+            const container = document.getElementById('archive-list-container');
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam...</div>';
+            try {
+                const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
+                const querySnapshot = await getDocs(q);
+                let list = [];
+                querySnapshot.forEach(doc => list.push(doc.data()));
+                list.sort((a,b) => b.timestamp - a.timestamp);
+                if (list.length === 0) { container.innerHTML = '<div style="padding:20px;">Prázdny archív.</div>'; return; }
+                container.innerHTML = '';
+                list.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'archive-item';
+                    div.innerHTML = `<div class="archive-info" onclick="loadFromCloud('${item.id}')"><span class="archive-no">${item.reportNo}</span><span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span><span class="archive-date">${item.date || '---'}</span></div>`;
+                    container.appendChild(div);
+                });
+            } catch (e) { container.innerHTML = 'Chyba načítania.'; }
+        };
 
-    window.openArchive = async () => {
-        if (!user) return;
-        document.getElementById('archive-modal').style.display = 'flex';
-        const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam správy...</div>';
-
-        try {
-            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
-            const querySnapshot = await getDocs(q);
-            
-            let list = [];
-            querySnapshot.forEach(doc => list.push(doc.data()));
-            list.sort((a,b) => b.timestamp - a.timestamp);
-
-            if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">V cloude nemáte žiadne správy.</div>';
-                return;
+        window.loadFromCloud = async (docId) => {
+            const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const isNew = confirm("Nová revízia pre tohto klienta?");
+                document.getElementById('inp-scenario').value = data.scenario;
+                document.getElementById('inp-company').value = data.customer.company || "";
+                document.getElementById('inp-name').value = data.customer.name || "";
+                document.getElementById('inp-street').value = data.customer.street || "";
+                document.getElementById('inp-city').value = data.customer.city || "";
+                document.getElementById('inp-phone').value = data.customer.phone || "";
+                document.getElementById('inp-email').value = data.customer.email || "";
+                document.getElementById('inp-dev').value = data.device.dev || "";
+                document.getElementById('inp-manuf').value = data.device.manuf || "";
+                document.getElementById('inp-sn').value = data.device.sn || "";
+                document.getElementById('inp-year').value = data.device.year || "";
+                document.getElementById('inp-power').value = data.device.power || "";
+                document.getElementById('inp-fuel').value = data.device.fuel || "";
+                document.getElementById('inp-price').value = data.result.price || 80;
+                document.getElementById('inp-vat-payer').checked = data.result.vat || false;
+                if (isNew) {
+                    document.getElementById('inp-date').valueAsDate = new Date();
+                    document.getElementById('inp-notes').value = "";
+                    let c = localStorage.getItem('rev_c_v5') || 0;
+                    c++; localStorage.setItem('rev_c_v5', c);
+                    const year = new Date().getFullYear();
+                    document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
+                } else {
+                    document.getElementById('inp-date').value = data.date;
+                    document.getElementById('inp-no').value = data.reportNo;
+                    document.getElementById('inp-notes').value = data.result.notes || "";
+                }
+                window.changeScenario(); window.closeArchive();
             }
-
-            container.innerHTML = '';
-            list.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'archive-item';
-                div.innerHTML = `
-                    <div class="archive-info" onclick="loadFromCloud('${item.id}')">
-                        <span class="archive-no">${item.reportNo}</span>
-                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span>
-                        <span class="archive-date">${item.date || '---'} | ${item.device.dev || '---'}</span>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        } catch (e) { container.innerHTML = '<div style="padding:20px;">Nepodarilo sa načítať archív.</div>'; }
-    };
-
-    window.loadFromCloud = async (docId) => {
-        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa aktualizujú.)");
-
-            document.getElementById('inp-scenario').value = data.scenario;
-            document.getElementById('inp-company').value = data.customer.company || "";
-            document.getElementById('inp-name').value = data.customer.name || "";
-            document.getElementById('inp-street').value = data.customer.street || "";
-            document.getElementById('inp-city').value = data.customer.city || "";
-            document.getElementById('inp-phone').value = data.customer.phone || "";
-            document.getElementById('inp-email').value = data.customer.email || "";
-            document.getElementById('inp-dev').value = data.device.dev || "";
-            document.getElementById('inp-manuf').value = data.device.manuf || "";
-            document.getElementById('inp-sn').value = data.device.sn || "";
-            document.getElementById('inp-year').value = data.device.year || "";
-            document.getElementById('inp-power').value = data.device.power || "";
-            document.getElementById('inp-fuel').value = data.device.fuel || "";
-            document.getElementById('inp-price').value = data.result.price || 80;
-            document.getElementById('inp-vat-payer').checked = data.result.vat || false;
-
-            if (isNew) {
-                document.getElementById('inp-date').valueAsDate = new Date();
-                document.getElementById('inp-notes').value = "";
-                document.getElementById('inp-status').value = "ok";
-                let c = localStorage.getItem('rev_c_v5') || 0;
-                c++; localStorage.setItem('rev_c_v5', c);
-                const year = new Date().getFullYear();
-                document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
-            } else {
-                document.getElementById('inp-date').value = data.date;
-                document.getElementById('inp-no').value = data.reportNo;
-                document.getElementById('inp-notes').value = data.result.notes || "";
-                document.getElementById('inp-status').value = data.result.status || "ok";
-            }
-            window.changeScenario();
-            window.closeArchive();
-        }
-    };
+        };
+    }
 </script>
 
 <script>
@@ -553,47 +545,22 @@
         if(!qr) initQR();
         const reportNo = document.getElementById('inp-no').value;
         document.getElementById('out-no').textContent = "Číslo: " + reportNo;
-        document.getElementById('out-pay-note').textContent = reportNo;
         const comp = document.getElementById('inp-company').value || "—";
         const name = document.getElementById('inp-name').value || "—";
-        const tel = document.getElementById('inp-phone').value || "";
-        const mail = document.getElementById('inp-email').value || "";
         document.getElementById('out-company').textContent = comp;
         document.getElementById('out-name').textContent = name;
         document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
         document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
-        document.getElementById('out-contact').textContent = `${tel} ${tel && mail ? '/' : ''} ${mail}`;
+        const tel = document.getElementById('inp-phone').value;
+        const mail = document.getElementById('inp-email').value;
+        document.getElementById('out-contact').textContent = `${tel || ''} ${mail || ''}`;
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
-        document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
-        document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
-        const pwr = document.getElementById('inp-power').value;
-        const fl = document.getElementById('inp-fuel').value;
-        document.getElementById('out-params').textContent = (pwr ? pwr + " kW " : "") + (fl ? "/ " + fl : "");
-        const note = document.getElementById('inp-notes').value;
-        document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
-        document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
-        const status = document.getElementById('inp-status').value;
         const dVal = document.getElementById('inp-date').value;
-        const statusBox = document.getElementById('out-status-box');
-        const conc = document.getElementById('out-conclusion');
-        let nextD = "....";
         if(dVal) {
             const d = new Date(dVal);
-            const ds = `${d.getDate()}. ${(d.getMonth()+1)}. ${d.getFullYear()}`;
-            document.getElementById('out-date').textContent = ds;
-            document.getElementById('out-date-sig').textContent = ds;
-            d.setFullYear(d.getFullYear() + 1);
-            nextD = `${d.getDate()}. ${(d.getMonth()+1)}. ${d.getFullYear()}`;
-        }
-        if(status === 'ok') {
-            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
-            statusBox.className = "status-box";
-            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a pokynov výrobcu. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
-        } else {
-            statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
-            statusBox.className = "status-box danger";
-            conc.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky. <strong>OPATRENIA:</strong> Odstaviť zariadenie z prevádzky do odstránenia zistených závad.`;
+            document.getElementById('out-date').textContent = d.toLocaleDateString('sk-SK');
+            document.getElementById('out-date-sig').textContent = d.toLocaleDateString('sk-SK');
         }
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
@@ -605,12 +572,11 @@
 
     async function shareAsPDF() {
         const element = document.getElementById('printable-content');
-        const reportNo = document.getElementById('inp-no').value;
-        const opt = { margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, html2canvas: { scale: 3, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } };
+        const opt = { margin: 0, filename: `RS2_Report.pdf`, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa' });
+            const file = new File([pdfBlob], "Report.pdf", { type: 'application/pdf' });
+            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízia' });
             else window.open(URL.createObjectURL(pdfBlob));
         } catch (err) { alert("Chyba PDF."); }
     }
@@ -627,71 +593,33 @@
         render();
     };
 
-    function openModal() {
-        document.getElementById('drawing-modal').style.display='flex';
-        const c = document.getElementById('full-screen-canvas');
-        c.width=c.offsetWidth; c.height=c.offsetHeight;
-        modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000';
-    }
+    function openModal() { document.getElementById('drawing-modal').style.display='flex'; const c = document.getElementById('full-screen-canvas'); c.width=c.offsetWidth; c.height=c.offsetHeight; modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000'; }
     window.closeModal = () => { document.getElementById('drawing-modal').style.display='none'; };
     window.clearFullCanvas = () => { modalCtx.clearRect(0,0,9999,9999); };
     window.saveDrawing = () => {
         const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
         const source = document.getElementById('full-screen-canvas');
         pc.width = pc.offsetWidth * 4; pc.height = pc.offsetHeight * 4;
-        pctx.imageSmoothingEnabled = true; pctx.imageSmoothingQuality = 'high';
         pctx.drawImage(source, 0, 0, pc.width, pc.height);
         closeModal(); render();
     };
-    const getPos = (e) => {
-        const r = document.getElementById('full-screen-canvas').getBoundingClientRect();
-        const cx = e.touches ? e.touches[0].clientX : e.clientX;
-        const cy = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: cx - r.left, y: cy - r.top };
-    };
-    document.getElementById('full-screen-canvas').onmousedown = document.getElementById('full-screen-canvas').ontouchstart = (e) => {
-        e.preventDefault(); isDrawing=true; modalCtx.beginPath(); const p = getPos(e); modalCtx.moveTo(p.x, p.y);
-    };
-    document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => {
-        if(isDrawing) { e.preventDefault(); const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); }
-    };
+    const getPos = (e) => { const r = document.getElementById('full-screen-canvas').getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; return { x: cx - r.left, y: cy - r.top }; };
+    document.getElementById('full-screen-canvas').onmousedown = document.getElementById('full-screen-canvas').ontouchstart = (e) => { e.preventDefault(); isDrawing=true; modalCtx.beginPath(); const p = getPos(e); modalCtx.moveTo(p.x, p.y); };
+    document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => { if(isDrawing) { e.preventDefault(); const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); } };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    window.loadPhoto = (event) => {
-        if(event.target.files && event.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = f => { document.getElementById('device-photo-preview').src = f.target.result; document.getElementById('device-photo-preview').style.display='block'; };
-            reader.readAsDataURL(event.target.files[0]);
-        }
-    };
+    window.loadPhoto = (event) => { if(event.target.files && event.target.files[0]) { const reader = new FileReader(); reader.onload = f => { document.getElementById('device-photo-preview').src = f.target.result; document.getElementById('device-photo-preview').style.display='block'; }; reader.readAsDataURL(event.target.files[0]); } };
+    window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
+    function resetCounter() { if(confirm('Vynulovať počítadlo na 001?')) { localStorage.setItem('rev_c_v5', 0); location.reload(); } }
+    function startNewReport() { if(confirm('Založiť novú správu?')) { location.reload(); } }
+    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
 
-    function generateNo() {
+    window.onload = () => { 
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
-        const n = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
-        document.getElementById('inp-no').value = n;
-        render();
-    }
-
-    window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
-
-    function resetCounter() {
-        if(confirm('Vynulovať počítadlo na 001?')) {
-            localStorage.setItem('rev_c_v5', 0);
-            generateNo();
-        }
-    }
-
-    function startNewReport() {
-        if(confirm('Založiť novú správu?')) {
-            const m = document.getElementById('inp-no').value.match(/\/(\d+)/);
-            if (m) localStorage.setItem('rev_c_v5', parseInt(m[1]));
-            location.reload();
-        }
-    }
-
-    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
-    window.onload = () => { generateNo(); initQR(); changeScenario(); };
+        document.getElementById('inp-no').value = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
+        initQR(); changeScenario(); 
+    };
 </script>
 </body>
 </html>
