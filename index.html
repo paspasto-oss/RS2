@@ -77,13 +77,6 @@
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
 
-        @media (max-width: 800px) {
-            .preview-container { transform: scale(0.45); margin-bottom: -600px; }
-        }
-        @media (max-width: 500px) {
-            .preview-container { transform: scale(0.38); margin-bottom: -750px; }
-        }
-
         .a4-page { 
             width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; 
@@ -133,18 +126,17 @@
         
         .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
 
-        /* CLOUD ARCHÍV MODAL */
+        /* MODAL ARCHÍVU */
         #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
         .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
         .archive-info { display: flex; flex-direction: column; gap: 2px; }
         .archive-no { font-weight: 900; color: var(--primary); }
         .archive-cust { font-size: 14px; font-weight: 600; }
         .archive-date { font-size: 12px; color: #666; }
-        .archive-actions { display: flex; gap: 8px; }
         .btn-load { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
@@ -156,15 +148,13 @@
 
         body.preview-mode .controls { display: none; }
         body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
-        body.preview-mode #floating-edit-btn { display: block; }
         #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        body.preview-mode #floating-edit-btn { display: block; }
 
         @media print {
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
-            .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
-            .sig-canvas-container { border: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -174,11 +164,10 @@
 <div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
 
-<!-- ARCHÍV MODAL -->
 <div id="archive-modal">
     <div class="archive-content">
         <div class="archive-header">
-            <h2 style="margin:0">📚 Cloudový archív</h2>
+            <h2 style="margin:0">📚 Archív revízií</h2>
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
         </div>
         <div class="archive-list" id="archive-list-container">
@@ -200,8 +189,8 @@
     <section class="controls">
         <h2>⚙️ RS2 Nastavenia</h2>
         
-        <div class="section-title">Cloudové úložisko</div>
-        <button class="btn-archive-save" onclick="saveToCloudArchive()">💾 Uložiť do archívu</button>
+        <div class="section-title">Cloudový archív</div>
+        <button class="btn-archive-save" onclick="saveToCloud()">💾 Uložiť do archívu</button>
         <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
         <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
 
@@ -284,7 +273,6 @@
 
     <section class="preview-scroll-wrapper">
         <div class="preview-container" id="printable-content">
-            <!-- STRANA 1 -->
             <div class="a4-page">
                 <div class="header">
                     <div class="brand">
@@ -399,49 +387,36 @@
     // RULE 3 - Auth Before Queries
     const initAuth = async () => {
         try {
-            // Skúsime prioritne token, inak anonymne
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
         } catch (e) {
-            console.error("Cloud Connection Failed", e);
+            console.error("Cloud Error", e);
             statusEl.innerHTML = '<span class="status-error">Chyba cloudu ❌</span>';
         }
     };
-
-    // Spustíme prihlásenie okamžite
     initAuth();
 
-    // Sledovanie stavu
     onAuthStateChanged(auth, (u) => {
         user = u;
         if (user) {
             statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
-            console.log("Authenticated as:", user.uid);
         } else {
             statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
         }
     });
 
-    // Diagnostický timeout pre pomalé pripojenie
-    setTimeout(() => {
-        if (!user) {
-            statusEl.innerHTML = '<span class="status-error">Pripojenie trvá dlho... ⚠️</span>';
-        }
-    }, 10000);
-
-    // ARCHÍV V CLOUDE
-    window.saveToCloudArchive = async () => {
-        if (!user) return alert("Počkajte na pripojenie k cloudu (stav ✅).");
+    // ARCHÍV FUNKCIE
+    window.saveToCloud = async () => {
+        if (!user) return alert("Počkajte na pripojenie k cloudu.");
         const reportNo = document.getElementById('inp-no').value;
         if (!reportNo) return alert("Zadajte číslo správy.");
 
         const docId = reportNo.replace(/\//g, '-');
         const data = {
-            id: docId,
-            reportNo: reportNo,
+            id: docId, reportNo,
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
             customer: {
@@ -472,28 +447,24 @@
         };
 
         try {
-            // RULE 1 - Mandatory Path Structure
-            const path = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
-            await setDoc(path, data);
+            // RULE 1 - Mandatory path structure
+            const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
+            await setDoc(docPath, data);
             
             const toast = document.getElementById('save-toast');
             toast.textContent = "Archivované do cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { 
-            console.error("Save failed", e);
-            alert("Chyba pri ukladaní do cloudu. Skontrolujte internet."); 
-        }
+        } catch (e) { alert("Chyba pri ukladaní."); }
     };
 
     window.openArchive = async () => {
-        if (!user) return alert("Počkajte na pripojenie k cloudu.");
+        if (!user) return;
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam vaše správy...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam správy...</div>';
 
         try {
-            // RULE 2 - Simple query
             const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
             const querySnapshot = await getDocs(q);
             
@@ -502,7 +473,7 @@
             list.sort((a,b) => b.timestamp - a.timestamp);
 
             if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">V cloude nemáte žiadne správy.</div>';
+                container.innerHTML = '<div style="text-align:center; padding:20px;">V cloude nemáte žiadne správy.</div>';
                 return;
             }
 
@@ -519,54 +490,47 @@
                 `;
                 container.appendChild(div);
             });
-        } catch (e) { 
-            console.error("Fetch failed", e);
-            container.innerHTML = '<div style="padding:20px; color:red;">Chyba pri načítaní archívu.</div>'; 
-        }
+        } catch (e) { container.innerHTML = '<div style="padding:20px;">Nepodarilo sa načítať archív.</div>'; }
     };
 
     window.loadFromCloud = async (docId) => {
-        try {
-            const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const isNew = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa zmenia.)");
+        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa aktualizujú.)");
 
-                document.getElementById('inp-scenario').value = data.scenario;
-                document.getElementById('inp-company').value = data.customer.company || "";
-                document.getElementById('inp-name').value = data.customer.name || "";
-                document.getElementById('inp-street').value = data.customer.street || "";
-                document.getElementById('inp-city').value = data.customer.city || "";
-                document.getElementById('inp-phone').value = data.customer.phone || "";
-                document.getElementById('inp-email').value = data.customer.email || "";
-                document.getElementById('inp-dev').value = data.device.dev || "";
-                document.getElementById('inp-manuf').value = data.device.manuf || "";
-                document.getElementById('inp-sn').value = data.device.sn || "";
-                document.getElementById('inp-year').value = data.device.year || "";
-                document.getElementById('inp-power').value = data.device.power || "";
-                document.getElementById('inp-fuel').value = data.device.fuel || "";
-                document.getElementById('inp-price').value = data.result.price || 80;
-                document.getElementById('inp-vat-payer').checked = data.result.vat || false;
+            document.getElementById('inp-scenario').value = data.scenario;
+            document.getElementById('inp-company').value = data.customer.company || "";
+            document.getElementById('inp-name').value = data.customer.name || "";
+            document.getElementById('inp-street').value = data.customer.street || "";
+            document.getElementById('inp-city').value = data.customer.city || "";
+            document.getElementById('inp-phone').value = data.customer.phone || "";
+            document.getElementById('inp-email').value = data.customer.email || "";
+            document.getElementById('inp-dev').value = data.device.dev || "";
+            document.getElementById('inp-manuf').value = data.device.manuf || "";
+            document.getElementById('inp-sn').value = data.device.sn || "";
+            document.getElementById('inp-year').value = data.device.year || "";
+            document.getElementById('inp-power').value = data.device.power || "";
+            document.getElementById('inp-fuel').value = data.device.fuel || "";
+            document.getElementById('inp-price').value = data.result.price || 80;
+            document.getElementById('inp-vat-payer').checked = data.result.vat || false;
 
-                if (isNew) {
-                    document.getElementById('inp-date').valueAsDate = new Date();
-                    document.getElementById('inp-notes').value = "";
-                    document.getElementById('inp-status').value = "ok";
-                    let c = localStorage.getItem('rev_c_v5') || 0;
-                    c++; localStorage.setItem('rev_c_v5', c);
-                    const year = new Date().getFullYear();
-                    document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
-                } else {
-                    document.getElementById('inp-date').value = data.date;
-                    document.getElementById('inp-no').value = data.reportNo;
-                    document.getElementById('inp-notes').value = data.result.notes || "";
-                    document.getElementById('inp-status').value = data.result.status || "ok";
-                }
-                window.changeScenario();
-                window.closeArchive();
+            if (isNew) {
+                document.getElementById('inp-date').valueAsDate = new Date();
+                document.getElementById('inp-notes').value = "";
+                document.getElementById('inp-status').value = "ok";
+                let c = localStorage.getItem('rev_c_v5') || 0;
+                c++; localStorage.setItem('rev_c_v5', c);
+                const year = new Date().getFullYear();
+                document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
+            } else {
+                document.getElementById('inp-date').value = data.date;
+                document.getElementById('inp-no').value = data.reportNo;
+                document.getElementById('inp-notes').value = data.result.notes || "";
+                document.getElementById('inp-status').value = data.result.status || "ok";
             }
-        } catch (e) {
-            alert("Nepodarilo sa načítať dáta.");
+            window.changeScenario();
+            window.closeArchive();
         }
     };
 </script>
@@ -634,10 +598,9 @@
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
-        const vs = document.getElementById('inp-invoice').value || "";
-        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
+        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${(document.getElementById('inp-invoice').value || "").replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
-        document.getElementById('out-pay-vs').textContent = vs || "—";
+        document.getElementById('out-pay-vs').textContent = document.getElementById('inp-invoice').value || "—";
     }
 
     async function shareAsPDF() {
@@ -647,7 +610,7 @@
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
+            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa' });
             else window.open(URL.createObjectURL(pdfBlob));
         } catch (err) { alert("Chyba PDF."); }
     }
@@ -705,8 +668,7 @@
     function generateNo() {
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
-        const currentCount = parseInt(c) + 1;
-        const n = `RS2-${year}/${String(currentCount).padStart(3,'0')}`;
+        const n = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
         document.getElementById('inp-no').value = n;
         render();
     }
@@ -722,8 +684,7 @@
 
     function startNewReport() {
         if(confirm('Založiť novú správu?')) {
-            const curNo = document.getElementById('inp-no').value;
-            const m = curNo.match(/\/(\d+)/);
+            const m = document.getElementById('inp-no').value.match(/\/(\d+)/);
             if (m) localStorage.setItem('rev_c_v5', parseInt(m[1]));
             location.reload();
         }
