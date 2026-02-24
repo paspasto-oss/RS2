@@ -69,20 +69,22 @@
         .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
         .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
 
-        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; }
+        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; line-height: 1.4; }
         .status-on { color: #16a34a; }
         .status-off { color: #f59e0b; }
-        .status-error { color: #dc2626; }
+        .status-error { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
 
+        /* A4 Page Setup */
         .a4-page { 
             width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; 
+            page-break-after: always;
         }
 
-        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.3; }
@@ -103,7 +105,7 @@
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 900; }
 
-        .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 130px; }
+        .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 125px; }
         .vtz-box { flex: 1; border: 1px solid #ddd; padding: 6px; font-size: 9px; display: flex; flex-direction: column; justify-content: space-around; }
         .vtz-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
         .vtz-label { color: #666; font-weight: bold; }
@@ -112,32 +114,40 @@
         .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; }
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
 
-        .footer-area { margin-top: auto; padding-bottom: 5mm; }
-        .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
+        .pdf-footer-block {
+            margin-top: auto;
+            page-break-inside: avoid;
+        }
         
-        .status-box { margin: 15mm auto 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        .conclusion-text { font-size: 11.5px; margin-top: 5px; text-align: justify; line-height: 1.35; color: #000; }
+        
+        .status-box { margin: 6mm auto 6px auto; border: 2px solid var(--success); padding: 7px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
 
-        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
-        .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
+        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; height: 60px; }
+        .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
+        
+        .sig-canvas-container { width: 100%; height: 45px; border: 1px dashed #D60000; cursor: pointer; background: #fffafa; margin-bottom: 2px; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
+        .tech-sig-img { 
+            width: 42mm !important; 
+            height: auto !important; 
+            object-fit: contain; 
+            display: block; 
+            margin: 0 auto -8mm auto; 
+            position: relative; 
+            z-index: 10; 
+            pointer-events: none;
+        }
 
-        /* MODAL ARCHÍVU */
         #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
         .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
-        .archive-info { display: flex; flex-direction: column; gap: 2px; }
-        .archive-no { font-weight: 900; color: var(--primary); }
-        .archive-cust { font-size: 14px; font-weight: 600; }
-        .archive-date { font-size: 12px; color: #666; }
-        .btn-load { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
         .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
@@ -151,10 +161,18 @@
         #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         body.preview-mode #floating-edit-btn { display: block; }
 
+        .qr-page-content { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .qr-title { font-size: 18px; font-weight: 900; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; }
+        .qr-flex-row { display: flex; align-items: center; gap: 30px; border: 1px solid #eee; padding: 25px; border-radius: 12px; }
+        .payment-details { text-align: left; font-size: 13px; line-height: 1.6; }
+        .pay-total { font-size: 24px; font-weight: 900; color: #000; margin-top: 15px; border-top: 2px solid #000; padding-top: 10px; }
+
         @media print {
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
-            .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
+            .preview-scroll-wrapper { overflow: visible !important; }
+            .a4-page { margin: 0 auto; box-shadow: none; border: none !important; width: 210mm; height: 297mm; }
+            .sig-canvas-container { border: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -190,8 +208,8 @@
         <h2>⚙️ RS2 Nastavenia</h2>
         
         <div class="section-title">Cloudový archív</div>
-        <button class="btn-archive-save" onclick="saveToCloud()">💾 Uložiť do archívu</button>
-        <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
+        <button class="btn-archive-save" onclick="saveToCloud()">💾 ULOŽIŤ DO ARCHÍVU</button>
+        <button class="btn-archive-view" onclick="openArchive()">📂 OTVORIŤ ARCHÍV</button>
         <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
 
         <div class="section-title">Základné údaje</div>
@@ -213,14 +231,14 @@
             </div>
         </div>
 
-        <div class="form-group"><label>VS (Číslo faktúry)</label><input type="text" id="inp-invoice" oninput="render()"></div>
+        <div class="form-group"><label>VS (ČÍSLO FAKTÚRY)</label><input type="text" id="inp-invoice" oninput="render()"></div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>Číslo správy</label>
+                <label>ČÍSLO SPRÁVY</label>
                 <input type="text" id="inp-no" oninput="render()">
             </div>
-            <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date" onchange="render()"></div>
+            <div class="form-group"><label>DÁTUM VÝKONU</label><input type="date" id="inp-date" onchange="render()"></div>
         </div>
 
         <div class="section-title">Údaje Prevádzkovateľa</div>
@@ -237,23 +255,23 @@
         
         <div class="section-title">Technické zariadenie</div>
         <div class="form-row">
-            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev" oninput="render()"></div>
-            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
+            <div class="form-group"><label>TYP</label><input type="text" id="inp-dev" oninput="render()"></div>
+            <div class="form-group"><label>VÝROBCA</label><input type="text" id="inp-manuf" oninput="render()"></div>
         </div>
         <div class="form-row">
             <div class="form-group"><label>S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
-            <div class="form-group"><label>Rok</label><input type="text" id="inp-year" oninput="render()"></div>
+            <div class="form-group"><label>ROK VÝROBY</label><input type="text" id="inp-year" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
-            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" oninput="render()"></div>
+            <div class="form-group"><label>VÝKON (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
+            <div class="form-group"><label>PALIVO</label><input type="text" id="inp-fuel" oninput="render()"></div>
         </div>
 
         <div class="section-title">Výsledok</div>
-        <div class="form-group"><label>Nedostatky</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
-        <div class="form-group"><label>Umiestnenie / Poznámka</label><textarea id="inp-location-note" rows="2" oninput="render()"></textarea></div>
+        <div class="form-group"><label>NEDOSTATKY</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
+        <div class="form-group"><label>UMIESTNENIE / POZNÁMKA</label><textarea id="inp-location-note" rows="2" oninput="render()"></textarea></div>
         <div class="form-group">
-            <label>Hodnotenie</label>
+            <label>HODNOTENIE</label>
             <select id="inp-status" onchange="render()">
                 <option value="ok">✅ SPÔSOBILÉ</option>
                 <option value="fail">❌ NESPÔSOBILÉ</option>
@@ -261,11 +279,11 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-share" onclick="shareAsPDF()">📤 Zdieľať PDF</button>
+            <button class="btn-share" onclick="shareAsPDF()">📤 ZDIEĽAŤ PDF</button>
             <button class="btn-new" onclick="startNewReport()">🗑️ NOVÁ SPRÁVA</button>
-            <button class="btn-reset-counter" onclick="resetCounter()">🔄 Vynulovať počítadlo</button>
+            <button class="btn-reset-counter" onclick="resetCounter()">🔄 VYNULOVAŤ POČÍTADLO</button>
             <div class="btn-row">
-                <button class="btn-preview" onclick="togglePreviewMode()">👁️ Náhľad</button>
+                <button class="btn-preview" onclick="togglePreviewMode()">👁️ NÁHĽAD</button>
                 <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
             </div>
         </div>
@@ -327,12 +345,11 @@
                 </div>
 
                 <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
-                <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
+                <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:20px;" id="out-location-note">—</div>
 
-                <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-                <div class="conclusion-text" id="out-conclusion">—</div>
-                
-                <div class="footer-area">
+                <div class="pdf-footer-block">
+                    <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
+                    <div class="conclusion-text" id="out-conclusion">—</div>
                     <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
                         <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
@@ -356,10 +373,10 @@
                     <div class="qr-flex-row">
                         <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
                         <div class="payment-details">
-                            <div class="pay-row"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
-                            <div class="pay-row"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
-                            <div class="pay-row"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
-                            <div class="pay-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
+                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
+                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
+                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
+                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
                             <div class="pay-total" id="out-pay-amount">—</div>
                         </div>
                     </div>
@@ -369,28 +386,32 @@
     </section>
 </div>
 
-<!-- Firebase Modular SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    /* DÔLEŽITÉ: Tieto premenné fungujú len v tomto prostredí (Canvas).
-       Ak nahrávate súbor na GITHUB, musíte premennú 'firebaseConfig' 
-       nahradiť vašimi údajmi z Firebase konzoly (apiKey, authDomain, atď.).
+    /* TU VLOŽTE ÚDAJE Z FIREBASE KONZOLY 
+       (Nahraďte prázdne úvodzovky údajmi zo svojej Firebase Web App)
     */
+    const myGitHubConfig = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+    };
+
     const firebaseConfig = typeof __firebase_config !== 'undefined' 
         ? JSON.parse(__firebase_config) 
-        : { /* TU VLOŽTE SVOJ KONFIG PRE GITHUB PAGES */ };
+        : (myGitHubConfig.apiKey ? myGitHubConfig : null);
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'vlastny-app-id';
-
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'spektra-install-rs2';
     const statusEl = document.getElementById('cloud-status-text');
 
-    // Ak nie je konfig, upozorníme užívateľa na GitHubu
-    if (!firebaseConfig.apiKey) {
-        statusEl.innerHTML = '<span class="status-error">Chýba Firebase Config ❌</span>';
-        console.warn("RS2: Na GitHube musíte v kóde doplniť firebaseConfig.");
+    if (!firebaseConfig) {
+        statusEl.innerHTML = '<span class="status-error">GitHub: Chýba Firebase Config ❌<br><small style="font-size:8.5px">Vložte API kľúče do kódu pre archív</small></span>';
     } else {
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -405,22 +426,17 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Cloud Error", e);
-                statusEl.innerHTML = '<span class="status-error">Chyba pripojenia ❌</span>';
+                statusEl.innerHTML = '<span class="status-error">Cloud: Chyba pripojenia ❌</span>';
             }
         };
         initAuth();
 
         onAuthStateChanged(auth, (u) => {
             user = u;
-            if (user) {
-                statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
-            } else {
-                statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
-            }
+            if (user) statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
+            else statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
         });
 
-        // GLOBÁLNE FUNKCIE PRE TLAČIDLÁ
         window.saveToCloud = async () => {
             if (!user) return alert("Počkajte na pripojenie k cloudu.");
             const reportNo = document.getElementById('inp-no').value;
@@ -459,10 +475,9 @@
             };
 
             try {
-                const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
-                await setDoc(docPath, data);
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId), data);
                 const toast = document.getElementById('save-toast');
-                toast.textContent = "Archivované ✅"; toast.style.opacity = "1";
+                toast.textContent = "Uložené do cloudu ✅"; toast.style.opacity = "1";
                 setTimeout(() => toast.style.opacity = "0", 2000);
             } catch (e) { alert("Chyba pri ukladaní."); }
         };
@@ -471,14 +486,14 @@
             if (!user) return;
             document.getElementById('archive-modal').style.display = 'flex';
             const container = document.getElementById('archive-list-container');
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam...</div>';
+            container.innerHTML = '🔍 Hľadám správy...';
             try {
                 const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
                 const querySnapshot = await getDocs(q);
                 let list = [];
                 querySnapshot.forEach(doc => list.push(doc.data()));
                 list.sort((a,b) => b.timestamp - a.timestamp);
-                if (list.length === 0) { container.innerHTML = '<div style="padding:20px;">Prázdny archív.</div>'; return; }
+                if (list.length === 0) { container.innerHTML = 'Prázdny archív.'; return; }
                 container.innerHTML = '';
                 list.forEach(item => {
                     const div = document.createElement('div');
@@ -493,7 +508,7 @@
             const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const isNew = confirm("Nová revízia pre tohto klienta?");
+                const isNew = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa aktualizujú.)");
                 document.getElementById('inp-scenario').value = data.scenario;
                 document.getElementById('inp-company').value = data.customer.company || "";
                 document.getElementById('inp-name').value = data.customer.name || "";
@@ -545,40 +560,63 @@
         if(!qr) initQR();
         const reportNo = document.getElementById('inp-no').value;
         document.getElementById('out-no').textContent = "Číslo: " + reportNo;
-        const comp = document.getElementById('inp-company').value || "—";
-        const name = document.getElementById('inp-name').value || "—";
-        document.getElementById('out-company').textContent = comp;
-        document.getElementById('out-name').textContent = name;
+        document.getElementById('out-company').textContent = document.getElementById('inp-company').value || "—";
+        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
         document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
-        const tel = document.getElementById('inp-phone').value;
-        const mail = document.getElementById('inp-email').value;
-        document.getElementById('out-contact').textContent = `${tel || ''} ${mail || ''}`;
+        document.getElementById('out-contact').textContent = `${document.getElementById('inp-phone').value || ''} / ${document.getElementById('inp-email').value || ''}`;
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
+        document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
+        document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
+        document.getElementById('out-params').textContent = (document.getElementById('inp-power').value || "") + " kW (" + (document.getElementById('inp-fuel').value || "") + ")";
+        document.getElementById('out-notes-text').textContent = document.getElementById('inp-notes').value || "V čase prehliadky neboli zistené závady.";
+        document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
+        
         const dVal = document.getElementById('inp-date').value;
         if(dVal) {
             const d = new Date(dVal);
             document.getElementById('out-date').textContent = d.toLocaleDateString('sk-SK');
             document.getElementById('out-date-sig').textContent = d.toLocaleDateString('sk-SK');
         }
+
+        const status = document.getElementById('inp-status').value;
+        const statusBox = document.getElementById('out-status-box');
+        const conc = document.getElementById('out-conclusion');
+        if(status === 'ok') {
+            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
+            statusBox.className = "status-box";
+            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle platnej legislatívy a pokynov výrobcu.`;
+        } else {
+            statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
+            statusBox.className = "status-box danger";
+            conc.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky. <strong>OPATRENIA:</strong> Nutné odstrániť zistené závady.`;
+        }
+
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
         qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${(document.getElementById('inp-invoice').value || "").replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = document.getElementById('inp-invoice').value || "—";
+        document.getElementById('out-pay-note').textContent = reportNo;
     }
 
     async function shareAsPDF() {
         const element = document.getElementById('printable-content');
-        const opt = { margin: 0, filename: `RS2_Report.pdf`, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        const reportNo = document.getElementById('inp-no').value;
+        const opt = { 
+            margin: 0, 
+            filename: `Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
+            html2canvas: { scale: 3, useCORS: true, logging: false }, 
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        };
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], "Report.pdf", { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízia' });
+            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa' });
             else window.open(URL.createObjectURL(pdfBlob));
-        } catch (err) { alert("Chyba PDF."); }
+        } catch (err) { alert("Chyba PDF generátora."); }
     }
 
     window.changeScenario = () => {
@@ -618,6 +656,7 @@
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
         document.getElementById('inp-no').value = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
+        document.getElementById('inp-date').valueAsDate = new Date();
         initQR(); changeScenario(); 
     };
 </script>
