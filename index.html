@@ -5,216 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RS2 - Spektra Install</title>
     
-    <!-- FAVICON / IKONA PRE PLOCHU MOBILU (RS2) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RS2 Revízie">
 
-    <!-- Knižnice -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --primary: #D60000;
-            --black: #000000;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --bg-color: #e5e7eb;
-        }
-
+        :root { --primary: #D60000; --black: #000000; --success: #16a34a; --danger: #dc2626; --bg-color: #e5e7eb; }
         body { background-color: var(--bg-color); font-family: 'Roboto', sans-serif; margin: 0; padding: 0; }
         
-        .app-container { 
-            display: grid; 
-            grid-template-columns: 350px 1fr; 
-            gap: 20px; 
-            padding: 20px; 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            align-items: start; 
-        }
-
-        @media (max-width: 1024px) {
-            .app-container { grid-template-columns: 1fr; padding: 10px; }
-            .controls { position: static !important; max-height: none !important; width: 100% !important; }
-        }
+        .app-container { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; align-items: start; }
+        @media (max-width: 1024px) { .app-container { grid-template-columns: 1fr; padding: 10px; } .controls { position: static !important; width: 100% !important; max-height: none !important; } }
 
         .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; z-index: 50; max-height: 95vh; overflow-y: auto; }
         .controls h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 16px; border-bottom: 2px solid #f3f3f3; padding-bottom: 10px; }
-        .form-group { margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .form-group { margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
         .form-row { display: flex; gap: 10px; }
         .form-row .form-group { flex: 1; }
-        
         label { font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; }
         input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; background: #fff; font-family: inherit; }
         
         .section-title { font-size: 11px; font-weight: 800; color: var(--primary); margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #eee; }
+        .btn-main { border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-save { background: #059669; color: white; width: 100%; }
+        .btn-view { background: #4b5563; color: white; width: 100%; margin-top: 5px; }
+        .btn-print { background: var(--primary); color: white; width: 100%; margin-top: 10px; }
+        .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; margin-top: 5px; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .btn-row { display: flex; gap: 10px; }
-        .btn-print, .btn-preview, .btn-share, .btn-new { 
-            border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-print { flex: 1; background: var(--primary); color: white; }
-        .btn-preview { flex: 1; background: #374151; color: white; }
-        .btn-share { background: #2563eb; color: white; width: 100%; }
-        .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
-        
-        .btn-archive-save { background: #059669; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; }
-        .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
-        .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
-
-        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; line-height: 1.4; }
+        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; }
         .status-on { color: #16a34a; }
-        .status-off { color: #f59e0b; }
-        .status-error { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+        .status-error { color: #dc2626; background: #fef2f2; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
 
-        /* A4 Page Setup */
-        .a4-page { 
-            width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; 
-            page-break-after: always;
-        }
-
-        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .a4-page { width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; page-break-after: always; }
+        .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
         .brand h1 span { color: var(--primary); }
         .brand .sub { font-size: 8px; color: #444; margin-top: 2px; line-height: 1.3; }
-        .report-meta { text-align: right; max-width: 65%; }
-        
-        .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
-        .report-no { font-size: 11px; margin-top: 6px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
+        .report-meta { text-align: right; }
+        .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; }
+        .report-no { font-size: 11px; margin-top: 5px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
 
         .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
-        .box-title { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
+        .box-title { font-size: 11px; font-weight: 900; text-transform: uppercase; border-bottom: 1px solid #eee; margin-bottom: 4px; }
         .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; }
-        .row-item span { color: #555; }
-
-        .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; }
+        .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); }
 
         .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9px; }
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 900; }
 
-        .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 125px; }
+        .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 115px; }
         .vtz-box { flex: 1; border: 1px solid #ddd; padding: 6px; font-size: 9px; display: flex; flex-direction: column; justify-content: space-around; }
-        .vtz-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
-        .vtz-label { color: #666; font-weight: bold; }
-        .vtz-val { font-weight: bold; color: #000; }
 
-        .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; }
-        #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
-
-        .pdf-footer-block {
-            margin-top: auto;
-            page-break-inside: avoid;
-        }
-        
+        /* PDF FIX: Celý tento blok držte spolu */
+        .pdf-footer-block { margin-top: auto; page-break-inside: avoid; background: white; padding-top: 10px; }
         .conclusion-text { font-size: 11.5px; margin-top: 5px; text-align: justify; line-height: 1.35; color: #000; }
-        
-        .status-box { margin: 6mm auto 6px auto; border: 2px solid var(--success); padding: 7px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        .status-box { margin: 5mm auto 5px auto; border: 2px solid var(--success); padding: 7px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
-
         .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; height: 60px; }
-        .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
+        .sig-box { width: 32%; text-align: center; font-size: 9px; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
-        
-        .sig-canvas-container { width: 100%; height: 45px; border: 1px dashed #D60000; cursor: pointer; background: #fffafa; margin-bottom: 2px; }
+        .sig-canvas-container { width: 100%; height: 45px; border: 1px dashed #eee; background: #fffafa; cursor: pointer; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
+        .tech-sig-img { width: 42mm !important; height: auto !important; margin: 0 auto -10mm auto; position: relative; z-index: 10; pointer-events: none; }
+
+        #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; }
+        .archive-content { background: white; width: 100%; max-width: 600px; max-height: 85vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .archive-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-weight: bold; }
+        .archive-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .archive-item { padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
         
-        .tech-sig-img { 
-            width: 42mm !important; 
-            height: auto !important; 
-            object-fit: contain; 
-            display: block; 
-            margin: 0 auto -8mm auto; 
-            position: relative; 
-            z-index: 10; 
-            pointer-events: none;
-        }
-
-        #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
-        .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
-        .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
-
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
-        .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
-        .modal-canvas-area { flex-grow: 1; touch-action: none; background: #fff; }
-        #full-screen-canvas { width: 100%; height: 100%; }
-        .modal-footer { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        .btn-modal { flex: 1; padding: 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
-
-        body.preview-mode .controls { display: none; }
-        body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
-        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #full-screen-canvas { flex-grow: 1; touch-action: none; background: #fff; cursor: crosshair; }
+        
+        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; }
         body.preview-mode #floating-edit-btn { display: block; }
+        body.preview-mode .controls { display: none; }
 
-        .qr-page-content { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .qr-title { font-size: 18px; font-weight: 900; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; }
-        .qr-flex-row { display: flex; align-items: center; gap: 30px; border: 1px solid #eee; padding: 25px; border-radius: 12px; }
-        .payment-details { text-align: left; font-size: 13px; line-height: 1.6; }
-        .pay-total { font-size: 24px; font-weight: 900; color: #000; margin-top: 15px; border-top: 2px solid #000; padding-top: 10px; }
-
-        @media print {
-            .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
-            .preview-container { transform: none !important; margin: 0 !important; }
-            .preview-scroll-wrapper { overflow: visible !important; }
-            .a4-page { margin: 0 auto; box-shadow: none; border: none !important; width: 210mm; height: 297mm; }
-            .sig-canvas-container { border: none !important; }
-            @page { size: A4; margin: 0; }
-        }
+        @media print { .controls, #drawing-modal, #floating-edit-btn, #archive-modal { display: none !important; } .preview-container { transform: none !important; margin: 0 !important; } .a4-page { box-shadow: none; border: none !important; width: 210mm; height: 297mm; } @page { size: A4; margin: 0; } }
     </style>
 </head>
 <body>
 
-<div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
-<button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
+<div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 25px; border-radius:50px; opacity:0; transition:0.3s; z-index:10001; font-weight:bold; pointer-events:none">Uložené ✅</div>
+<button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ SPÄŤ NA ÚPRAVY</button>
 
 <div id="archive-modal">
     <div class="archive-content">
-        <div class="archive-header">
-            <h2 style="margin:0">📚 Archív revízií</h2>
-            <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
-        </div>
-        <div class="archive-list" id="archive-list-container">
-            <div style="text-align:center; padding:20px; color:#666;">Načítavam zoznam správ...</div>
-        </div>
+        <div class="archive-header"><span>📚 Archív revízií</span><button onclick="closeArchive()" style="border:none; background:none; font-size:24px">&times;</button></div>
+        <div class="archive-list" id="archive-list-container"></div>
     </div>
 </div>
 
 <div id="drawing-modal">
-    <div class="modal-header"><span>✍️ Podpis zákazníka</span><button onclick="closeModal()" style="font-size:32px; border:none; background:none;">&times;</button></div>
-    <div class="modal-canvas-area"><canvas id="full-screen-canvas"></canvas></div>
-    <div class="modal-footer">
-        <button class="btn-modal" style="background:#fee2e2; color:#b91c1c;" onclick="clearFullCanvas()">Vymazať</button>
-        <button class="btn-modal" style="background:var(--success); color:white" onclick="saveDrawing()">✅ Uložiť</button>
+    <div style="padding:15px; display:flex; justify-content:space-between; border-bottom:1px solid #eee"><strong>✍️ Podpis zákazníka</strong><button onclick="closeModal()">Zatvoriť</button></div>
+    <canvas id="full-screen-canvas"></canvas>
+    <div style="padding:15px; display:flex; gap:10px; border-top:1px solid #eee">
+        <button onclick="clearFullCanvas()" style="flex:1; padding:15px; background:#fee2e2; border:none; border-radius:8px">Vymazať</button>
+        <button onclick="saveDrawing()" style="flex:1; padding:15px; background:#16a34a; color:white; border:none; border-radius:8px; font-weight:bold">ULOŽIŤ PODPIS</button>
     </div>
 </div>
 
 <div class="app-container">
     <section class="controls">
         <h2>⚙️ RS2 Nastavenia</h2>
-        
-        <div class="section-title">Cloudový archív</div>
-        <button class="btn-archive-save" onclick="saveToCloud()">💾 ULOŽIŤ DO ARCHÍVU</button>
-        <button class="btn-archive-view" onclick="openArchive()">📂 OTVORIŤ ARCHÍV</button>
-        <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
+        <div class="section-title">Archív (Cloud)</div>
+        <button class="btn-main btn-save" onclick="saveToCloud()">💾 ULOŽIŤ DO CLOUDU</button>
+        <button class="btn-main btn-view" onclick="openArchive()">📂 OTVORIŤ ARCHÍV</button>
+        <div class="cloud-status" id="cloud-status-text">Pripájanie...</div>
 
         <div class="section-title">Základné údaje</div>
-        <div class="form-group">
-            <label>KATEGÓRIA</label>
+        <div class="form-group"><label>Kategória</label>
             <select id="inp-scenario" onchange="changeScenario()">
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
                 <option value="pellet">🪵 PELETOVÝ KOTOL (Biomasa)</option>
@@ -222,71 +131,31 @@
                 <option value="rozvod">🌐 ROZVOD PLYNU (Skupina Bg)</option>
             </select>
         </div>
-
-        <div class="form-group" style="background:#f0f9ff; padding:10px; border-radius:6px;">
-            <label><input type="checkbox" id="inp-vat-payer" onchange="render()" style="width:auto;"> Platca DPH (23 %)</label>
-            <div style="margin-top:5px;">
-                <label>Cena (€)</label>
-                <input type="number" id="inp-price" value="80" oninput="render()">
-            </div>
+        <div class="form-row">
+            <div class="form-group"><label>Číslo správy</label><input type="text" id="inp-no" oninput="render()"></div>
+            <div class="form-group"><label>Dátum</label><input type="date" id="inp-date" onchange="render()"></div>
         </div>
 
-        <div class="form-group"><label>VS (ČÍSLO FAKTÚRY)</label><input type="text" id="inp-invoice" oninput="render()"></div>
+        <div class="section-title">Prevádzkovateľ</div>
+        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma / Meno" oninput="render()"></div>
+        <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica" oninput="render()"></div>
+        <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto" oninput="render()"></div>
 
+        <div class="section-title">Zariadenie</div>
         <div class="form-row">
-            <div class="form-group">
-                <label>ČÍSLO SPRÁVY</label>
-                <input type="text" id="inp-no" oninput="render()">
-            </div>
-            <div class="form-group"><label>DÁTUM VÝKONU</label><input type="date" id="inp-date" onchange="render()"></div>
-        </div>
-
-        <div class="section-title">Údaje Prevádzkovateľa</div>
-        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma / Názov" oninput="render()"></div>
-        <div class="form-group"><input type="text" id="inp-name" placeholder="Meno a priezvisko" oninput="render()"></div>
-        <div class="form-row">
-            <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica" oninput="render()"></div>
-            <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto / PSČ" oninput="render()"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><input type="text" id="inp-phone" placeholder="Telefón" oninput="render()"></div>
-            <div class="form-group"><input type="text" id="inp-email" placeholder="Email" oninput="render()"></div>
+            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev" oninput="render()"></div>
+            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
         </div>
         
-        <div class="section-title">Technické zariadenie</div>
-        <div class="form-row">
-            <div class="form-group"><label>TYP</label><input type="text" id="inp-dev" oninput="render()"></div>
-            <div class="form-group"><label>VÝROBCA</label><input type="text" id="inp-manuf" oninput="render()"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
-            <div class="form-group"><label>ROK VÝROBY</label><input type="text" id="inp-year" oninput="render()"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>VÝKON (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
-            <div class="form-group"><label>PALIVO</label><input type="text" id="inp-fuel" oninput="render()"></div>
+        <div class="form-group" style="background:#f0f9ff; padding:10px; border-radius:8px; margin-top:10px">
+            <label><input type="checkbox" id="inp-vat-payer" onchange="render()" style="width:auto"> Platca DPH (23 %)</label>
+            <div style="margin-top:5px"><label>Cena (€)</label><input type="number" id="inp-price" value="80" oninput="render()"></div>
+            <div style="margin-top:5px"><label>VS (Faktúra)</label><input type="text" id="inp-invoice" oninput="render()"></div>
         </div>
 
-        <div class="section-title">Výsledok</div>
-        <div class="form-group"><label>NEDOSTATKY</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
-        <div class="form-group"><label>UMIESTNENIE / POZNÁMKA</label><textarea id="inp-location-note" rows="2" oninput="render()"></textarea></div>
-        <div class="form-group">
-            <label>HODNOTENIE</label>
-            <select id="inp-status" onchange="render()">
-                <option value="ok">✅ SPÔSOBILÉ</option>
-                <option value="fail">❌ NESPÔSOBILÉ</option>
-            </select>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn-share" onclick="shareAsPDF()">📤 ZDIEĽAŤ PDF</button>
-            <button class="btn-new" onclick="startNewReport()">🗑️ NOVÁ SPRÁVA</button>
-            <button class="btn-reset-counter" onclick="resetCounter()">🔄 VYNULOVAŤ POČÍTADLO</button>
-            <div class="btn-row">
-                <button class="btn-preview" onclick="togglePreviewMode()">👁️ NÁHĽAD</button>
-                <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
-            </div>
-        </div>
+        <button class="btn-main btn-print" onclick="window.print()">📄 TLAČIŤ / PDF</button>
+        <button class="btn-main btn-preview" onclick="togglePreviewMode()">👁️ NÁHĽAD</button>
+        <button class="btn-main btn-new" onclick="startNewReport()">🗑️ NOVÁ SPRÁVA</button>
     </section>
 
     <section class="preview-scroll-wrapper">
@@ -295,90 +164,55 @@
                 <div class="header">
                     <div class="brand">
                         <h1>SPEKTRA <span>INSTALL</span></h1>
-                        <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
+                        <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
                     </div>
                     <div class="report-meta">
-                        <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
+                        <div class="report-type" id="out-title">SPRÁVA O PREHLIADKE</div>
                         <div class="report-no" id="out-no">Číslo: -</div>
                     </div>
                 </div>
 
                 <div class="info-grid">
-                    <div class="box">
-                        <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
-                        <div class="row-item"><span>Názov:</span> <strong id="out-company">—</strong></div>
-                        <div class="row-item"><span>Meno:</span> <strong id="out-name">—</strong></div>
-                        <div class="row-item"><span>Ulica:</span> <strong id="out-street">—</strong></div>
-                        <div class="row-item"><span>Mesto:</span> <strong id="out-city">—</strong></div>
-                        <div class="row-item"><span>Kontakt:</span> <strong id="out-contact">—</strong></div>
-                    </div>
-                    <div class="box">
-                        <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
-                        <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                        <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
-                        <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
-                        <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
-                    </div>
+                    <div class="box"><div class="box-title">PREVÁDZKOVATEĽ</div><div id="out-company">...</div><div id="out-address">...</div></div>
+                    <div class="box"><div class="box-title">TECHNIK</div><strong>Pavol Pastorek</strong><br>013-IZA/2017 PZ RT<br><span id="out-date">...</span></div>
                 </div>
 
                 <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
-                <table class="data-table">
-                    <thead><tr><th>Predmet kontroly</th><th>Predpísané</th><th>Namerané</th><th>Výsledok</th></tr></thead>
-                    <tbody id="out-table-body"></tbody>
-                </table>
+                <table class="data-table"><thead><tr><th>Predmet kontroly</th><th>Predpísané</th><th>Namerané</th><th>Výsledok</th></tr></thead><tbody id="out-table-body"></tbody></table>
 
-                <div class="section-header">2. ZARIADENIE A NEDOSTATKY <span class="header-note" id="out-notes-text">Bez závad.</span></div>
+                <div class="section-header">2. ÚDAJE O ZARIADENÍ</div>
                 <div class="section-2-container">
                     <div class="vtz-box">
-                        <div class="vtz-row"><span class="vtz-label">Typ:</span> <span class="vtz-val" id="out-dev">—</span></div>
-                        <div class="vtz-row"><span class="vtz-label">Výrobca:</span> <span class="vtz-val" id="out-manuf">—</span></div>
-                        <div class="vtz-row"><span class="vtz-label">S/N:</span> <span class="vtz-val" id="out-sn">—</span></div>
-                        <div class="vtz-row"><span class="vtz-label">Rok:</span> <span class="vtz-val" id="out-year">—</span></div>
-                        <div class="vtz-row"><span class="vtz-label">Parametre:</span> <span class="vtz-val" id="out-params">—</span></div>
-                        <div class="vtz-row"><span class="vtz-label">Skupina:</span> <span class="vtz-val" id="out-group">—</span></div>
+                        <div style="display:flex; justify-content:space-between"><span>Typ:</span><strong id="out-dev">...</strong></div>
+                        <div style="display:flex; justify-content:space-between"><span>Výrobca:</span><strong id="out-manuf">...</strong></div>
                     </div>
                     <div class="notes-photo-container">
                         <img id="device-photo-preview" alt="Foto">
-                        <button class="btn-reset" style="position:absolute; bottom:5px; padding:5px; font-size:10px;" onclick="document.getElementById('photo-upload').click()">+ FOTO</button>
+                        <button style="position:absolute; bottom:5px; font-size:9px" onclick="document.getElementById('photo-upload').click()">+ FOTO</button>
                         <input type="file" id="photo-upload" style="display:none" accept="image/*" onchange="loadPhoto(event)">
                     </div>
                 </div>
 
-                <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
-                <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:20px;" id="out-location-note">—</div>
-
                 <div class="pdf-footer-block">
-                    <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-                    <div class="conclusion-text" id="out-conclusion">—</div>
+                    <div class="section-header">3. CELKOVÝ ZÁVER</div>
+                    <div class="conclusion-text" id="out-conclusion">...</div>
                     <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
-                        <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
-                        <div class="sig-box">
-                            <div class="sig-canvas-container" onclick="openModal()"><canvas id="preview-sig-canvas"></canvas></div>
-                            <div class="sig-line">Podpis prevádzkovateľa</div>
-                        </div>
-                        <div class="sig-box">
-                            <img src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'">
-                            <div class="sig-line">Revízny technik</div>
-                        </div>
+                        <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">...</span></div></div>
+                        <div class="sig-box"><div class="sig-canvas-container" onclick="openModal()"><canvas id="preview-sig-canvas"></canvas></div><div class="sig-line">Podpis zákazníka</div></div>
+                        <div class="sig-box"><img src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'"><div class="sig-line">Revízny technik</div></div>
                     </div>
                 </div>
             </div>
 
-            <!-- STRANA 2: PLATBA -->
             <div class="a4-page">
-                <div class="header"><div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div></div>
                 <div class="qr-page-content">
-                    <div class="qr-title">PODKLADY PRE PLATBU</div>
-                    <div class="qr-flex-row">
-                        <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
-                        <div class="payment-details">
-                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
-                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
-                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
-                            <div class="pay-row" style="display:flex; justify-content:space-between; width:100%; border-bottom:1px solid #eee; padding:5px 0;"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
-                            <div class="pay-total" id="out-pay-amount">—</div>
-                        </div>
+                    <div style="font-weight:900; color:var(--primary); margin-bottom:20px">PODKLADY PRE PLATBU</div>
+                    <canvas id="qr-canvas" style="border:1px solid #eee; padding:10px"></canvas>
+                    <div style="margin-top:20px; text-align:left; width:100%; max-width:400px">
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px 0"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px 0"><span>VS:</span><strong id="out-pay-vs">...</strong></div>
+                        <div class="pay-total" id="out-pay-amount">... €</div>
                     </div>
                 </div>
             </div>
@@ -388,277 +222,136 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    /* TU VLOŽTE ÚDAJE Z FIREBASE KONZOLY 
-       (Nahraďte prázdne úvodzovky údajmi zo svojej Firebase Web App)
-    */
-    const myGitHubConfig = {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: ""
+    /* FIREBASE CONFIG - ÚDAJE Z OBRÁZKA image_89a827.png */
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
+        authDomain: "rs2-spektra.firebaseapp.com",
+        projectId: "rs2-spektra",
+        storageBucket: "rs2-spektra.firebasestorage.app",
+        messagingSenderId: "290233159590",
+        appId: "1:290233159590:web:f9b4df2b79623a8299c967"
     };
 
-    const firebaseConfig = typeof __firebase_config !== 'undefined' 
-        ? JSON.parse(__firebase_config) 
-        : (myGitHubConfig.apiKey ? myGitHubConfig : null);
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'spektra-install-rs2';
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let user = null;
     const statusEl = document.getElementById('cloud-status-text');
 
-    if (!firebaseConfig) {
-        statusEl.innerHTML = '<span class="status-error">GitHub: Chýba Firebase Config ❌<br><small style="font-size:8.5px">Vložte API kľúče do kódu pre archív</small></span>';
-    } else {
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        let user = null;
+    signInAnonymously(auth);
+    onAuthStateChanged(auth, u => {
+        user = u;
+        if (user) statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
+        else statusEl.innerHTML = 'Čakám na spojenie...';
+    });
 
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) {
-                statusEl.innerHTML = '<span class="status-error">Cloud: Chyba pripojenia ❌</span>';
-            }
+    window.saveToCloud = async () => {
+        if (!user) return alert("Cloud nie je pripojený!");
+        const id = document.getElementById('inp-no').value.replace(/\//g, '-');
+        if (!id) return alert("Zadajte číslo správy!");
+        const data = {
+            no: document.getElementById('inp-no').value,
+            date: document.getElementById('inp-date').value,
+            company: document.getElementById('inp-company').value,
+            customer: { street: document.getElementById('inp-street').value, city: document.getElementById('inp-city').value },
+            device: { dev: document.getElementById('inp-dev').value, manuf: document.getElementById('inp-manuf').value },
+            payment: { price: document.getElementById('inp-price').value, vat: document.getElementById('inp-vat-payer').checked, invoice: document.getElementById('inp-invoice').value },
+            timestamp: Date.now()
         };
-        initAuth();
+        try {
+            await setDoc(doc(db, 'artifacts', 'spektra-install', 'users', user.uid, 'inspections', id), data);
+            showToast("Uložené do cloudu ✅");
+        } catch (e) { alert("Chyba! Skontrolujte 'Rules' vo Firebase Firestore."); }
+    };
 
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (user) statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
-            else statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
+    window.openArchive = async () => {
+        if (!user) return;
+        document.getElementById('archive-modal').style.display = 'flex';
+        const cont = document.getElementById('archive-list-container');
+        cont.innerHTML = '🔍 Hľadám správy...';
+        const snap = await getDocs(query(collection(db, 'artifacts', 'spektra-install', 'users', user.uid, 'inspections')));
+        cont.innerHTML = '';
+        snap.forEach(d => {
+            const item = d.data();
+            const div = document.createElement('div');
+            div.className = 'archive-item';
+            div.innerHTML = `<strong>${item.no}</strong> - ${item.company || 'Bez mena'}`;
+            div.onclick = () => loadFromCloud(item);
+            cont.appendChild(div);
         });
+    };
 
-        window.saveToCloud = async () => {
-            if (!user) return alert("Počkajte na pripojenie k cloudu.");
-            const reportNo = document.getElementById('inp-no').value;
-            if (!reportNo) return alert("Zadajte číslo správy.");
-
-            const docId = reportNo.replace(/\//g, '-');
-            const data = {
-                id: docId, reportNo,
-                date: document.getElementById('inp-date').value,
-                scenario: document.getElementById('inp-scenario').value,
-                customer: {
-                    company: document.getElementById('inp-company').value,
-                    name: document.getElementById('inp-name').value,
-                    street: document.getElementById('inp-street').value,
-                    city: document.getElementById('inp-city').value,
-                    phone: document.getElementById('inp-phone').value,
-                    email: document.getElementById('inp-email').value,
-                },
-                device: {
-                    dev: document.getElementById('inp-dev').value,
-                    manuf: document.getElementById('inp-manuf').value,
-                    sn: document.getElementById('inp-sn').value,
-                    year: document.getElementById('inp-year').value,
-                    power: document.getElementById('inp-power').value,
-                    fuel: document.getElementById('inp-fuel').value,
-                },
-                result: {
-                    notes: document.getElementById('inp-notes').value,
-                    locationNote: document.getElementById('inp-location-note').value,
-                    status: document.getElementById('inp-status').value,
-                    price: document.getElementById('inp-price').value,
-                    vat: document.getElementById('inp-vat-payer').checked,
-                    invoice: document.getElementById('inp-invoice').value
-                },
-                timestamp: Date.now()
-            };
-
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId), data);
-                const toast = document.getElementById('save-toast');
-                toast.textContent = "Uložené do cloudu ✅"; toast.style.opacity = "1";
-                setTimeout(() => toast.style.opacity = "0", 2000);
-            } catch (e) { alert("Chyba pri ukladaní."); }
-        };
-
-        window.openArchive = async () => {
-            if (!user) return;
-            document.getElementById('archive-modal').style.display = 'flex';
-            const container = document.getElementById('archive-list-container');
-            container.innerHTML = '🔍 Hľadám správy...';
-            try {
-                const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
-                const querySnapshot = await getDocs(q);
-                let list = [];
-                querySnapshot.forEach(doc => list.push(doc.data()));
-                list.sort((a,b) => b.timestamp - a.timestamp);
-                if (list.length === 0) { container.innerHTML = 'Prázdny archív.'; return; }
-                container.innerHTML = '';
-                list.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'archive-item';
-                    div.innerHTML = `<div class="archive-info" onclick="loadFromCloud('${item.id}')"><span class="archive-no">${item.reportNo}</span><span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span><span class="archive-date">${item.date || '---'}</span></div>`;
-                    container.appendChild(div);
-                });
-            } catch (e) { container.innerHTML = 'Chyba načítania.'; }
-        };
-
-        window.loadFromCloud = async (docId) => {
-            const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const isNew = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa aktualizujú.)");
-                document.getElementById('inp-scenario').value = data.scenario;
-                document.getElementById('inp-company').value = data.customer.company || "";
-                document.getElementById('inp-name').value = data.customer.name || "";
-                document.getElementById('inp-street').value = data.customer.street || "";
-                document.getElementById('inp-city').value = data.customer.city || "";
-                document.getElementById('inp-phone').value = data.customer.phone || "";
-                document.getElementById('inp-email').value = data.customer.email || "";
-                document.getElementById('inp-dev').value = data.device.dev || "";
-                document.getElementById('inp-manuf').value = data.device.manuf || "";
-                document.getElementById('inp-sn').value = data.device.sn || "";
-                document.getElementById('inp-year').value = data.device.year || "";
-                document.getElementById('inp-power').value = data.device.power || "";
-                document.getElementById('inp-fuel').value = data.device.fuel || "";
-                document.getElementById('inp-price').value = data.result.price || 80;
-                document.getElementById('inp-vat-payer').checked = data.result.vat || false;
-                if (isNew) {
-                    document.getElementById('inp-date').valueAsDate = new Date();
-                    document.getElementById('inp-notes').value = "";
-                    let c = localStorage.getItem('rev_c_v5') || 0;
-                    c++; localStorage.setItem('rev_c_v5', c);
-                    const year = new Date().getFullYear();
-                    document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
-                } else {
-                    document.getElementById('inp-date').value = data.date;
-                    document.getElementById('inp-no').value = data.reportNo;
-                    document.getElementById('inp-notes').value = data.result.notes || "";
-                }
-                window.changeScenario(); window.closeArchive();
-            }
-        };
-    }
+    const loadFromCloud = (item) => {
+        document.getElementById('inp-no').value = item.no;
+        document.getElementById('inp-date').value = item.date;
+        document.getElementById('inp-company').value = item.company || "";
+        document.getElementById('inp-street').value = item.customer?.street || "";
+        document.getElementById('inp-city').value = item.customer?.city || "";
+        document.getElementById('inp-dev').value = item.device?.dev || "";
+        document.getElementById('inp-manuf').value = item.device?.manuf || "";
+        document.getElementById('inp-price').value = item.payment?.price || 80;
+        document.getElementById('inp-vat-payer').checked = item.payment?.vat || false;
+        document.getElementById('inp-invoice').value = item.payment?.invoice || "";
+        render(); closeArchive();
+    };
 </script>
 
 <script>
     let qr;
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
-
     const SCENARIOS = {
-        plyn: { title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bh (do 0,5 MW)", rows: [["Tlak plynu na vstupe (HUP)", "1.8 - 2.5 kPa", "2.1 kPa"], ["Tesnosť spojov (detektor)", "0 ppm", "0 ppm"], ["Koncentrácia CO v spalinách", "< 100 ppm", "14 ppm"], ["Ťah komína / Teplota spalín", "min. 3 Pa", "12 Pa"], ["Funkcia blokovacích prvkov", "vypnutie < 1s", "0.5 s"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Vizuálna kontrola umiestnenia", "TPP 704 01", "Bez závad"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška termostatu / regulácie", "Plynulá", "OK"], ["Kontrola horáka a výmenníka", "Čisté", "Vyhovuje"]] },
-        pellet: { title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY", law: "STN EN 303-5", group: "Biomasa", rows: [["Vizuálna kontrola telesa", "Čisté", "Vyhovuje"], ["Funkčnosť podávača", "Plynulá", "OK"], ["Tesnosť spaľovacej komory", "Bez úniku", "OK"], ["Ťah komína", "10-20 Pa", "15 Pa"], ["Teplota spalín", "100-180 °C", "145 °C"], ["Obsah CO v spalinách", "V norme", "120 ppm"], ["Obsah O2", "6 - 10 %", "8.2 %"], ["Účinnosť spaľovania", "> 85 %", "91.5 %"], ["Kontrola ventilátora", "Tichý chod", "OK"], ["Funkcia bezp. klapky", "Funkčná", "Vyhovuje"]] },
-        tc: { title: "SPRÁVA O KONTROLE TEPELNÉHO ČERPADLA", law: "Zákon č. 286/2009 Z.z.", group: "F-plyny", rows: [["Kontrola úniku (Detektor)", "Bez úniku", "OK"], ["Vizuálna kontrola okruhu", "Bez oleja", "Negatívna"], ["Kontrola bezp. prvkov", "Funkčné", "Vyhovuje"], ["Prúd kompresora", "I-nom", "V norme"], ["Tlak chladiva", "Podľa T-ok", "V norme"], ["Funkčná skúška Chlad/Teplo", "Funkčná", "OK"], ["Tlak vo vykurovacej sústave", "> 1.0 bar", "1.5 bar"], ["Kontrola prietoku (flow switch)", "Funkčný", "OK"], ["Čistota vonkajšej jednotky", "Priechodná", "Bez závad"], ["Kontrola el. spojov", "Pevné", "OK"]] },
-        rozvod: { title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bg", rows: [["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"], ["Kontrola upevnenia potrubia", "Pevné", "OK"], ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"], ["Stav protikoróznej ochrany", "Bez korózie", "OK"], ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"], ["Kontrola označenia potrubia", "Jasné", "OK"], ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"], ["Ochrana pred mech. poškodením", "Dostatočná", "OK"], ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"], ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]] }
+        plyn: { title: "SPRÁVA O PREHLIADKE PLYNOVÉHO ZARIADENIA", rows: [["Tlak plynu", "2.1 kPa", "OK"], ["Tesnosť spojov", "0 ppm", "OK"], ["CO v spalinách", "V norme", "OK"]] },
+        pellet: { title: "SPRÁVA O PREHLIADKE KOTLA NA PELETY", rows: [["Ťah komína", "15 Pa", "OK"], ["Teplota spalín", "145°C", "OK"]] },
+        tc: { title: "KONTROLA TEPELNÉHO ČERPADLA", rows: [["Únik chladiva", "Bez úniku", "Negatívny"]] },
+        rozvod: { title: "PREHLIADKA PLYNOVÉHO ROZVODU", rows: [["Tesnosť", "0 ppm", "OK"]] }
     };
 
-    function initQR() { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' }); }
-
     function render() {
-        if(!qr) initQR();
-        const reportNo = document.getElementById('inp-no').value;
-        document.getElementById('out-no').textContent = "Číslo: " + reportNo;
+        if(!qr) qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' });
+        document.getElementById('out-no').textContent = "Číslo: " + document.getElementById('inp-no').value;
         document.getElementById('out-company').textContent = document.getElementById('inp-company').value || "—";
-        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
-        document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
-        document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
-        document.getElementById('out-contact').textContent = `${document.getElementById('inp-phone').value || ''} / ${document.getElementById('inp-email').value || ''}`;
+        document.getElementById('out-address').textContent = `${document.getElementById('inp-street').value || ''}, ${document.getElementById('inp-city').value || ''}`;
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
-        document.getElementById('out-sn').textContent = document.getElementById('inp-sn').value || "—";
-        document.getElementById('out-year').textContent = document.getElementById('inp-year').value || "—";
-        document.getElementById('out-params').textContent = (document.getElementById('inp-power').value || "") + " kW (" + (document.getElementById('inp-fuel').value || "") + ")";
-        document.getElementById('out-notes-text').textContent = document.getElementById('inp-notes').value || "V čase prehliadky neboli zistené závady.";
-        document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
-        
-        const dVal = document.getElementById('inp-date').value;
-        if(dVal) {
-            const d = new Date(dVal);
-            document.getElementById('out-date').textContent = d.toLocaleDateString('sk-SK');
-            document.getElementById('out-date-sig').textContent = d.toLocaleDateString('sk-SK');
-        }
-
-        const status = document.getElementById('inp-status').value;
-        const statusBox = document.getElementById('out-status-box');
-        const conc = document.getElementById('out-conclusion');
-        if(status === 'ok') {
-            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
-            statusBox.className = "status-box";
-            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle platnej legislatívy a pokynov výrobcu.`;
-        } else {
-            statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
-            statusBox.className = "status-box danger";
-            conc.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky. <strong>OPATRENIA:</strong> Nutné odstrániť zistené závady.`;
-        }
-
-        const vat = document.getElementById('inp-vat-payer').checked;
-        const base = parseFloat(document.getElementById('inp-price').value) || 0;
-        const total = vat ? base * 1.23 : base;
-        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${(document.getElementById('inp-invoice').value || "").replace(/\D/g,'')}\n${reportNo}`;
+        const d = new Date(document.getElementById('inp-date').value);
+        if(!isNaN(d)) { document.getElementById('out-date').textContent = d.toLocaleDateString('sk-SK'); document.getElementById('out-date-sig').textContent = d.toLocaleDateString('sk-SK'); }
+        document.getElementById('out-conclusion').textContent = "Zariadenie je schopné bezpečnej prevádzky v zmysle platnej legislatívy.";
+        const total = parseFloat(document.getElementById('inp-price').value || 0) * (document.getElementById('inp-vat-payer').checked ? 1.23 : 1);
+        const vs = (document.getElementById('inp-invoice').value || "").replace(/\D/g,'');
+        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs}\n${document.getElementById('inp-no').value}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
-        document.getElementById('out-pay-vs').textContent = document.getElementById('inp-invoice').value || "—";
-        document.getElementById('out-pay-note').textContent = reportNo;
-    }
-
-    async function shareAsPDF() {
-        const element = document.getElementById('printable-content');
-        const reportNo = document.getElementById('inp-no').value;
-        const opt = { 
-            margin: 0, 
-            filename: `Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
-            html2canvas: { scale: 3, useCORS: true, logging: false }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-        };
-        try {
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa' });
-            else window.open(URL.createObjectURL(pdfBlob));
-        } catch (err) { alert("Chyba PDF generátora."); }
+        document.getElementById('out-pay-vs').textContent = vs || "—";
     }
 
     window.changeScenario = () => {
-        const s = document.getElementById('inp-scenario').value;
-        const data = SCENARIOS[s];
+        const data = SCENARIOS[document.getElementById('inp-scenario').value];
         document.getElementById('out-title').textContent = data.title;
-        document.getElementById('out-law').textContent = data.law;
-        document.getElementById('out-group').textContent = data.group;
-        const tbody = document.getElementById('out-table-body');
-        tbody.innerHTML = '';
+        const tbody = document.getElementById('out-table-body'); tbody.innerHTML = '';
         data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td>Vyhovuje</td></tr>`);
         render();
     };
 
-    function openModal() { document.getElementById('drawing-modal').style.display='flex'; const c = document.getElementById('full-screen-canvas'); c.width=c.offsetWidth; c.height=c.offsetHeight; modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000'; }
-    window.closeModal = () => { document.getElementById('drawing-modal').style.display='none'; };
-    window.clearFullCanvas = () => { modalCtx.clearRect(0,0,9999,9999); };
+    function openModal() { document.getElementById('drawing-modal').style.display='flex'; const c = document.getElementById('full-screen-canvas'); c.width=c.offsetWidth; c.height=c.offsetHeight; modalCtx.lineWidth=3; modalCtx.lineCap='round'; }
+    window.closeModal = () => document.getElementById('drawing-modal').style.display='none';
+    window.clearFullCanvas = () => modalCtx.clearRect(0,0,9999,9999);
     window.saveDrawing = () => {
         const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
-        const source = document.getElementById('full-screen-canvas');
         pc.width = pc.offsetWidth * 4; pc.height = pc.offsetHeight * 4;
-        pctx.drawImage(source, 0, 0, pc.width, pc.height);
+        pctx.drawImage(document.getElementById('full-screen-canvas'), 0, 0, pc.width, pc.height);
         closeModal(); render();
     };
-    const getPos = (e) => { const r = document.getElementById('full-screen-canvas').getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; return { x: cx - r.left, y: cy - r.top }; };
-    document.getElementById('full-screen-canvas').onmousedown = document.getElementById('full-screen-canvas').ontouchstart = (e) => { e.preventDefault(); isDrawing=true; modalCtx.beginPath(); const p = getPos(e); modalCtx.moveTo(p.x, p.y); };
-    document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => { if(isDrawing) { e.preventDefault(); const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); } };
+    const getPos = (e) => { const r = document.getElementById('full-screen-canvas').getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; return { x: cx - r.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top }; };
+    document.getElementById('full-screen-canvas').onmousedown = document.getElementById('full-screen-canvas').ontouchstart = (e) => { isDrawing=true; modalCtx.beginPath(); const p = getPos(e); modalCtx.moveTo(p.x, p.y); };
+    document.getElementById('full-screen-canvas').onmousemove = document.getElementById('full-screen-canvas').ontouchmove = (e) => { if(isDrawing) { const p = getPos(e); modalCtx.lineTo(p.x, p.y); modalCtx.stroke(); } };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
-
-    window.loadPhoto = (event) => { if(event.target.files && event.target.files[0]) { const reader = new FileReader(); reader.onload = f => { document.getElementById('device-photo-preview').src = f.target.result; document.getElementById('device-photo-preview').style.display='block'; }; reader.readAsDataURL(event.target.files[0]); } };
-    window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
-    function resetCounter() { if(confirm('Vynulovať počítadlo na 001?')) { localStorage.setItem('rev_c_v5', 0); location.reload(); } }
-    function startNewReport() { if(confirm('Založiť novú správu?')) { location.reload(); } }
-    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
-
-    window.onload = () => { 
-        const year = new Date().getFullYear();
-        let c = localStorage.getItem('rev_c_v5') || 0;
-        document.getElementById('inp-no').value = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
-        document.getElementById('inp-date').valueAsDate = new Date();
-        initQR(); changeScenario(); 
-    };
+    window.showToast = (msg) => { const t = document.getElementById('save-toast'); t.textContent = msg; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 2500); };
+    window.closeArchive = () => document.getElementById('archive-modal').style.display = 'none';
+    window.togglePreviewMode = () => document.body.classList.toggle('preview-mode');
+    window.onload = () => { document.getElementById('inp-date').valueAsDate = new Date(); changeScenario(); };
 </script>
 </body>
 </html>
