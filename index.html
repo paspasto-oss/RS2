@@ -70,7 +70,9 @@
         .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
         .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
 
-        .auth-status { font-size: 9px; color: #9ca3af; margin-top: 10px; word-break: break-all; text-align: center; }
+        .auth-status { font-size: 9px; color: #9ca3af; margin-top: 10px; word-break: break-all; text-align: center; font-weight: bold; }
+        .status-ready { color: #16a34a; }
+        .status-waiting { color: #f59e0b; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
@@ -182,7 +184,7 @@
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
         </div>
         <div class="archive-list" id="archive-list-container">
-            <div style="text-align:center; padding:20px; color:#666;">Načítavam...</div>
+            <div style="text-align:center; padding:20px; color:#666;">Načítavam vašu prácu...</div>
         </div>
     </div>
 </div>
@@ -201,7 +203,7 @@
         <h2>⚙️ RS2 Nastavenia</h2>
         
         <div class="section-title">Archív a úložisko</div>
-        <button class="btn-archive-save" onclick="saveToArchive()">💾 Uložiť do archívu</button>
+        <button class="btn-archive-save" id="btn-save-trigger" onclick="saveToArchive()">💾 Uložiť do archívu</button>
         <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
 
         <div class="section-title">Základné údaje</div>
@@ -412,15 +414,27 @@
 
     onAuthStateChanged(auth, (u) => {
         user = u;
+        const statusEl = document.getElementById('auth-status-id');
         if (user) {
-            document.getElementById('auth-status-id').textContent = `Váš cloudový účet: ${user.uid}`;
+            statusEl.innerHTML = `<span class="status-ready">Cloud pripojený ✅</span><br><small>${user.uid}</small>`;
+        } else {
+            statusEl.innerHTML = `<span class="status-waiting">Čakám na cloud... ⏳</span>`;
         }
     });
 
-    // ARCHÍV FUNKCIE (Dostupné globálne cez window)
+    // ARCHÍV FUNKCIE
     window.saveToArchive = async () => {
-        if (!user) return;
+        if (!user) { 
+            alert("⚠️ Cloud ešte nie je pripravený. Prosím, počkajte pár sekúnd na prihlásenie."); 
+            return; 
+        }
+
         const reportNo = document.getElementById('inp-no').value;
+        if (!reportNo) {
+            alert("⚠️ Chýba číslo správy. Nie je možné uložiť do archívu.");
+            return;
+        }
+
         const docId = reportNo.replace(/\//g, '-');
         
         const data = {
@@ -456,27 +470,38 @@
         };
 
         try {
+            const btnSave = document.getElementById('btn-save-trigger');
+            btnSave.textContent = "⌛ Ukladám...";
+            btnSave.disabled = true;
+
             // RULE 1 - Private Path
             const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
             await setDoc(docRef, data);
             
             const toast = document.getElementById('save-toast');
-            toast.textContent = "Uložené do cloudu ✅";
+            toast.textContent = "Archivované ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
+            
+            btnSave.textContent = "💾 Uložiť do archívu";
+            btnSave.disabled = false;
         } catch (e) {
-            alert("Chyba pri ukladaní.");
+            alert("❌ Chyba pri ukladaní do cloudu. Skontrolujte internetové pripojenie.");
+            document.getElementById('btn-save-trigger').textContent = "💾 Uložiť do archívu";
+            document.getElementById('btn-save-trigger').disabled = false;
         }
     };
 
     window.openArchive = async () => {
-        if (!user) return;
+        if (!user) {
+            alert("⚠️ Cloud nie je k dispozícii. Skúste obnoviť stránku.");
+            return;
+        }
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam vaše práce...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">🔍 Vyhľadávam vaše uložené práce...</div>';
 
         try {
-            // RULE 1 & 2 - Simple query on private path
             const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
             const querySnapshot = await getDocs(q);
             
@@ -485,7 +510,7 @@
             items.sort((a,b) => b.timestamp - a.timestamp);
 
             if (items.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">Váš archív je zatiaľ prázdny.</div>';
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Váš archív je zatiaľ prázdny. Uložte prvú správu cez tlačidlo "Uložiť do archívu".</div>';
                 return;
             }
 
@@ -496,8 +521,8 @@
                 div.innerHTML = `
                     <div class="archive-info">
                         <span class="archive-no">${item.reportNo}</span>
-                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span>
-                        <span class="archive-date">${item.date || '---'} | ${item.device.dev || '---'}</span>
+                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Klient bez mena'}</span>
+                        <span class="archive-date">${item.date || 'Bez dátumu'} | ${item.device.dev || 'Neznáme zar.'}</span>
                     </div>
                     <div class="archive-actions">
                         <button class="btn-load" onclick="loadFromArchive('${item.id}')">Načítať</button>
@@ -506,7 +531,7 @@
                 container.appendChild(div);
             });
         } catch (e) {
-            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Chyba pri načítaní archívu.</div>`;
+            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">⚠️ Nepodarilo sa načítať zoznam.</div>`;
         }
     };
 
@@ -518,8 +543,7 @@
             const data = docSnap.data();
             const isNewRevision = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa zmenia na aktuálne.)");
 
-            // Naplnenie polí
-            document.getElementById('inp-scenario').value = data.scenario;
+            document.getElementById('inp-scenario').value = data.scenario || 'plyn';
             document.getElementById('inp-company').value = data.customer.company || "";
             document.getElementById('inp-name').value = data.customer.name || "";
             document.getElementById('inp-street').value = data.customer.street || "";
@@ -539,20 +563,17 @@
             document.getElementById('inp-invoice').value = data.result.invoice || "";
 
             if (isNewRevision) {
-                // Nová revízia
                 document.getElementById('inp-date').valueAsDate = new Date();
                 document.getElementById('inp-notes').value = "";
                 document.getElementById('inp-location-note').value = data.result.locationNote || "";
                 document.getElementById('inp-status').value = "ok";
                 
-                // Nasledujúce číslo počítadla
                 let c = localStorage.getItem('rev_c_v5') || 0;
                 c++;
                 localStorage.setItem('rev_c_v5', c);
                 const year = new Date().getFullYear();
                 document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
             } else {
-                // Úprava pôvodnej
                 document.getElementById('inp-date').value = data.date;
                 document.getElementById('inp-no').value = data.reportNo;
                 document.getElementById('inp-notes').value = data.result.notes || "";
@@ -571,7 +592,6 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
-    // Scenáre meraní
     const SCENARIOS = {
         plyn: { 
             title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", 
@@ -707,9 +727,9 @@
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Posielam revíznu správu č. ${reportNo}` });
+            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
             else window.open(URL.createObjectURL(pdfBlob));
-        } catch (err) { alert("Chyba pri zdieľaní PDF."); }
+        } catch (err) { alert("Chyba pri generovaní PDF."); }
     }
 
     window.changeScenario = () => {
