@@ -57,7 +57,7 @@
 
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .btn-row { display: flex; gap: 10px; }
-        .btn-print, .btn-preview, .btn-share, .btn-new, .btn-archive-op { 
+        .btn-print, .btn-preview, .btn-share, .btn-new { 
             border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
@@ -65,9 +65,12 @@
         .btn-preview { flex: 1; background: #374151; color: white; }
         .btn-share { background: #2563eb; color: white; width: 100%; }
         .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
+        
         .btn-archive-save { background: #059669; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; }
         .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
         .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
+
+        .auth-status { font-size: 9px; color: #9ca3af; margin-top: 10px; word-break: break-all; text-align: center; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
@@ -276,6 +279,8 @@
                 <button class="btn-print" onclick="window.print()">📄 TLAČIŤ</button>
             </div>
         </div>
+
+        <div class="auth-status" id="auth-status-id">Pripájanie k úložisku...</div>
     </section>
 
     <section class="preview-scroll-wrapper">
@@ -377,26 +382,30 @@
     </section>
 </div>
 
-<!-- Firebase -->
+<!-- Firebase Modular SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
     const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-app';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5';
 
     let user = null;
 
-    // RULE 3 - Auth first
+    // RULE 3 - Auth Before Queries
     const initAuth = async () => {
         try {
-            await signInAnonymously(auth);
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
         } catch (e) {
-            console.error("Auth error", e);
+            console.error("Auth init failed", e);
         }
     };
     initAuth();
@@ -404,18 +413,18 @@
     onAuthStateChanged(auth, (u) => {
         user = u;
         if (user) {
-            console.log("Prihlásený ako:", user.uid);
+            document.getElementById('auth-status-id').textContent = `Váš cloudový účet: ${user.uid}`;
         }
     });
 
-    // ARCHÍV LOGIKA
+    // ARCHÍV FUNKCIE (Dostupné globálne cez window)
     window.saveToArchive = async () => {
-        if (!user) { alert("Chyba pripojenia k úložisku."); return; }
+        if (!user) return;
         const reportNo = document.getElementById('inp-no').value;
-        const toast = document.getElementById('save-toast');
+        const docId = reportNo.replace(/\//g, '-');
         
         const data = {
-            id: reportNo.replace(/\//g, '-'),
+            id: docId,
             reportNo: reportNo,
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
@@ -448,55 +457,56 @@
 
         try {
             // RULE 1 - Private Path
-            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', data.id), data);
-            toast.textContent = "Uložené do archívu ✅";
+            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
+            await setDoc(docRef, data);
+            
+            const toast = document.getElementById('save-toast');
+            toast.textContent = "Uložené do cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
         } catch (e) {
-            alert("Chyba pri ukladaní: " + e.message);
+            alert("Chyba pri ukladaní.");
         }
     };
 
     window.openArchive = async () => {
-        if (!user) { alert("Chyba pripojenia."); return; }
+        if (!user) return;
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Načítavam zoznam...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam vaše práce...</div>';
 
         try {
-            // RULE 2 - Simple query
+            // RULE 1 & 2 - Simple query on private path
             const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
             const querySnapshot = await getDocs(q);
             
-            let list = [];
-            querySnapshot.forEach(doc => list.push(doc.data()));
-            
-            // Sort in memory (Rule 2)
-            list.sort((a,b) => b.timestamp - a.timestamp);
+            let items = [];
+            querySnapshot.forEach(doc => items.push(doc.data()));
+            items.sort((a,b) => b.timestamp - a.timestamp);
 
-            if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">Archív je prázdny.</div>';
+            if (items.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px;">Váš archív je zatiaľ prázdny.</div>';
                 return;
             }
 
             container.innerHTML = '';
-            list.forEach(item => {
+            items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'archive-item';
                 div.innerHTML = `
                     <div class="archive-info">
                         <span class="archive-no">${item.reportNo}</span>
-                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Neznámy klient'}</span>
-                        <span class="archive-date">${item.date || 'Bez dátumu'} - ${item.device.dev || 'Zariadenie'}</span>
+                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span>
+                        <span class="archive-date">${item.date || '---'} | ${item.device.dev || '---'}</span>
                     </div>
                     <div class="archive-actions">
-                        <button class="btn-load" onclick="loadFromArchive('${item.id}')">Otvoriť</button>
+                        <button class="btn-load" onclick="loadFromArchive('${item.id}')">Načítať</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         } catch (e) {
-            container.innerHTML = `<div style="color:red; padding:20px;">Chyba: ${e.message}</div>`;
+            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Chyba pri načítaní archívu.</div>`;
         }
     };
 
@@ -506,50 +516,51 @@
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            
-            // Pýtať sa či chce novú revíziu alebo len upraviť starú
-            const isNew = confirm("Chcete použiť tieto údaje pre NOVÚ revíziu?\n(Ak kliknete ZRUŠIŤ, otvorí sa pôvodná správa pre úpravu.)");
+            const isNewRevision = confirm("Chcete vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa zmenia na aktuálne.)");
 
-            // Naplnenie formy
+            // Naplnenie polí
             document.getElementById('inp-scenario').value = data.scenario;
-            document.getElementById('inp-company').value = data.customer.company;
-            document.getElementById('inp-name').value = data.customer.name;
-            document.getElementById('inp-street').value = data.customer.street;
-            document.getElementById('inp-city').value = data.customer.city;
-            document.getElementById('inp-phone').value = data.customer.phone;
-            document.getElementById('inp-email').value = data.customer.email;
+            document.getElementById('inp-company').value = data.customer.company || "";
+            document.getElementById('inp-name').value = data.customer.name || "";
+            document.getElementById('inp-street').value = data.customer.street || "";
+            document.getElementById('inp-city').value = data.customer.city || "";
+            document.getElementById('inp-phone').value = data.customer.phone || "";
+            document.getElementById('inp-email').value = data.customer.email || "";
 
-            document.getElementById('inp-dev').value = data.device.dev;
-            document.getElementById('inp-manuf').value = data.device.manuf;
-            document.getElementById('inp-sn').value = data.device.sn;
-            document.getElementById('inp-year').value = data.device.year;
-            document.getElementById('inp-power').value = data.device.power;
-            document.getElementById('inp-fuel').value = data.device.fuel;
+            document.getElementById('inp-dev').value = data.device.dev || "";
+            document.getElementById('inp-manuf').value = data.device.manuf || "";
+            document.getElementById('inp-sn').value = data.device.sn || "";
+            document.getElementById('inp-year').value = data.device.year || "";
+            document.getElementById('inp-power').value = data.device.power || "";
+            document.getElementById('inp-fuel').value = data.device.fuel || "";
 
-            document.getElementById('inp-notes').value = data.result.notes;
-            document.getElementById('inp-location-note').value = data.result.locationNote;
-            document.getElementById('inp-status').value = data.result.status;
-            document.getElementById('inp-price').value = data.result.price;
-            document.getElementById('inp-vat-payer').checked = data.result.vat;
-            document.getElementById('inp-invoice').value = data.result.invoice;
+            document.getElementById('inp-price').value = data.result.price || 80;
+            document.getElementById('inp-vat-payer').checked = data.result.vat || false;
+            document.getElementById('inp-invoice').value = data.result.invoice || "";
 
-            if (isNew) {
-                // Pre novú revíziu dáme dnešný dátum a nové číslo
+            if (isNewRevision) {
+                // Nová revízia
                 document.getElementById('inp-date').valueAsDate = new Date();
-                // Pokračujeme v číslovaní
+                document.getElementById('inp-notes').value = "";
+                document.getElementById('inp-location-note').value = data.result.locationNote || "";
+                document.getElementById('inp-status').value = "ok";
+                
+                // Nasledujúce číslo počítadla
                 let c = localStorage.getItem('rev_c_v5') || 0;
                 c++;
                 localStorage.setItem('rev_c_v5', c);
-                
                 const year = new Date().getFullYear();
                 document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
             } else {
-                // Pre úpravu staršej necháme pôvodné údaje
+                // Úprava pôvodnej
                 document.getElementById('inp-date').value = data.date;
                 document.getElementById('inp-no').value = data.reportNo;
+                document.getElementById('inp-notes').value = data.result.notes || "";
+                document.getElementById('inp-location-note').value = data.result.locationNote || "";
+                document.getElementById('inp-status').value = data.result.status || "ok";
             }
 
-            window.changeScenario(); // Aktualizuje merania
+            window.changeScenario();
             window.closeArchive();
         }
     };
@@ -560,6 +571,7 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
+    // Scenáre meraní
     const SCENARIOS = {
         plyn: { 
             title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", 
@@ -687,7 +699,11 @@
     async function shareAsPDF() {
         const element = document.getElementById('printable-content');
         const reportNo = document.getElementById('inp-no').value;
-        const opt = { margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, html2canvas: { scale: 3, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } };
+        const opt = { 
+            margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, 
+            html2canvas: { scale: 3, useCORS: true, logging: false }, 
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
+        };
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
@@ -696,7 +712,7 @@
         } catch (err) { alert("Chyba pri zdieľaní PDF."); }
     }
 
-    function changeScenario() {
+    window.changeScenario = () => {
         const s = document.getElementById('inp-scenario').value;
         const data = SCENARIOS[s];
         document.getElementById('out-title').textContent = data.title;
@@ -706,7 +722,7 @@
         tbody.innerHTML = '';
         data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td>Vyhovuje</td></tr>`);
         render();
-    }
+    };
 
     function openModal() {
         document.getElementById('drawing-modal').style.display='flex';
@@ -714,16 +730,16 @@
         c.width=c.offsetWidth; c.height=c.offsetHeight;
         modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000';
     }
-    function closeModal() { document.getElementById('drawing-modal').style.display='none'; }
-    function clearFullCanvas() { modalCtx.clearRect(0,0,9999,9999); }
-    function saveDrawing() {
+    window.closeModal = () => { document.getElementById('drawing-modal').style.display='none'; };
+    window.clearFullCanvas = () => { modalCtx.clearRect(0,0,9999,9999); };
+    window.saveDrawing = () => {
         const pc = document.getElementById('preview-sig-canvas'), pctx = pc.getContext('2d');
         const source = document.getElementById('full-screen-canvas');
         pc.width = pc.offsetWidth * 4; pc.height = pc.offsetHeight * 4;
         pctx.imageSmoothingEnabled = true; pctx.imageSmoothingQuality = 'high';
         pctx.drawImage(source, 0, 0, pc.width, pc.height);
         closeModal(); render();
-    }
+    };
     const getPos = (e) => {
         const r = document.getElementById('full-screen-canvas').getBoundingClientRect();
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
@@ -738,13 +754,13 @@
     };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    function loadPhoto(event) {
+    window.loadPhoto = (event) => {
         if(event.target.files && event.target.files[0]) {
             const reader = new FileReader();
             reader.onload = f => { document.getElementById('device-photo-preview').src = f.target.result; document.getElementById('device-photo-preview').style.display='block'; };
             reader.readAsDataURL(event.target.files[0]);
         }
-    }
+    };
 
     function extractNumberFromText(text) {
         const match = text.match(/\/(\d+)/);
@@ -762,14 +778,14 @@
 
     window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
 
-    function resetCounter() {
+    window.resetCounter = () => {
         if(confirm('Naozaj chcete vynulovať počítadlo správ? Nasledujúca správa bude začínať od 001.')) {
             localStorage.setItem('rev_c_v5', 0);
             generateNo();
         }
-    }
+    };
 
-    function startNewReport() {
+    window.startNewReport = () => {
         if(confirm('Zmazať všetky údaje a vytvoriť novú správu?')) {
             const currentInputValue = document.getElementById('inp-no').value;
             const parsedNumber = extractNumberFromText(currentInputValue);
@@ -780,9 +796,9 @@
             }
             location.reload();
         }
-    }
+    };
 
-    function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
+    window.togglePreviewMode = () => { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); };
     window.onload = () => { generateNo(); initQR(); changeScenario(); };
 </script>
 </body>
