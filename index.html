@@ -340,10 +340,9 @@
                 <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
                 <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
 
-                <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-                <div class="conclusion-text" id="out-conclusion">—</div>
-                
                 <div class="footer-area">
+                    <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
+                    <div class="conclusion-text" id="out-conclusion">—</div>
                     <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
                         <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
@@ -386,7 +385,7 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    // --- FIREBASE KONFIGURÁCIA ---
+    // --- FIREBASE KONFIGURÁCIA Z OBRÁZKA image_89a827.png ---
     const firebaseConfig = {
         apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
         authDomain: "rs2-spektra.firebaseapp.com",
@@ -404,15 +403,15 @@
     let user = null;
     const statusEl = document.getElementById('cloud-status-text');
 
-    // OPRAVA AUTH: Pridaný fallback na anonymné prihlásenie pri chybe custom-token-mismatch
+    // OPRAVA AUTH: Fallback na anonymné prihlásenie ak custom token nesedí s projektom
     const initAuth = async () => {
         try {
+            // Ak sme v prostredí, ktoré poskytuje custom token, skúsime ho
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 try {
-                    // Skúsime prihlásenie pomocou custom tokenu
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } catch (tokenError) {
-                    // Ak nastane chyba (napr. mismatch), prepneme na anonymné prihlásenie
+                    // Pri mismatch chybe (vaše API kľúče vs systémový token) použijeme anonymné prihlásenie
                     console.warn("Custom token mismatch, falling back to anonymous.");
                     await signInAnonymously(auth);
                 }
@@ -474,6 +473,7 @@
         };
 
         try {
+            // RULE 1: Strict Paths
             const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
             await setDoc(docPath, data);
             
@@ -481,7 +481,10 @@
             toast.textContent = "Archivované do cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { alert("Chyba pri ukladaní."); }
+        } catch (e) { 
+            console.error(e);
+            alert("Chyba pri ukladaní. Skontrolujte pravidlá (Rules) vo Firebase konzole."); 
+        }
     };
 
     window.openArchive = async () => {
@@ -540,6 +543,7 @@
             document.getElementById('inp-fuel').value = data.device.fuel || "";
             document.getElementById('inp-price').value = data.result.price || 80;
             document.getElementById('inp-vat-payer').checked = data.result.vat || false;
+            document.getElementById('inp-invoice').value = data.result.invoice || "";
 
             if (isNew) {
                 document.getElementById('inp-date').valueAsDate = new Date();
