@@ -98,16 +98,18 @@
         .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
         .report-no { font-size: 11px; margin-top: 6px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
 
-        .info-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 10px; }
-        .box { border: 1px solid #ddd; padding: 6px; border-radius: 2px; }
-        .box-title { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 4px; padding-bottom: 2px; }
-        .row-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px; }
+        .info-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-bottom: 10px; }
+        .box { border: 1px solid #ddd; padding: 8px; border-radius: 2px; }
+        /* Zväčšené písmo prevádzkovateľa a technika */
+        .box-title { font-size: 12px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 5px; padding-bottom: 3px; }
+        .row-item { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 11px; }
         .row-item span { color: #555; }
 
         .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; }
 
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9px; }
-        .data-table th, .data-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
+        /* Zväčšené písmo meraní */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10.5px; }
+        .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 900; }
 
         .section-2-container { display: flex; gap: 10px; margin-top: 5px; height: 130px; }
@@ -133,19 +135,20 @@
         
         .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
 
-        /* CLOUD ARCHÍV MODAL */
+        /* Platobné podklady */
+        .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .qr-flex-row { display: flex; align-items: center; gap: 20px; justify-content: center; }
+        .payment-details { font-size: 12px; }
+        .pay-total { font-size: 20px; font-weight: 900; color: var(--primary); margin-top: 10px; }
+        .qr-title { font-weight: 900; margin-bottom: 20px; }
+
+        /* Modaly */
         #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
-        .archive-info { display: flex; flex-direction: column; gap: 2px; }
-        .archive-no { font-weight: 900; color: var(--primary); }
-        .archive-cust { font-size: 14px; font-weight: 600; }
-        .archive-date { font-size: 12px; color: #666; }
-        .archive-actions { display: flex; gap: 8px; }
-        .btn-load { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
         .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
@@ -158,12 +161,6 @@
         body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
         body.preview-mode #floating-edit-btn { display: block; }
         #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-
-        .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .qr-flex-row { display: flex; align-items: center; gap: 20px; justify-content: center; }
-        .payment-details { font-size: 12px; }
-        .pay-total { font-size: 20px; font-weight: 900; color: var(--primary); margin-top: 10px; }
-        .qr-title { font-weight: 900; margin-bottom: 20px; }
 
         @media print {
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
@@ -305,19 +302,19 @@
 
                 <div class="info-grid">
                     <div class="box">
+                        <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
+                        <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
+                        <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
+                        <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
+                        <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
+                    </div>
+                    <div class="box">
                         <div class="box-title">PREVÁDZKOVATEĽ / OBJEDNÁVATEĽ</div>
                         <div class="row-item"><span>Názov:</span> <strong id="out-company">—</strong></div>
                         <div class="row-item"><span>Meno:</span> <strong id="out-name">—</strong></div>
                         <div class="row-item"><span>Ulica:</span> <strong id="out-street">—</strong></div>
                         <div class="row-item"><span>Mesto:</span> <strong id="out-city">—</strong></div>
                         <div class="row-item"><span>Kontakt:</span> <strong id="out-contact">—</strong></div>
-                    </div>
-                    <div class="box">
-                        <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
-                        <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                        <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
-                        <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
-                        <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
                     </div>
                 </div>
 
@@ -393,7 +390,16 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    const firebaseConfig = JSON.parse(__firebase_config);
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
+        authDomain: "rs2-spektra.firebaseapp.com",
+        projectId: "rs2-spektra",
+        storageBucket: "rs2-spektra.firebasestorage.app",
+        messagingSenderId: "290233159590",
+        appId: "1:290233159590:web:f9b4df2b79623a8299c967",
+        measurementId: "G-XNF0RLNEY4"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -401,10 +407,17 @@
 
     let user = null;
 
+    // RULE 3 - Auth Before Queries s fallbackom pri chybe tokenu
     const initAuth = async () => {
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
+                try {
+                    // Skúsime prihlásenie pomocou custom tokenu
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (tokenErr) {
+                    // Ak custom token zlyhá (napr. mismatch), prejdeme na anonymné prihlásenie
+                    await signInAnonymously(auth);
+                }
             } else {
                 await signInAnonymously(auth);
             }
