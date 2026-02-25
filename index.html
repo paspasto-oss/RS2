@@ -65,17 +65,24 @@
         .btn-share { background: #2563eb; color: white; width: 100%; }
         .btn-new { background: #f3f4f6; color: #374151; border: 1px solid #ddd; width: 100%; }
         
+        /* CLOUD ARCHÍV */
         .btn-archive-save { background: #059669; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; }
         .btn-archive-view { background: #4b5563; color: white; width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; border:none; margin-top:5px; }
         .btn-reset-counter { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 5px; }
 
-        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: #f8fafc; font-weight: bold; border: 1px solid #e2e8f0; }
+        .cloud-status { font-size: 10px; text-align: center; margin-top: 10px; padding: 5px; border-radius: 5px; background: #f8fafc; font-weight: bold; }
         .status-on { color: #16a34a; }
         .status-off { color: #f59e0b; }
-        .status-error { color: #dc2626; }
 
         .preview-scroll-wrapper { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 20px; }
         .preview-container { display: flex; flex-direction: column; align-items: center; gap: 30px; transform-origin: top center; }
+
+        @media (max-width: 800px) {
+            .preview-container { transform: scale(0.45); margin-bottom: -600px; }
+        }
+        @media (max-width: 500px) {
+            .preview-container { transform: scale(0.38); margin-bottom: -750px; }
+        }
 
         .a4-page { 
             width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
@@ -112,12 +119,7 @@
         .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; }
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
 
-        .footer-area { 
-            margin-top: auto; 
-            padding-bottom: 5mm; 
-            page-break-inside: avoid;
-        }
-        
+        .footer-area { margin-top: auto; padding-bottom: 5mm; }
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
         
         .status-box { margin: 15mm auto 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
@@ -129,26 +131,21 @@
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        .tech-sig-img { 
-            width: 44mm !important; 
-            height: auto !important; 
-            object-fit: contain; 
-            display: block; 
-            margin: 0 auto -5mm auto; 
-            position: relative; 
-            z-index: 10; 
-        }
+        .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
 
+        /* CLOUD ARCHÍV MODAL */
         #archive-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .archive-content { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
         .archive-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .archive-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .archive-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .archive-item:hover { border-color: var(--primary); background: #fff5f5; }
         .archive-info { display: flex; flex-direction: column; gap: 2px; }
         .archive-no { font-weight: 900; color: var(--primary); }
         .archive-cust { font-size: 14px; font-weight: 600; }
         .archive-date { font-size: 12px; color: #666; }
+        .archive-actions { display: flex; gap: 8px; }
+        .btn-load { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         #drawing-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; }
         .modal-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; }
@@ -159,13 +156,21 @@
 
         body.preview-mode .controls { display: none; }
         body.preview-mode .app-container { grid-template-columns: 1fr; justify-content: center; }
-        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         body.preview-mode #floating-edit-btn { display: block; }
+        #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+        .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .qr-flex-row { display: flex; align-items: center; gap: 20px; justify-content: center; }
+        .payment-details { font-size: 12px; }
+        .pay-total { font-size: 20px; font-weight: 900; color: var(--primary); margin-top: 10px; }
+        .qr-title { font-weight: 900; margin-bottom: 20px; }
 
         @media print {
             .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
+            .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
+            .sig-canvas-container { border: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -175,10 +180,11 @@
 <div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
 
+<!-- ARCHÍV MODAL -->
 <div id="archive-modal">
     <div class="archive-content">
         <div class="archive-header">
-            <h2 style="margin:0">📚 Archív revízií</h2>
+            <h2 style="margin:0">📚 Cloudový archív</h2>
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
         </div>
         <div class="archive-list" id="archive-list-container">
@@ -200,8 +206,8 @@
     <section class="controls">
         <h2>⚙️ RS2 Nastavenia</h2>
         
-        <div class="section-title">Cloudový archív</div>
-        <button class="btn-archive-save" onclick="saveToCloud()">💾 Uložiť do archívu</button>
+        <div class="section-title">Cloudové úložisko</div>
+        <button class="btn-archive-save" onclick="saveToCloudArchive()">💾 Uložiť do archívu</button>
         <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
         <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
 
@@ -231,7 +237,7 @@
                 <label>Číslo správy</label>
                 <input type="text" id="inp-no" oninput="render()">
             </div>
-            <div class="form-group"><label>DÁTUM VÝKONU</label><input type="date" id="inp-date" onchange="render()"></div>
+            <div class="form-group"><label>Dátum výkonu</label><input type="date" id="inp-date" onchange="render()"></div>
         </div>
 
         <div class="section-title">Údaje Prevádzkovateľa</div>
@@ -284,6 +290,7 @@
 
     <section class="preview-scroll-wrapper">
         <div class="preview-container" id="printable-content">
+            <!-- STRANA 1 -->
             <div class="a4-page">
                 <div class="header">
                     <div class="brand">
@@ -340,9 +347,10 @@
                 <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
                 <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
 
+                <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
+                <div class="conclusion-text" id="out-conclusion">—</div>
+                
                 <div class="footer-area">
-                    <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
-                    <div class="conclusion-text" id="out-conclusion">—</div>
                     <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
                         <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
@@ -385,48 +393,30 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    // --- FIREBASE KONFIGURÁCIA Z OBRÁZKA image_89a827.png ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
-        authDomain: "rs2-spektra.firebaseapp.com",
-        projectId: "rs2-spektra",
-        storageBucket: "rs2-spektra.firebasestorage.app",
-        messagingSenderId: "290233159590",
-        appId: "1:290233159590:web:f9b4df2b79623a8299c967"
-    };
-
+    const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5-prod';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5';
 
     let user = null;
-    const statusEl = document.getElementById('cloud-status-text');
 
-    // OPRAVA AUTH: Fallback na anonymné prihlásenie ak custom token nesedí s projektom
     const initAuth = async () => {
         try {
-            // Ak sme v prostredí, ktoré poskytuje custom token, skúsime ho
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                try {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } catch (tokenError) {
-                    // Pri mismatch chybe (vaše API kľúče vs systémový token) použijeme anonymné prihlásenie
-                    console.warn("Custom token mismatch, falling back to anonymous.");
-                    await signInAnonymously(auth);
-                }
+                await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
         } catch (e) {
-            console.error("Auth Error", e);
-            statusEl.innerHTML = '<span class="status-error">Chyba prihlásenia ❌</span>';
+            console.error("Cloud Error", e);
         }
     };
     initAuth();
 
     onAuthStateChanged(auth, (u) => {
         user = u;
+        const statusEl = document.getElementById('cloud-status-text');
         if (user) {
             statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
         } else {
@@ -434,15 +424,15 @@
         }
     });
 
-    // ARCHÍV FUNKCIE
-    window.saveToCloud = async () => {
+    window.saveToCloudArchive = async () => {
         if (!user) return alert("Počkajte na pripojenie k cloudu.");
         const reportNo = document.getElementById('inp-no').value;
         if (!reportNo) return alert("Zadajte číslo správy.");
 
         const docId = reportNo.replace(/\//g, '-');
         const data = {
-            id: docId, reportNo,
+            id: docId,
+            reportNo: reportNo,
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
             customer: {
@@ -473,25 +463,19 @@
         };
 
         try {
-            // RULE 1: Strict Paths
-            const docPath = doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId);
-            await setDoc(docPath, data);
-            
+            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId), data);
             const toast = document.getElementById('save-toast');
-            toast.textContent = "Archivované do cloudu ✅";
+            toast.textContent = "Uložené do cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { 
-            console.error(e);
-            alert("Chyba pri ukladaní. Skontrolujte pravidlá (Rules) vo Firebase konzole."); 
-        }
+        } catch (e) { alert("Chyba pri ukladaní."); }
     };
 
     window.openArchive = async () => {
         if (!user) return;
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Vyhľadávam správy...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Hľadám správy...</div>';
 
         try {
             const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
@@ -502,7 +486,7 @@
             list.sort((a,b) => b.timestamp - a.timestamp);
 
             if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">V cloude nemáte žiadne správy.</div>';
+                container.innerHTML = '<div style="text-align:center; padding:20px;">Archív je prázdny.</div>';
                 return;
             }
 
@@ -526,24 +510,23 @@
         const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?\n(Meno a zariadenie ostanú, dátum a číslo sa aktualizujú.)");
+            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?");
 
             document.getElementById('inp-scenario').value = data.scenario;
-            document.getElementById('inp-company').value = data.customer.company || "";
-            document.getElementById('inp-name').value = data.customer.name || "";
-            document.getElementById('inp-street').value = data.customer.street || "";
-            document.getElementById('inp-city').value = data.customer.city || "";
-            document.getElementById('inp-phone').value = data.customer.phone || "";
-            document.getElementById('inp-email').value = data.customer.email || "";
-            document.getElementById('inp-dev').value = data.device.dev || "";
-            document.getElementById('inp-manuf').value = data.device.manuf || "";
-            document.getElementById('inp-sn').value = data.device.sn || "";
-            document.getElementById('inp-year').value = data.device.year || "";
-            document.getElementById('inp-power').value = data.device.power || "";
-            document.getElementById('inp-fuel').value = data.device.fuel || "";
-            document.getElementById('inp-price').value = data.result.price || 80;
-            document.getElementById('inp-vat-payer').checked = data.result.vat || false;
-            document.getElementById('inp-invoice').value = data.result.invoice || "";
+            document.getElementById('inp-company').value = data.customer.company;
+            document.getElementById('inp-name').value = data.customer.name;
+            document.getElementById('inp-street').value = data.customer.street;
+            document.getElementById('inp-city').value = data.customer.city;
+            document.getElementById('inp-phone').value = data.customer.phone;
+            document.getElementById('inp-email').value = data.customer.email;
+            document.getElementById('inp-dev').value = data.device.dev;
+            document.getElementById('inp-manuf').value = data.device.manuf;
+            document.getElementById('inp-sn').value = data.device.sn;
+            document.getElementById('inp-year').value = data.device.year;
+            document.getElementById('inp-power').value = data.device.power;
+            document.getElementById('inp-fuel').value = data.device.fuel;
+            document.getElementById('inp-price').value = data.result.price;
+            document.getElementById('inp-vat-payer').checked = data.result.vat;
 
             if (isNew) {
                 document.getElementById('inp-date').valueAsDate = new Date();
@@ -556,8 +539,8 @@
             } else {
                 document.getElementById('inp-date').value = data.date;
                 document.getElementById('inp-no').value = data.reportNo;
-                document.getElementById('inp-notes').value = data.result.notes || "";
-                document.getElementById('inp-status').value = data.result.status || "ok";
+                document.getElementById('inp-notes').value = data.result.notes;
+                document.getElementById('inp-status').value = data.result.status;
             }
             window.changeScenario();
             window.closeArchive();
@@ -582,16 +565,17 @@
     function render() {
         if(!qr) initQR();
         const reportNo = document.getElementById('inp-no').value;
-        document.getElementById('out-no').textContent = "Číslo: " + reportNo;
-        document.getElementById('out-pay-note').textContent = reportNo;
-        const comp = document.getElementById('inp-company').value || "—";
-        const name = document.getElementById('inp-name').value || "—";
-        const tel = document.getElementById('inp-phone').value || "";
-        const mail = document.getElementById('inp-email').value || "";
-        document.getElementById('out-company').textContent = comp;
-        document.getElementById('out-name').textContent = name;
+        const outNo = document.getElementById('out-no');
+        const outPayNote = document.getElementById('out-pay-note');
+        if(outNo) outNo.textContent = "Číslo: " + reportNo;
+        if(outPayNote) outPayNote.textContent = reportNo;
+
+        document.getElementById('out-company').textContent = document.getElementById('inp-company').value || "—";
+        document.getElementById('out-name').textContent = document.getElementById('inp-name').value || "—";
         document.getElementById('out-street').textContent = document.getElementById('inp-street').value || "—";
         document.getElementById('out-city').textContent = document.getElementById('inp-city').value || "—";
+        const tel = document.getElementById('inp-phone').value || "";
+        const mail = document.getElementById('inp-email').value || "";
         document.getElementById('out-contact').textContent = `${tel} ${tel && mail ? '/' : ''} ${mail}`;
         document.getElementById('out-dev').textContent = document.getElementById('inp-dev').value || "—";
         document.getElementById('out-manuf').textContent = document.getElementById('inp-manuf').value || "—";
@@ -628,9 +612,10 @@
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
-        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${(document.getElementById('inp-invoice').value || "").replace(/\D/g,'')}\n${reportNo}`;
+        const vs = document.getElementById('inp-invoice').value || "";
+        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
-        document.getElementById('out-pay-vs').textContent = document.getElementById('inp-invoice').value || "—";
+        document.getElementById('out-pay-vs').textContent = vs || "—";
     }
 
     async function shareAsPDF() {
@@ -640,7 +625,7 @@
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa' });
+            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
             else window.open(URL.createObjectURL(pdfBlob));
         } catch (err) { alert("Chyba PDF."); }
     }
@@ -648,12 +633,20 @@
     window.changeScenario = () => {
         const s = document.getElementById('inp-scenario').value;
         const data = SCENARIOS[s];
-        document.getElementById('out-title').textContent = data.title;
-        document.getElementById('out-law').textContent = data.law;
-        document.getElementById('out-group').textContent = data.group;
+        
+        const outTitle = document.getElementById('out-title');
+        const outLaw = document.getElementById('out-law');
+        const outGroup = document.getElementById('out-group');
         const tbody = document.getElementById('out-table-body');
-        tbody.innerHTML = '';
-        data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td>Vyhovuje</td></tr>`);
+
+        if(outTitle) outTitle.textContent = data.title;
+        if(outLaw) outLaw.textContent = data.law;
+        if(outGroup) outGroup.textContent = data.group;
+        
+        if(tbody) {
+            tbody.innerHTML = '';
+            data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td>Vyhovuje</td></tr>`);
+        }
         render();
     };
 
@@ -698,8 +691,10 @@
     function generateNo() {
         const year = new Date().getFullYear();
         let c = localStorage.getItem('rev_c_v5') || 0;
-        const n = `RS2-${year}/${String(parseInt(c)+1).padStart(3,'0')}`;
-        document.getElementById('inp-no').value = n;
+        const currentCount = parseInt(c) + 1;
+        const n = `RS2-${year}/${String(currentCount).padStart(3,'0')}`;
+        const inpNo = document.getElementById('inp-no');
+        if(inpNo) inpNo.value = n;
         render();
     }
 
@@ -714,7 +709,8 @@
 
     function startNewReport() {
         if(confirm('Založiť novú správu?')) {
-            const m = document.getElementById('inp-no').value.match(/\/(\d+)/);
+            const curNo = document.getElementById('inp-no').value;
+            const m = curNo.match(/\/(\d+)/);
             if (m) localStorage.setItem('rev_c_v5', parseInt(m[1]));
             location.reload();
         }
