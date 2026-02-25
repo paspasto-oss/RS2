@@ -100,14 +100,12 @@
 
         .info-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 8px; border-radius: 2px; }
-        /* Zväčšené písmo prevádzkovateľa a technika */
         .box-title { font-size: 12px; font-weight: 900; text-transform: uppercase; color: #000; border-bottom: 1px solid #eee; margin-bottom: 5px; padding-bottom: 3px; }
         .row-item { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 11px; }
         .row-item span { color: #555; }
 
         .section-header { background: #f3f4f6; padding: 4px 8px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 8px; border-left: 3px solid var(--primary); display: flex; justify-content: space-between; }
 
-        /* Zväčšené písmo meraní */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10.5px; }
         .data-table th, .data-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         .data-table th { background: #f9f9f9; font-weight: 900; }
@@ -181,7 +179,7 @@
 <div id="archive-modal">
     <div class="archive-content">
         <div class="archive-header">
-            <h2 style="margin:0">📚 Cloudový archív</h2>
+            <h2 style="margin:0">📚 Spoločný cloudový archív</h2>
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
         </div>
         <div class="archive-list" id="archive-list-container">
@@ -389,9 +387,8 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    // Konfigurácia poskytnutá používateľom
     const firebaseConfig = {
         apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
         authDomain: "rs2-spektra.firebaseapp.com",
@@ -427,15 +424,41 @@
     };
     initAuth();
 
-    onAuthStateChanged(auth, (u) => {
+    onAuthStateChanged(auth, async (u) => {
         user = u;
         const statusEl = document.getElementById('cloud-status-text');
         if (user) {
-            statusEl.innerHTML = '<span class="status-on">Cloud pripojený ✅</span>';
+            statusEl.innerHTML = '<span class="status-on">Cloud zjednotený ✅</span>';
+            // Po prihlásení skúsime zosynchronizovať počítadlo z cloudu
+            await syncCounterFromCloud();
         } else {
             statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
         }
     });
+
+    // Funkcia na zosynchronizovanie počítadla z cloudu (verejná cesta - RULE 1)
+    async function syncCounterFromCloud() {
+        try {
+            const counterDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global_counter'));
+            if (counterDoc.exists()) {
+                const cloudVal = counterDoc.data().value || 0;
+                const localVal = parseInt(localStorage.getItem('rev_c_v5')) || 0;
+                // Vždy vezmeme vyššiu hodnotu
+                if (cloudVal > localVal) {
+                    localStorage.setItem('rev_c_v5', cloudVal);
+                }
+            }
+            window.generateNo(); // Prepočítaj číslo správy po synchronizácii
+        } catch (e) { console.log("Chyba sync counter."); }
+    }
+
+    // Funkcia na aktualizáciu počítadla v cloude
+    async function updateCloudCounter(newVal) {
+        if (!user) return;
+        try {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global_counter'), { value: newVal });
+        } catch (e) { console.log("Chyba update counter."); }
+    }
 
     window.saveToCloudArchive = async () => {
         if (!user) return alert("Počkajte na pripojenie k cloudu.");
@@ -476,9 +499,18 @@
         };
 
         try {
-            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId), data);
+            // ZMENA NA VEREJNÚ CESTU (RULE 1) - aby to všetci videli rovnako
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId), data);
+            
+            // Zároveň aktualizuj globálne počítadlo v cloude
+            const m = reportNo.match(/\/(\d+)/);
+            if (m) {
+                const currentNum = parseInt(m[1]);
+                await updateCloudCounter(currentNum);
+            }
+
             const toast = document.getElementById('save-toast');
-            toast.textContent = "Uložené do cloudu ✅";
+            toast.textContent = "Uložené do spoločného cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
         } catch (e) { alert("Chyba pri ukladaní."); }
@@ -488,10 +520,11 @@
         if (!user) return;
         document.getElementById('archive-modal').style.display = 'flex';
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Hľadám správy...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Prehľadávam spoločný archív...</div>';
 
         try {
-            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'inspections'));
+            // ZMENA NA VEREJNÚ CESTU (RULE 1)
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
             const querySnapshot = await getDocs(q);
             
             let list = [];
@@ -520,7 +553,8 @@
     };
 
     window.loadFromCloud = async (docId) => {
-        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'inspections', docId));
+        // ZMENA NA VEREJNÚ CESTU (RULE 1)
+        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId));
         if (docSnap.exists()) {
             const data = docSnap.data();
             const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?");
@@ -545,10 +579,11 @@
                 document.getElementById('inp-date').valueAsDate = new Date();
                 document.getElementById('inp-notes').value = "";
                 document.getElementById('inp-status').value = "ok";
-                let c = localStorage.getItem('rev_c_v5') || 0;
+                let c = parseInt(localStorage.getItem('rev_c_v5')) || 0;
                 c++; localStorage.setItem('rev_c_v5', c);
-                const year = new Date().getFullYear();
-                document.getElementById('inp-no').value = `RS2-${year}/${String(c).padStart(3,'0')}`;
+                // Pri vytvorení novej revízie hneď zapíšeme číslo aj do cloudu
+                await updateCloudCounter(c);
+                window.generateNo();
             } else {
                 document.getElementById('inp-date').value = data.date;
                 document.getElementById('inp-no').value = data.reportNo;
@@ -704,8 +739,8 @@
 
     function generateNo() {
         const year = new Date().getFullYear();
-        let c = localStorage.getItem('rev_c_v5') || 0;
-        const currentCount = parseInt(c) + 1;
+        let c = parseInt(localStorage.getItem('rev_c_v5')) || 0;
+        const currentCount = c + 1;
         const n = `RS2-${year}/${String(currentCount).padStart(3,'0')}`;
         const inpNo = document.getElementById('inp-no');
         if(inpNo) inpNo.value = n;
@@ -717,6 +752,7 @@
     function resetCounter() {
         if(confirm('Vynulovať počítadlo na 001?')) {
             localStorage.setItem('rev_c_v5', 0);
+            updateCloudCounter(0);
             generateNo();
         }
     }
@@ -725,7 +761,11 @@
         if(confirm('Založiť novú správu?')) {
             const curNo = document.getElementById('inp-no').value;
             const m = curNo.match(/\/(\d+)/);
-            if (m) localStorage.setItem('rev_c_v5', parseInt(m[1]));
+            if (m) {
+                const num = parseInt(m[1]);
+                localStorage.setItem('rev_c_v5', num);
+                updateCloudCounter(num);
+            }
             location.reload();
         }
     }
