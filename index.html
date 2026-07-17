@@ -15,6 +15,7 @@
     <!-- Knižnice -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -160,8 +161,38 @@
         body.preview-mode #floating-edit-btn { display: block; }
         #floating-edit-btn { display: none; position: fixed; bottom: 30px; right: 30px; background: #2563eb; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 1000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
+        /* FOTENIE A OCR VÝROBNÉHO ŠTÍTKU */
+        #label-scan-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 12000;
+            align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;
+        }
+        .label-scan-card {
+            width: 100%; max-width: 460px; background: #fff; border-radius: 18px; overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+        .label-scan-head { background: var(--primary); color: #fff; padding: 22px; text-align: center; }
+        .label-scan-head h2 { margin: 0 0 6px; font-size: 22px; }
+        .label-scan-head p { margin: 0; font-size: 13px; opacity: .92; line-height: 1.4; }
+        .label-scan-body { padding: 20px; }
+        .label-scan-tip { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; font-size: 12px; color: #475569; line-height: 1.45; margin-bottom: 14px; }
+        .label-scan-actions { display: grid; gap: 10px; }
+        .btn-label-camera, .btn-label-skip, .btn-label-rescan {
+            width: 100%; border: 0; border-radius: 10px; padding: 15px; font-weight: 800; cursor: pointer; font-size: 14px;
+        }
+        .btn-label-camera { background: var(--primary); color: #fff; }
+        .btn-label-skip { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .btn-label-rescan { background: #111827; color: #fff; margin-bottom: 8px; }
+        .ocr-progress-wrap { display:none; margin-top:14px; }
+        .ocr-progress-track { height: 9px; background:#e5e7eb; border-radius:99px; overflow:hidden; }
+        .ocr-progress-bar { height:100%; width:0%; background:var(--primary); transition:width .2s; }
+        .ocr-progress-text { margin-top:8px; font-size:12px; font-weight:700; color:#374151; text-align:center; }
+        .label-scan-result { display:none; margin-top:14px; padding:12px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-size:12px; line-height:1.45; }
+        .device-scan-panel { background:#fff7f7; border:1px solid #fecaca; border-radius:8px; padding:10px; margin-bottom:10px; }
+        .device-scan-status { font-size:11px; color:#475569; line-height:1.35; margin-top:6px; }
+        .ocr-filled { border-color:#22c55e !important; background:#f0fdf4 !important; box-shadow:0 0 0 2px rgba(34,197,94,.12); }
+
         @media print {
-            .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal { display: none !important; }
+            .controls, #drawing-modal, #floating-edit-btn, .btn-reset, #archive-modal, #label-scan-modal { display: none !important; }
             .preview-container { transform: none !important; margin: 0 !important; }
             .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
@@ -174,6 +205,30 @@
 
 <div id="save-toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:10px 20px; border-radius:20px; opacity:0; transition:0.3s; z-index:9999;">Uložené 💾</div>
 <button id="floating-edit-btn" onclick="togglePreviewMode()">✏️ Späť na úpravy</button>
+
+<!-- ÚVODNÉ FOTENIE VÝROBNÉHO ŠTÍTKU -->
+<div id="label-scan-modal" role="dialog" aria-modal="true" aria-labelledby="label-scan-title">
+    <div class="label-scan-card">
+        <div class="label-scan-head">
+            <h2 id="label-scan-title">📷 Výrobný štítok zariadenia</h2>
+            <p>Odfotografujte štítok a aplikácia sa pokúsi automaticky vyplniť technické údaje.</p>
+        </div>
+        <div class="label-scan-body">
+            <div class="label-scan-tip">
+                Štítok odfoťte rovno, zblízka, bez odlesku a tak, aby bol celý text ostrý. Rozpoznané údaje pred uložením skontrolujte.
+            </div>
+            <div class="label-scan-actions">
+                <button type="button" class="btn-label-camera" onclick="openLabelCamera('startup')">📸 ODFOTIŤ ŠTÍTOK</button>
+                <button type="button" class="btn-label-skip" onclick="closeLabelScanModal()">Pokračovať bez fotografie</button>
+            </div>
+            <div class="ocr-progress-wrap" id="ocr-progress-wrap">
+                <div class="ocr-progress-track"><div class="ocr-progress-bar" id="ocr-progress-bar"></div></div>
+                <div class="ocr-progress-text" id="ocr-progress-text">Pripravujem rozpoznávanie...</div>
+            </div>
+            <div class="label-scan-result" id="label-scan-result"></div>
+        </div>
+    </div>
+</div>
 
 <!-- ARCHÍV MODAL -->
 <div id="archive-modal">
@@ -249,6 +304,10 @@
         </div>
         
         <div class="section-title">Technické zariadenie</div>
+        <div class="device-scan-panel">
+            <button type="button" class="btn-label-rescan" onclick="openLabelCamera('controls')">📷 ODFOTIŤ / ZNOVU NAČÍTAŤ ŠTÍTOK</button>
+            <div class="device-scan-status" id="device-scan-status">Výrobcu, typ, sériové číslo, rok a výkon môžete vyplniť automaticky z fotografie štítku.</div>
+        </div>
         <div class="form-row">
             <div class="form-group"><label>Typ</label><input type="text" id="inp-dev" oninput="render()"></div>
             <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
@@ -335,8 +394,8 @@
                     </div>
                     <div class="notes-photo-container">
                         <img id="device-photo-preview" alt="Foto">
-                        <button class="btn-reset" style="position:absolute; bottom:5px; padding:5px; font-size:10px;" onclick="document.getElementById('photo-upload').click()">+ FOTO</button>
-                        <input type="file" id="photo-upload" style="display:none" accept="image/*" onchange="loadPhoto(event)">
+                        <button type="button" class="btn-reset" style="position:absolute; bottom:5px; padding:5px; font-size:10px;" onclick="openLabelCamera('report')">+ FOTO / ŠTÍTOK</button>
+                        <input type="file" id="photo-upload" style="display:none" accept="image/*" capture="environment" onchange="handleDeviceLabelPhoto(event)">
                     </div>
                 </div>
 
@@ -459,6 +518,7 @@
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global_counter'), { value: newVal });
         } catch (e) { console.log("Chyba update counter."); }
     }
+    window.updateCloudCounter = updateCloudCounter;
 
     window.saveToCloudArchive = async () => {
         if (!user) return alert("Počkajte na pripojenie k cloudu.");
@@ -729,11 +789,259 @@
     };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    window.loadPhoto = (event) => {
-        if(event.target.files && event.target.files[0]) {
+    let labelScanSource = 'startup';
+    let lastLabelOcrText = '';
+
+    window.openLabelCamera = (source = 'controls') => {
+        labelScanSource = source;
+        const input = document.getElementById('photo-upload');
+        input.value = '';
+        input.click();
+    };
+
+    window.closeLabelScanModal = () => {
+        document.getElementById('label-scan-modal').style.display = 'none';
+    };
+
+    function showLabelScanModal() {
+        const modal = document.getElementById('label-scan-modal');
+        const result = document.getElementById('label-scan-result');
+        const progress = document.getElementById('ocr-progress-wrap');
+        result.style.display = 'none';
+        progress.style.display = 'none';
+        modal.style.display = 'flex';
+    }
+
+    function setOcrProgress(percent, text) {
+        const wrap = document.getElementById('ocr-progress-wrap');
+        const bar = document.getElementById('ocr-progress-bar');
+        const label = document.getElementById('ocr-progress-text');
+        wrap.style.display = 'block';
+        bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+        label.textContent = text;
+    }
+
+    function normalizeOcrText(text) {
+        return String(text || '')
+            .replace(/\r/g, '\n')
+            .replace(/[|]/g, 'I')
+            .replace(/[‐‑–—]/g, '-')
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n{2,}/g, '\n')
+            .trim();
+    }
+
+    function cleanValue(value) {
+        return String(value || '')
+            .replace(/^[\s:;#=.-]+/, '')
+            .replace(/[\s:;,.]+$/, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+    }
+
+    function firstMatch(text, patterns) {
+        for (const pattern of patterns) {
+            const match = text.match(pattern);
+            if (match && match[1]) return cleanValue(match[1]);
+        }
+        return '';
+    }
+
+    function findManufacturer(text) {
+        const brands = [
+            ['Mitsubishi Electric', /MITSUBISHI\s+ELECTRIC/i],
+            ['Panasonic', /PANASONIC/i], ['Vaillant', /VAILLANT/i],
+            ['Protherm', /PROTHERM/i], ['Viessmann', /VIESSMANN/i],
+            ['Buderus', /BUDERUS/i], ['Bosch', /BOSCH/i],
+            ['Daikin', /DAIKIN/i], ['Midea', /MIDEA/i], ['Samsung', /SAMSUNG/i],
+            ['LG', /(?:^|\s)LG(?:\s|$)/i], ['Gree', /GREE/i], ['AUX', /(?:^|\s)AUX(?:\s|$)/i],
+            ['Baxi', /BAXI/i], ['Immergas', /IMMERGAS/i], ['Attack', /ATTACK/i],
+            ['OPOP', /OPOP/i], ['Nibe', /NIBE/i], ['Stiebel Eltron', /STIEBEL\s+ELTRON/i],
+            ['Wolf', /(?:^|\s)WOLF(?:\s|$)/i], ['Kospel', /KOSPEL/i], ['Kaisai', /KAISAI/i],
+            ['Hyundai', /HYUNDAI/i], ['De Dietrich', /DE\s+DIETRICH/i], ['Ariston', /ARISTON/i],
+            ['Junkers', /JUNKERS/i], ['Ferroli', /FERROLI/i], ['Beretta', /BERETTA/i]
+        ];
+        for (const [name, regex] of brands) if (regex.test(text)) return name;
+        return '';
+    }
+
+    function extractDeviceData(rawText, barcodeValues = []) {
+        const text = normalizeOcrText(rawText);
+        const lines = text.split('\n').map(cleanValue).filter(Boolean);
+        const joined = lines.join('\n');
+
+        const manufacturer = findManufacturer(joined);
+        let model = firstMatch(joined, [
+            /(?:^|\n)\s*(?:MODEL|MODELLO|MODELL|MODÈLE|TYP(?:E)?|TYPE|TYPENR\.?|ART\.?\s*NO\.?)\s*[:#=]?\s*([^\n]{2,60})/i,
+            /(?:^|\n)\s*(?:ZARIADENIE|DEVICE)\s*[:#=]?\s*([^\n]{3,60})/i
+        ]);
+        model = model
+            .replace(/\s+(?:S\s*\/\s*N|SN|SERIAL|SERIENNUMMER|YEAR|ROK|BAUJAHR)\b.*$/i, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        if (model && /^(NO|NR|NUMBER|NUMMER)$/i.test(model)) model = '';
+
+        let serial = firstMatch(joined, [
+            /(?:SERIAL\s*(?:NO\.?|NUMBER)?|S\s*\/\s*N|SN|SER\.\s*NO\.?|SERIENNUMMER|SERIEN\s*NR\.?|VÝROBN[ÉE]\s*ČÍSLO|VYROBNE\s*CISLO)\s*[:#=]?\s*([A-Z0-9][A-Z0-9._\/-]{3,})/i,
+            /(?:FABR\.?\s*NR\.?|HERSTELLNUMMER)\s*[:#=]?\s*([A-Z0-9][A-Z0-9._\/-]{3,})/i
+        ]);
+        if (!serial && barcodeValues.length) {
+            const candidate = barcodeValues.find(v => /^[A-Z0-9._\/-]{6,}$/i.test(v) && !/^\d{13}$/.test(v));
+            serial = candidate || '';
+        }
+
+        let year = firstMatch(joined, [
+            /(?:YEAR|ROK(?:\s+VÝROBY)?|VYROBENE|BAUJAHR|MANUFACTURED|MFG\.?\s*DATE|DATE)\s*[:#=]?\s*((?:19|20)\d{2})/i
+        ]);
+        if (!year) {
+            const y = joined.match(/\b(20[0-3]\d|19[8-9]\d)\b/);
+            year = y ? y[1] : '';
+        }
+
+        let power = firstMatch(joined, [
+            /(?:NOMINAL\s+(?:HEAT(?:ING)?\s+)?OUTPUT|HEATING\s+CAPACITY|HEAT\s+OUTPUT|WÄRMELEISTUNG|WAERMELEISTUNG|MENOVIT[ÝY]\s+VÝKON|VYKON|OUTPUT|CAPACITY)\s*[:#=]?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*kW/i,
+            /(?:P\s*NOM|Q\s*NOM|P\s*MAX|Q\s*MAX)\s*[:#=]?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*kW/i,
+            /\b(\d{1,3}(?:[.,]\d{1,2})?)\s*kW\b/i
+        ]).replace(',', '.');
+
+        let fuel = '';
+        const refrigerant = joined.match(/\b(R\s*[-]?\s*(?:290|32|410A|407C|134A|454B|452B|744))\b/i);
+        if (refrigerant) fuel = refrigerant[1].replace(/[\s-]/g, '').toUpperCase();
+        else if (/\b(G20|NATURAL\s+GAS|ERDGAS|ZEMN[ÝY]\s+PLYN)\b/i.test(joined)) fuel = 'Zemný plyn G20';
+        else if (/\b(G31|PROPANE|PROPAN|LPG)\b/i.test(joined)) fuel = 'Propán G31';
+        else if (/PELLET|PELETA|BIOMASS/i.test(joined)) fuel = 'Pelety';
+        else if (/ELECTRIC|ELEKTRICK|230\s*V|400\s*V/i.test(joined)) fuel = 'Elektrina';
+
+        let scenario = '';
+        if (/\bR(?:290|32|410A|407C|134A|454B|452B|744)\b/i.test(fuel)) scenario = 'tc';
+        else if (/plyn|G20|G31/i.test(fuel)) scenario = 'plyn';
+        else if (/pelet/i.test(fuel)) scenario = 'pellet';
+        else if (/elektr/i.test(fuel)) scenario = 'elektro';
+
+        return { manufacturer, model, serial, year, power, fuel, scenario, rawText: text };
+    }
+
+    async function prepareImageForOcr(file) {
+        const dataUrl = await new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = f => { document.getElementById('device-photo-preview').src = f.target.result; document.getElementById('device-photo-preview').style.display='block'; };
-            reader.readAsDataURL(event.target.files[0]);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = dataUrl;
+        });
+
+        const preview = document.getElementById('device-photo-preview');
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+
+        const maxSide = 2200;
+        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = pixels.data;
+        for (let i = 0; i < d.length; i += 4) {
+            const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            const contrasted = Math.max(0, Math.min(255, (gray - 128) * 1.55 + 128));
+            d[i] = d[i + 1] = d[i + 2] = contrasted;
+        }
+        ctx.putImageData(pixels, 0, 0);
+        return { canvas, img };
+    }
+
+    async function detectBarcodes(imageSource) {
+        if (!('BarcodeDetector' in window)) return [];
+        try {
+            const detector = new BarcodeDetector({ formats: ['qr_code', 'data_matrix', 'code_128', 'code_39', 'ean_13', 'ean_8'] });
+            const found = await detector.detect(imageSource);
+            return found.map(x => x.rawValue).filter(Boolean);
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function setFieldFromOcr(id, value) {
+        if (!value) return false;
+        const el = document.getElementById(id);
+        if (!el) return false;
+        el.value = value;
+        el.classList.add('ocr-filled');
+        setTimeout(() => el.classList.remove('ocr-filled'), 5000);
+        return true;
+    }
+
+    function applyDeviceData(data) {
+        const filled = [];
+        if (setFieldFromOcr('inp-manuf', data.manufacturer)) filled.push('výrobca');
+        if (setFieldFromOcr('inp-dev', data.model)) filled.push('typ/model');
+        if (setFieldFromOcr('inp-sn', data.serial)) filled.push('sériové číslo');
+        if (setFieldFromOcr('inp-year', data.year)) filled.push('rok');
+        if (setFieldFromOcr('inp-power', data.power)) filled.push('výkon');
+        if (setFieldFromOcr('inp-fuel', data.fuel)) filled.push('palivo/chladivo');
+        if (data.scenario) {
+            document.getElementById('inp-scenario').value = data.scenario;
+            changeScenario();
+        } else render();
+        return filled;
+    }
+
+    window.handleDeviceLabelPhoto = async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        const modal = document.getElementById('label-scan-modal');
+        const resultBox = document.getElementById('label-scan-result');
+        modal.style.display = 'flex';
+        resultBox.style.display = 'none';
+        setOcrProgress(5, 'Načítavam fotografiu štítku...');
+        document.getElementById('device-scan-status').textContent = 'Rozpoznávam údaje zo štítku...';
+
+        try {
+            const prepared = await prepareImageForOcr(file);
+            setOcrProgress(15, 'Hľadám čiarový alebo QR kód...');
+            const barcodeValues = await detectBarcodes(prepared.img);
+
+            if (!window.Tesseract) throw new Error('OCR knižnica sa nenačítala.');
+            setOcrProgress(20, 'Rozpoznávam text. Môže to chvíľu trvať...');
+            const recognition = await Tesseract.recognize(prepared.canvas, 'eng+deu', {
+                logger: message => {
+                    if (message.status === 'recognizing text') {
+                        const pct = 20 + Math.round((message.progress || 0) * 75);
+                        setOcrProgress(pct, `Rozpoznávam text ${Math.round((message.progress || 0) * 100)} %`);
+                    }
+                }
+            });
+
+            lastLabelOcrText = recognition.data.text || '';
+            const data = extractDeviceData(lastLabelOcrText, barcodeValues);
+            const filled = applyDeviceData(data);
+            setOcrProgress(100, 'Rozpoznávanie dokončené');
+
+            const summary = filled.length
+                ? `Automaticky vyplnené: <strong>${filled.join(', ')}</strong>. Údaje skontrolujte podľa fotografie.`
+                : 'Fotografia je vložená, ale údaje sa nepodarilo spoľahlivo rozpoznať. Vyplňte ich ručne alebo štítok odfoťte znova.';
+            resultBox.innerHTML = summary;
+            resultBox.style.display = 'block';
+            document.getElementById('device-scan-status').innerHTML = filled.length
+                ? `✅ Rozpoznané: ${filled.join(', ')}. Skontrolujte správnosť údajov.`
+                : '⚠️ Štítok bol odfotený, ale údaje neboli spoľahlivo rozpoznané.';
+
+            setTimeout(() => closeLabelScanModal(), filled.length ? 1700 : 2800);
+        } catch (error) {
+            console.error('OCR chyba:', error);
+            setOcrProgress(100, 'Rozpoznávanie sa nepodarilo');
+            resultBox.innerHTML = 'Fotografia bola vložená do správy, ale automatické čítanie zlyhalo. Skontrolujte internetové pripojenie alebo údaje vyplňte ručne.';
+            resultBox.style.display = 'block';
+            document.getElementById('device-scan-status').textContent = '⚠️ Automatické rozpoznanie zlyhalo. Fotografia zostala uložená v náhľade.';
         }
     };
 
@@ -771,7 +1079,12 @@
     }
 
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
-    window.onload = () => { generateNo(); initQR(); changeScenario(); };
+    window.onload = () => {
+        generateNo();
+        initQR();
+        changeScenario();
+        setTimeout(showLabelScanModal, 250);
+    };
 </script>
 </body>
 </html>
