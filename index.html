@@ -9,7 +9,7 @@
   <div id="rs2-loader" style="font-family:Arial,sans-serif;padding:24px;text-align:center">Načítavam RS2…</div>
   <script>
   (async () => {
-    const sourceUrl = './rs2-app.html?v=20260916-rlfix2';
+    const sourceUrl = './rs2-app.html?v=20260916-rlfix3';
     const closeScript = '</scr' + 'ipt>';
     try {
       const response = await fetch(sourceUrl, { cache: 'no-store' });
@@ -80,10 +80,24 @@
         console.warn('RS2: Tesseract marker nebol nájdený.');
       }
 
-      // 2) Firebase Auth: najprv necháme obnoviť persistované prihlásenie.
-      //    Anonymné prihlásenie sa spustí iba ak po 1,5 s stále nie je používateľ.
+      // 2) Firebase Auth: počkáme na obnovenie persistovaného prihlásenia.
+      //    Ak používateľ stále nie je prihlásený, nový pokus dovolíme najviac raz za 30 s.
       const authStart = '    initAuth();\n\n    onAuthStateChanged(auth, async (u) => {';
-      const authSafe = '    setTimeout(() => { if (!auth.currentUser) initAuth(); }, 1500);\n\n    onAuthStateChanged(auth, async (u) => {';
+      const authSafe = `    setTimeout(async () => {
+        if (typeof auth.authStateReady === 'function') await auth.authStateReady();
+        if (auth.currentUser) return;
+        const throttleKey = 'rs2_auth_last_attempt';
+        const lastAttempt = Number(localStorage.getItem(throttleKey) || 0);
+        if (Date.now() - lastAttempt < 30000) {
+            const statusEl = document.getElementById('cloud-status-text');
+            if (statusEl) statusEl.innerHTML = '<span class="status-off">Cloud: ochrana pred limitom požiadaviek ⏳</span>';
+            return;
+        }
+        localStorage.setItem(throttleKey, String(Date.now()));
+        initAuth();
+    }, 250);
+
+    onAuthStateChanged(auth, async (u) => {`;
       if (html.includes(authStart)) {
         html = html.replace(authStart, authSafe);
       } else {
