@@ -1,0 +1,314 @@
+name: RS2 rate-limit hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rs2-rate-limit-hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-rs2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch Firebase auth and label OCR request throttling
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old_auth = r'''    let user = null;
+
+    // RULE 3 - Auth s fallbackom pri chybe tokenu
+    const initAuth = async () => {
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (tokenErr) {
+                    await signInAnonymously(auth);
+                }
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (e) {
+            console.error("Cloud Error", e);
+        }
+    };
+    initAuth();
+
+    onAuthStateChanged(auth, async (u) => {
+        user = u;
+        const statusEl = document.getElementById('cloud-status-text');
+        if (user) {
+            statusEl.innerHTML = '<span class="status-on">Cloud zjednotený ✅</span>';
+            // Po prihlásení skúsime zosynchronizovať počítadlo z cloudu
+            await syncCounterFromCloud();
+        } else {
+            statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
+        }
+    });'''
+
+          new_auth = r'''    let user = null;
+    let authInitInFlight = false;
+    let lastSyncedUid = null;
+    const AUTH_BACKOFF_KEY = 'rs2_auth_backoff_until';
+
+    function isAuthRateLimitError(error) {
+        const code = String(error?.code || '').toLowerCase();
+        const message = String(error?.message || error || '').toLowerCase();
+        return code.includes('too-many-requests') || message.includes('too many requests') || message.includes('429');
+    }
+
+    function setCloudStatus(html) {
+        const statusEl = document.getElementById('cloud-status-text');
+        if (statusEl) statusEl.innerHTML = html;
+    }
+
+    // Firebase Auth si používateľa pamätá. Nové anonymné prihlásenie robíme len vtedy,
+    // keď po obnovení persistovaného stavu naozaj nie je prihlásený používateľ.
+    const initAuth = async () => {
+        if (authInitInFlight) return;
+        authInitInFlight = true;
+        try {
+            if (typeof auth.authStateReady === 'function') await auth.authStateReady();
+            if (auth.currentUser) {
+                user = auth.currentUser;
+                localStorage.removeItem(AUTH_BACKOFF_KEY);
+                return;
+            }
+
+            const blockedUntil = Number(localStorage.getItem(AUTH_BACKOFF_KEY) || 0);
+            if (Date.now() < blockedUntil) {
+                const seconds = Math.max(1, Math.ceil((blockedUntil - Date.now()) / 1000));
+                setCloudStatus(`<span class="status-off">Cloud čaká po limite požiadaviek (${seconds} s) ⏳</span>`);
+                setTimeout(initAuth, Math.min(blockedUntil - Date.now() + 250, 60000));
+                return;
+            }
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (tokenErr) {
+                    if (isAuthRateLimitError(tokenErr)) throw tokenErr;
+                    if (!auth.currentUser) await signInAnonymously(auth);
+                }
+            } else if (!auth.currentUser) {
+                await signInAnonymously(auth);
+            }
+
+            localStorage.removeItem(AUTH_BACKOFF_KEY);
+        } catch (e) {
+            if (isAuthRateLimitError(e)) {
+                const retryAt = Date.now() + 60000;
+                localStorage.setItem(AUTH_BACKOFF_KEY, String(retryAt));
+                setCloudStatus('<span class="status-off">Cloud: limit požiadaviek – ďalší pokus o 60 s ⏳</span>');
+                setTimeout(initAuth, 60500);
+            } else {
+                console.error("Cloud Error", e);
+                setCloudStatus('<span class="status-off">Cloud momentálne nedostupný ⚠️</span>');
+            }
+        } finally {
+            authInitInFlight = false;
+        }
+    };
+
+    onAuthStateChanged(auth, async (u) => {
+        user = u;
+        if (user) {
+            setCloudStatus('<span class="status-on">Cloud zjednotený ✅</span>');
+            localStorage.removeItem(AUTH_BACKOFF_KEY);
+            // Synchronizáciu počítadla spusti iba raz pre konkrétne prihlásenie.
+            if (lastSyncedUid !== user.uid) {
+                lastSyncedUid = user.uid;
+                await syncCounterFromCloud();
+            }
+        } else {
+            setCloudStatus('<span class="status-off">Čakám na spojenie... ⏳</span>');
+        }
+    });
+
+    initAuth();'''
+
+          if old_auth not in text:
+              raise SystemExit('AUTH block not found; refusing unsafe patch')
+          text = text.replace(old_auth, new_auth, 1)
+
+          old_vars = r'''    let labelScanSource = 'startup';
+    let lastLabelOcrText = '';'''
+
+          new_vars = r'''    let labelScanSource = 'startup';
+    let lastLabelOcrText = '';
+    let labelOcrBusy = false;
+    let labelOcrWorkerPromise = null;
+    let labelOcrCooldownUntil = 0;
+
+    function isOcrRateLimitError(error) {
+        const message = String(error?.message || error || '').toLowerCase();
+        return message.includes('too many requests') || message.includes('429') || message.includes('rate limit');
+    }
+
+    function setLabelScanButtonsDisabled(disabled) {
+        document.querySelectorAll('.btn-label-camera, .btn-label-rescan').forEach(btn => {
+            btn.disabled = disabled;
+            btn.style.opacity = disabled ? '0.55' : '';
+            btn.style.cursor = disabled ? 'not-allowed' : '';
+        });
+    }
+
+    async function getLabelOcrWorker() {
+        if (!window.Tesseract) throw new Error('OCR knižnica sa nenačítala.');
+        if (!labelOcrWorkerPromise) {
+            // Jeden ENG worker je pre názov/model/SN spoľahlivejší a hlavne sa nesťahujú
+            // dva jazykové balíky pri každom novom rozpoznávaní.
+            labelOcrWorkerPromise = Tesseract.createWorker('eng', 1, {
+                logger: message => {
+                    if (message.status === 'recognizing text') {
+                        const pct = 20 + Math.round((message.progress || 0) * 75);
+                        setOcrProgress(pct, `Rozpoznávam text ${Math.round((message.progress || 0) * 100)} %`);
+                    }
+                }
+            }).catch(error => {
+                labelOcrWorkerPromise = null;
+                throw error;
+            });
+        }
+        return labelOcrWorkerPromise;
+    }
+
+    async function recognizeDeviceLabel(canvas) {
+        const worker = await getLabelOcrWorker();
+        return worker.recognize(canvas);
+    }'''
+
+          if old_vars not in text:
+              raise SystemExit('OCR vars block not found; refusing unsafe patch')
+          text = text.replace(old_vars, new_vars, 1)
+
+          old_open = r'''    window.openLabelCamera = (source = 'controls') => {
+        labelScanSource = source;
+        const input = document.getElementById('photo-upload');
+        input.value = '';
+        input.click();
+    };'''
+
+          new_open = r'''    window.openLabelCamera = (source = 'controls') => {
+        if (labelOcrBusy) {
+            document.getElementById('device-scan-status').textContent = '⏳ Štítok sa už spracúva. Počkajte na dokončenie.';
+            return;
+        }
+        if (Date.now() < labelOcrCooldownUntil) {
+            const seconds = Math.max(1, Math.ceil((labelOcrCooldownUntil - Date.now()) / 1000));
+            document.getElementById('device-scan-status').textContent = `⏳ Ochrana proti limitu požiadaviek: skúste znova o ${seconds} s.`;
+            return;
+        }
+        labelScanSource = source;
+        const input = document.getElementById('photo-upload');
+        input.value = '';
+        input.click();
+    };'''
+
+          if old_open not in text:
+              raise SystemExit('openLabelCamera block not found; refusing unsafe patch')
+          text = text.replace(old_open, new_open, 1)
+
+          old_handler_start = r'''    window.handleDeviceLabelPhoto = async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        const modal = document.getElementById('label-scan-modal');'''
+
+          new_handler_start = r'''    window.handleDeviceLabelPhoto = async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (labelOcrBusy) return;
+        if (Date.now() < labelOcrCooldownUntil) {
+            const seconds = Math.max(1, Math.ceil((labelOcrCooldownUntil - Date.now()) / 1000));
+            document.getElementById('device-scan-status').textContent = `⏳ OCR je po limite pozastavené. Skúste znova o ${seconds} s.`;
+            return;
+        }
+
+        labelOcrBusy = true;
+        setLabelScanButtonsDisabled(true);
+
+        const modal = document.getElementById('label-scan-modal');'''
+
+          if old_handler_start not in text:
+              raise SystemExit('OCR handler start not found; refusing unsafe patch')
+          text = text.replace(old_handler_start, new_handler_start, 1)
+
+          old_recognition = r'''            if (!window.Tesseract) throw new Error('OCR knižnica sa nenačítala.');
+            setOcrProgress(20, 'Rozpoznávam text. Môže to chvíľu trvať...');
+            const recognition = await Tesseract.recognize(prepared.canvas, 'eng+deu', {
+                logger: message => {
+                    if (message.status === 'recognizing text') {
+                        const pct = 20 + Math.round((message.progress || 0) * 75);
+                        setOcrProgress(pct, `Rozpoznávam text ${Math.round((message.progress || 0) * 100)} %`);
+                    }
+                }
+            });'''
+
+          new_recognition = r'''            if (!window.Tesseract) throw new Error('OCR knižnica sa nenačítala.');
+            setOcrProgress(20, 'Rozpoznávam text. Môže to chvíľu trvať...');
+            // Worker sa vytvorí iba raz a potom sa znovu používa. Nevznikajú paralelné
+            // sťahovania workerov/jazykových dát pri opakovanom fotení štítku.
+            const recognition = await recognizeDeviceLabel(prepared.canvas);'''
+
+          if old_recognition not in text:
+              raise SystemExit('Tesseract recognition block not found; refusing unsafe patch')
+          text = text.replace(old_recognition, new_recognition, 1)
+
+          old_catch_end = r'''        } catch (error) {
+            console.error('OCR chyba:', error);
+            setOcrProgress(100, 'Rozpoznávanie sa nepodarilo');
+            resultBox.innerHTML = 'Fotografia bola vložená do správy, ale automatické čítanie zlyhalo. Skontrolujte internetové pripojenie alebo údaje vyplňte ručne.';
+            resultBox.style.display = 'block';
+            document.getElementById('device-scan-status').textContent = '⚠️ Automatické rozpoznanie zlyhalo. Fotografia zostala uložená v náhľade.';
+        }
+    };'''
+
+          new_catch_end = r'''        } catch (error) {
+            console.error('OCR chyba:', error);
+            setOcrProgress(100, 'Rozpoznávanie sa nepodarilo');
+            if (isOcrRateLimitError(error)) {
+                labelOcrCooldownUntil = Date.now() + 30000;
+                resultBox.innerHTML = 'Server dočasne obmedzil počet požiadaviek. RS2 ďalšie OCR na 30 sekúnd pozastavilo, aby sa limit nezvyšoval. Fotografia zostala v správe.';
+                document.getElementById('device-scan-status').textContent = '⏳ Limit požiadaviek (429): OCR je na 30 s pozastavené.';
+            } else {
+                resultBox.innerHTML = 'Fotografia bola vložená do správy, ale automatické čítanie zlyhalo. Skontrolujte internetové pripojenie alebo údaje vyplňte ručne.';
+                document.getElementById('device-scan-status').textContent = '⚠️ Automatické rozpoznanie zlyhalo. Fotografia zostala uložená v náhľade.';
+            }
+            resultBox.style.display = 'block';
+        } finally {
+            labelOcrBusy = false;
+            setLabelScanButtonsDisabled(false);
+        }
+    };'''
+
+          if old_catch_end not in text:
+              raise SystemExit('OCR catch block not found; refusing unsafe patch')
+          text = text.replace(old_catch_end, new_catch_end, 1)
+
+          path.write_text(text, encoding='utf-8')
+          print('RS2 patch applied successfully')
+          PY
+
+      - name: Commit hotfix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Fix RS2 too-many-requests handling"
+          git push origin main
