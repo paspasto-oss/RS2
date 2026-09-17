@@ -9,76 +9,12 @@
   <div id="rs2-loader" style="font-family:Arial,sans-serif;padding:24px;text-align:center">Načítavam RS2…</div>
   <script>
   (async () => {
-    const sourceUrl = './rs2-app.html?v=20260916-rlfix3';
+    const sourceUrl = './rs2-app.html?v=20260917-ocr3';
     const closeScript = '</scr' + 'ipt>';
     try {
       const response = await fetch(sourceUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
       let html = await response.text();
-
-      // 1) OCR ochrana: jeden znovupoužiteľný worker, požiadavky idú do frontu,
-      //    po 429 sa na 30 s zastavia. Tým nevzniká viac rozpoznávaní naraz.
-      const tesseractOpen = '<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">';
-      const tesseractMarker = tesseractOpen + closeScript;
-      const ocrGuard = `
-<script>
-(() => {
-  const T = window.Tesseract;
-  if (!T || typeof T.createWorker !== 'function') return;
-
-  let workerPromise = null;
-  let queue = Promise.resolve();
-  let cooldownUntil = 0;
-
-  const isRateLimit = (error) => {
-    const message = String(error && (error.message || error) || '').toLowerCase();
-    return message.includes('429') || message.includes('too many requests') || message.includes('rate limit');
-  };
-
-  const getWorker = (logger) => {
-    if (!workerPromise) {
-      workerPromise = T.createWorker(['eng', 'deu'], 1, {
-        logger: message => {
-          try { if (window.__rs2CurrentOcrLogger) window.__rs2CurrentOcrLogger(message); } catch (_) {}
-        }
-      }).catch(error => {
-        workerPromise = null;
-        throw error;
-      });
-    }
-    window.__rs2CurrentOcrLogger = logger || null;
-    return workerPromise;
-  };
-
-  T.recognize = (image, _langs, options = {}) => {
-    const task = queue.then(async () => {
-      const remaining = cooldownUntil - Date.now();
-      if (remaining > 0) {
-        throw new Error('429: OCR cooldown ' + Math.ceil(remaining / 1000) + ' s');
-      }
-      try {
-        const worker = await getWorker(options && options.logger);
-        return await worker.recognize(image);
-      } catch (error) {
-        if (isRateLimit(error)) cooldownUntil = Date.now() + 30000;
-        throw error;
-      } finally {
-        window.__rs2CurrentOcrLogger = null;
-      }
-    });
-    queue = task.catch(() => undefined);
-    return task;
-  };
-
-  window.__RS2_OCR_GUARD__ = true;
-})();
-` + closeScript;
-
-      if (html.includes(tesseractMarker)) {
-        html = html.replace(tesseractMarker, tesseractMarker + ocrGuard);
-      } else {
-        console.warn('RS2: Tesseract marker nebol nájdený.');
-      }
 
       // 2) Firebase Auth: počkáme na obnovenie persistovaného prihlásenia.
       //    Ak používateľ stále nie je prihlásený, nový pokus dovolíme najviac raz za 30 s.
@@ -136,3 +72,4 @@ document.addEventListener('click', (event) => {
   </script>
 </body>
 </html>
+

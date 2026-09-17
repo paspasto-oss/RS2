@@ -13,9 +13,8 @@
     <meta name="apple-mobile-web-app-title" content="RS2 Revízie">
 
     <!-- Knižnice -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" onload="if(window.render) render()"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -167,7 +166,7 @@
             align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;
         }
         .label-scan-card {
-            width: 100%; max-width: 460px; background: #fff; border-radius: 18px; overflow: hidden;
+            width: 100%; max-width: 740px; max-height: 94vh; overflow-y: auto; background: #fff; border-radius: 18px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         }
         .label-scan-head { background: var(--primary); color: #fff; padding: 22px; text-align: center; }
@@ -189,6 +188,25 @@
         .label-scan-result { display:none; margin-top:14px; padding:12px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-size:12px; line-height:1.45; }
         .device-scan-panel { background:#fff7f7; border:1px solid #fecaca; border-radius:8px; padding:10px; margin-bottom:10px; }
         .device-scan-status { font-size:11px; color:#475569; line-height:1.35; margin-top:6px; }
+        [hidden] { display: none !important; }
+        .label-scan-card button:disabled { opacity: .55; cursor: wait; }
+        .scan-help { font-size: 12px; color: #475569; line-height: 1.5; }
+        #label-crop-canvas { display: block; max-width: 100%; height: auto; margin: 12px auto; touch-action: none; cursor: crosshair; background: #eef2f7; }
+        .scan-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .scan-toolbar button { flex: 1; padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer; }
+        #label-review-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 12px 0; }
+        .scan-field { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        .scan-field-label { display: flex; align-items: center; font-weight: 700; font-size: 13px; gap: 6px; margin-bottom: 8px; }
+        .scan-field-label input { width: 18px; height: 18px; flex: 0 0 18px; }
+        .scan-field input[type=text], .scan-field select, #label-raw-text { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; font-size: 16px; }
+        .scan-field select { margin-top: 6px; font-size: 12px; }
+        .scan-field small { display: block; color: #475569; font-size: 11px; line-height: 1.4; margin-top: 6px; overflow-wrap: anywhere; }
+        .scan-details { margin: 16px 0; font-size: 12px; line-height: 1.5; }
+        .scan-details summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+        .scan-details label { display: block; margin-bottom: 8px; }
+        #label-method-log { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+        #label-close, #label-cancel { margin-top: 12px; }
+        @media(max-width: 540px) { #label-review-fields { grid-template-columns: 1fr; } #label-scan-modal { padding: 6px; } .label-scan-body { padding: 14px; } }
         .ocr-filled { border-color:#22c55e !important; background:#f0fdf4 !important; box-shadow:0 0 0 2px rgba(34,197,94,.12); }
 
         @media print {
@@ -215,17 +233,40 @@
         </div>
         <div class="label-scan-body">
             <div class="label-scan-tip">
-                Štítok odfoťte rovno, zblízka, bez odlesku a tak, aby bol celý text ostrý. Rozpoznané údaje pred uložením skontrolujte.
+                Odfoťte ostrý štítok bez odlesku. Po načítaní môžete prstom alebo myšou označiť len štítok a čítanie zopakovať. Pri prvom použití je potrebný internet na načítanie rozpoznávania; fotografia sa spracúva v tomto prehliadači.
             </div>
             <div class="label-scan-actions">
-                <button type="button" class="btn-label-camera" onclick="openLabelCamera('startup')">📸 ODFOTIŤ ŠTÍTOK</button>
-                <button type="button" class="btn-label-skip" onclick="closeLabelScanModal()">Pokračovať bez fotografie</button>
+                <button type="button" class="btn-label-camera" data-scan-lock onclick="openLabelCamera('startup')">📸 ODFOTIŤ ŠTÍTOK</button>
+                <button type="button" class="btn-label-skip" data-scan-lock onclick="openLabelGallery()">Vybrať fotografiu zo súborov</button>
             </div>
-            <div class="ocr-progress-wrap" id="ocr-progress-wrap">
+            <div id="label-editor" hidden>
+                <p class="scan-help">Ťahaním označte štítok. Potom stlačte „Načítať vybranú oblasť“.</p>
+                <canvas id="label-crop-canvas" aria-label="Fotografia štítku; orezanie myšou alebo dotykom"></canvas>
+                <div class="scan-toolbar">
+                    <button type="button" data-scan-lock onclick="rotateLabelPhoto()">Otočiť ↻ 90°</button>
+                    <button type="button" data-scan-lock onclick="resetLabelCrop()">Celá fotografia</button>
+                </div>
+                <button type="button" class="btn-label-rescan" data-scan-lock onclick="runLabelScan()">Načítať vybranú oblasť</button>
+            </div>
+            <div class="ocr-progress-wrap" id="ocr-progress-wrap" role="status" aria-live="polite">
                 <div class="ocr-progress-track"><div class="ocr-progress-bar" id="ocr-progress-bar"></div></div>
                 <div class="ocr-progress-text" id="ocr-progress-text">Pripravujem rozpoznávanie...</div>
             </div>
-            <div class="label-scan-result" id="label-scan-result"></div>
+            <button type="button" id="label-cancel" class="btn-label-skip" hidden onclick="cancelLabelScan()">Zastaviť rozpoznávanie</button>
+            <div class="label-scan-result" id="label-scan-result" role="status" aria-live="polite"></div>
+            <div id="label-review" hidden>
+                <p class="scan-help">Skontrolujte návrhy podľa fotografie. Neisté návrhy treba upraviť alebo osobitne zaškrtnúť. Zaškrtnuté údaje sa prenesú do správy. Prázdne alebo nezaškrtnuté polia zachovajú pôvodný údaj.</p>
+                <div id="label-review-fields"></div>
+                <button type="button" class="btn-label-camera" data-scan-lock onclick="confirmLabelData()">VLOŽIŤ VYBRANÉ ÚDAJE DO DOKUMENTU</button>
+            </div>
+            <details class="scan-details">
+                <summary>Rozpoznaný text / vložiť text zo štítku</summary>
+                <label for="label-raw-text">Ak máte text skopírovaný z fotografie, vložte ho sem.</label>
+                <textarea id="label-raw-text" rows="7" maxlength="30000" placeholder="Značka, model, S/N..."></textarea>
+                <button type="button" class="btn-label-skip" data-scan-lock onclick="parsePastedLabelText()">Vyhľadať údaje v texte</button>
+                <pre id="label-method-log"></pre>
+            </details>
+            <button type="button" id="label-close" class="btn-label-skip" onclick="closeLabelScanModal()">Späť do dokumentu</button>
         </div>
     </div>
 </div>
@@ -305,15 +346,16 @@
         
         <div class="section-title">Technické zariadenie</div>
         <div class="device-scan-panel">
-            <button type="button" class="btn-label-rescan" onclick="openLabelCamera('controls')">📷 ODFOTIŤ / ZNOVU NAČÍTAŤ ŠTÍTOK</button>
+            <button type="button" class="btn-label-rescan" data-scan-lock onclick="openLabelCamera('controls')">📷 ODFOTIŤ / ZNOVU NAČÍTAŤ ŠTÍTOK</button>
+            <button type="button" class="btn-label-skip" onclick="showLabelScanModal()">Skontrolovať údaje / orezať fotografiu</button>
             <div class="device-scan-status" id="device-scan-status">Výrobcu, typ, sériové číslo, rok a výkon môžete vyplniť automaticky z fotografie štítku.</div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Typ</label><input type="text" id="inp-dev" oninput="render()"></div>
-            <div class="form-group"><label>Výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
+            <div class="form-group"><label>Názov / typ / model</label><input type="text" id="inp-dev" oninput="render()"></div>
+            <div class="form-group"><label>Značka / výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
+            <div class="form-group"><label>Výrobné číslo / S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
             <div class="form-group"><label>Rok</label><input type="text" id="inp-year" oninput="render()"></div>
         </div>
         <div class="form-row">
@@ -396,6 +438,7 @@
                         <img id="device-photo-preview" alt="Foto">
                         <button type="button" class="btn-reset" style="position:absolute; bottom:5px; padding:5px; font-size:10px;" onclick="openLabelCamera('report')">+ FOTO / ŠTÍTOK</button>
                         <input type="file" id="photo-upload" style="display:none" accept="image/*" capture="environment" onchange="handleDeviceLabelPhoto(event)">
+                        <input type="file" id="photo-gallery" hidden accept="image/*" onchange="handleDeviceLabelPhoto(event)">
                     </div>
                 </div>
 
@@ -669,7 +712,11 @@
         rozvod: { title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bg", rows: [["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"], ["Kontrola upevnenia potrubia", "Pevné", "OK"], ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"], ["Stav protikoróznej ochrany", "Bez korózie", "OK"], ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"], ["Kontrola označenia potrubia", "Jasné", "OK"], ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"], ["Ochrana pred mech. poškodením", "Dostatočná", "OK"], ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"], ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]] }
     };
 
-    function initQR() { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' }); }
+    function initQR() {
+        if (qr || !window.QRious) return;
+        try { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' }); }
+        catch (error) { console.warn('Platobný QR kód nie je dostupný.', error); }
+    }
 
     function render() {
         if(!qr) initQR();
@@ -722,7 +769,7 @@
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
         const vs = document.getElementById('inp-invoice').value || "";
-        qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
+        if (qr) qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = vs || "—";
     }
@@ -789,265 +836,723 @@
     };
     document.getElementById('full-screen-canvas').onmouseup = document.getElementById('full-screen-canvas').ontouchend = () => isDrawing=false;
 
-    let labelScanSource = 'startup';
+    // RS2 label reader: image ensemble + positioned text + anchored field parser.
+    // References: github.com/naptha/tesseract.js/docs/api.md,
+    // tesseract-ocr.github.io/tessdoc/ImproveQuality.html, github.com/zxing-js/library.
+    // Codes remain verbatim: do not substitute O/0, I/1, B/8 in serial numbers.
+    const LABEL_FIELDS = [
+        ['manufacturer', 'inp-manuf', 'Značka / výrobca'],
+        ['model', 'inp-dev', 'Názov / typ / model'],
+        ['serial', 'inp-sn', 'Výrobné číslo / S/N'],
+        ['year', 'inp-year', 'Rok výroby'],
+        ['power', 'inp-power', 'Menovitý výkon (kW)'],
+        ['fuel', 'inp-fuel', 'Palivo / chladivo']
+    ];
+    const scanState = { image: null, crop: null, drag: null, busy: false, token: 0,
+        worker: null, stop: null, candidates: [], results: {}, log: [] };
     let lastLabelOcrText = '';
-
-    window.openLabelCamera = (source = 'controls') => {
-        labelScanSource = source;
-        const input = document.getElementById('photo-upload');
-        input.value = '';
-        input.click();
-    };
-
-    window.closeLabelScanModal = () => {
-        document.getElementById('label-scan-modal').style.display = 'none';
-    };
-
-    function showLabelScanModal() {
-        const modal = document.getElementById('label-scan-modal');
-        const result = document.getElementById('label-scan-result');
-        const progress = document.getElementById('ocr-progress-wrap');
-        result.style.display = 'none';
-        progress.style.display = 'none';
-        modal.style.display = 'flex';
+    const byId = id => document.getElementById(id);
+    const foldLabel = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    function normalizeOcrText(text) {
+        return String(text || '').replace(/\r\n?/g, '\n').replace(/[‐‑–—−]/g, '-')
+            .replace(/\u00a0/g, ' ').replace(/[\t ]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
     }
+    function cleanValue(value) {
+        return String(value || '').replace(/^[\s:;#=|]+/, '').replace(/[\s:;,.|]+$/, '').trim();
+    }
+    const FIELD_LABELS = {
+        manufacturer: '(?:MANUFACTURER|MANUFACTURED BY|HERSTELLER|VYROBCA|VYROBCE|ZNACKA|BRAND|MARQUE)',
+        model: '(?:MODEL(?:LO|LE|L)?|MOD[ÈE]LE|TYP(?:E|EN)?|NAZOV(?: ZARIADENIA)?|ZARIADENIE|DEVICE(?: NAME)?|PRODUCT NAME|BEZEICHNUNG)',
+        serial: '(?:S?ERIAL(?:[ -]*(?:NUMMER|NUMBER|NO\\.?|NR\\.?))?|SERIEN(?:[ -]*(?:NUMMER|NR\\.?|NO\\.?))|SER\\.?[ -]*(?:NO\\.?|NR\\.?)|S\\s*[/\\\\-]\\s*N|S\\.?N\\.?|VYROBN[EYI](?:[ -]*(?:CISLO|C\\.?))|VYR\\.?\\s*(?:CISLO|C\\.?)|V\\.?\\s*C\\.?|FABR(?:IKATIONS)?\\.?[ -]*(?:NR\\.?|NO\\.?|NUMMER)|FABRICATION[ -]*(?:NO\\.?|NUMBER)|HERSTELL(?:UNGS)?NUMMER|MFG\\.?\\s*(?:NO\\.?|NR\\.?|NUMBER)|MATRICOLA|SER[ -]*NO\\.?)',
+        year: '(?:ROK(?: VYROBY)?|YEAR(?: OF MANUFACTURE)?|BAUJAHR|VYROBENE|DATUM VYROBY|MFG\\.?\\s*DATE|MANUFACTURED(?: DATE)?)',
+        power: '(?:MENOVIT[YI] VYKON|VYKON|NOMINAL (?:HEAT(?:ING)? )?OUTPUT|RATED HEATING CAPACITY|HEATING CAPACITY|HEAT OUTPUT|WARMELEISTUNG|NENNWARMELEISTUNG|P\\s*NOM)',
+        fuel: '(?:REFRIGERANT|CHLADIVO|KALTEMITTEL|FUEL|PALIVO|GAS TYPE)'
+    };
+    const OTHER_LABEL = '(?:SERVICE REF\\.?|FACTORY CODE|POWER SUPPLY|RATED (?:INPUT|VOLTAGE|CURRENT|CAPACITY)|BACKUP HEATER|CONTROL BOARD|AIR TO WATER|PS HIGH|PS LOW|GWP|MFG\\.?\\s*DATE|ART(?:ICLE)?\\.?[ -]*(?:NO|NR)|PRODUCT CODE|PART[ -]*(?:NO|NUMBER)|P\\s*/\\s*N|EAN|GTIN|VOLTAGE|FREQUENCY|POWER INPUT|INPUT|MAX\\.?|COUNTRY|MADE IN|IP\\s*\\d|CE\\b|PRESSURE|NET WEIGHT|WEIGHT|HERTZ|COOLING CAPACITY|DATE)';
+    const LABEL_TAIL = '(?:\\s*(?:NO\\.?|NR\\.?|NUMBER|NUMMER))?';
+    const ALL_LABELS = Object.values(FIELD_LABELS).join('|') + '|' + OTHER_LABEL;
+    function labelMatches(line) {
+        const folded = foldLabel(line), found = [];
+        for (const [field, pattern] of Object.entries(FIELD_LABELS)) {
+            const re = new RegExp('(^|[^A-Z0-9])(' + pattern + LABEL_TAIL + ')(?=$|[^A-Z0-9])', 'g');
+            let m;
+            while ((m = re.exec(folded))) found.push({ field, start: m.index + m[1].length, end: re.lastIndex });
+        }
+        return found.sort((a, b) => a.start - b.start || b.end - a.end)
+            .filter((m, i, list) => !list.slice(0, i).some(p => p.start <= m.start && p.end >= m.end));
+    }
+    function isLabelLine(line) { return new RegExp('^(?:' + ALL_LABELS + ')(?=$|[^A-Z0-9])').test(foldLabel(cleanValue(line))); }
+    function clipAtNextLabel(value) {
+        const m = new RegExp('(?:\\s+|[|;])(?:' + ALL_LABELS + ')(?=$|[^A-Z0-9])').exec(foldLabel(value));
+        return cleanValue(m ? value.slice(0, m.index) : value);
+    }
+    function validField(field, input) {
+        let value = cleanValue(input);
+        if (field === 'model') value = value.replace(/\s*<H>\s*$/i, '').trim();
+        const upper = foldLabel(value);
+        if (/^(?:NO|NR|NUMBER|NUMMER|MODEL|TYPE|TYP)$/i.test(value)) return '';
+        if (!value || value.length > 100 || /[<>\u0000-\u001f]/.test(value) || /^https?:/i.test(value) || isLabelLine(value)) return '';
+        if (field === 'serial') {
+            if (value.length < 4 || value.length > 60 || !/^[A-Z0-9][A-Z0-9 ._\/-]*$/i.test(value) || (value.match(/\d/g) || []).length < 3) return '';
+            if (value.split(/\s+/).slice(1).some(token => /^[A-Z]{4,}$/i.test(token))) return '';
+            if (/^\d{1,3}\s*(?:V|HZ|KW|W|A|KG|BAR|MPA)$/i.test(value) || /^\d{1,2}[./]\d{1,2}[./]\d{2,4}$/.test(value)) return '';
+        }
+        if (field === 'model' && (!/\d/.test(value) && !/ECOTEC|AROTHERM|TIGER|PANTHER|VULKAN|BIOPEL|VITODENS|LOGAMAX/i.test(value))) return '';
+        if (field === 'model' && (value.length < 2 || value.length > 85 || !/[A-Z\d]/i.test(upper) || /^\d+(?:[.,]\d+)?\s*(?:KW|V|HZ|A|KG|BAR|MPA)$/.test(upper))) return '';
+        if (field === 'manufacturer' && (value.length < 2 || value.length > 65 || !/[A-Z]/.test(upper))) return '';
+        if (field === 'year') {
+            const m = value.match(/\b((?:19|20)\d{2})\b/);
+            return m && +m[1] >= 1950 && +m[1] <= new Date().getFullYear() ? m[1] : '';
+        }
+        if (field === 'power') {
+            const m = value.match(/^(\d{1,3}(?:[.,]\d{1,3})?)\s*kW\b/i);
+            return m && +m[1].replace(',', '.') > 0 ? m[1].replace(',', '.') : '';
+        }
+        if (field === 'fuel') {
+            const m = upper.match(/\bR\s*-?\s*(290|32|410A|407C|134A|454B|452B|744)\b/);
+            if (m) return 'R' + m[1];
+            if (/\b(G20|NATURAL GAS|ERDGAS|ZEMNY PLYN)\b/.test(upper)) return 'Zemný plyn G20';
+            if (/\b(G31|PROPANE|PROPAN|LPG)\b/.test(upper)) return 'Propán G31';
+            if (/PELLET|PELETY|BIOMASS/.test(upper)) return 'Pelety';
+            if (/^ELEKTRINA$|^ELECTRICITY$/.test(upper)) return 'Elektrina';
+            return '';
+        }
+        return value;
+    }
+    const LABEL_BRANDS = ['Mitsubishi Electric', 'Mitsubishi Heavy Industries', 'Stiebel Eltron', 'De Dietrich',
+        'Panasonic', 'Vaillant', 'Protherm', 'Viessmann', 'Buderus', 'Bosch', 'Daikin', 'Midea', 'MDV',
+        'Samsung', 'LG', 'Gree', 'AUX', 'Baxi', 'Immergas', 'Attack', 'OPOP', 'Nibe', 'Wolf', 'Kospel',
+        'Kaisai', 'Hyundai', 'Ariston', 'Junkers', 'Ferroli', 'Beretta', 'Toshiba', 'Atlantic', 'Dražice', 'Modratherm'];
+    function brandCandidates(text) {
+        const upper = foldLabel(text), list = [];
+        for (const brand of LABEL_BRANDS) {
+            const pattern = foldLabel(brand).replace(/ /g, '\\s+');
+            if (new RegExp('(^|[^A-Z0-9])' + pattern + '(?=$|[^A-Z0-9])').test(upper)) list.push({ value: brand, strength: 92 });
+            else if (brand.length >= 5) {
+                const letters = foldLabel(brand).replace(/ /g, '').split('').map(c => c === 'I' ? '[I1L]' : c === 'O' ? '[O0]' : c);
+                if (new RegExp('(^|[^A-Z0-9])' + letters.join('\\s*') + '(?=$|[^A-Z0-9])').test(upper)) list.push({ value: brand, strength: 62 });
+            }
+        }
+        if (!list.some(b => b.value === 'Modratherm') && /\bODRATHERM\b/.test(upper)) list.push({ value: 'Modratherm', strength: 84 });
+        return list;
+    }
+    function findManufacturer(text) { return brandCandidates(text)[0]?.value || ''; }
+    function parseLabelCandidates(rawText, pass = 'text', confidence = 70) {
+        const text = normalizeOcrText(rawText), lines = text.split('\n').map(cleanValue).filter(Boolean), out = [];
+        const add = (field, value, strength, evidence) => {
+            value = validField(field, value);
+            if (value) out.push({ field, value, strength, evidence, pass, confidence });
+        };
+        const brands = brandCandidates(text);
+        brands.forEach(b => {
+            const ownLine = lines.some(line => foldLabel(cleanValue(line)) === foldLabel(b.value));
+            const oem = brands.length > 1 && lines.some(line => /GD\s+MIDEA|MANUFACTURER.*MIDEA/i.test(line)) && b.value === 'Midea';
+            add('manufacturer', b.value, oem ? 62 : ownLine ? 104 : b.strength, oem ? 'OEM výrobca uvedený na štítku' : ownLine ? 'Samostatne uvedená značka' : 'Značka v texte');
+        });
+        lines.forEach((line, index) => {
+            const matches = labelMatches(line);
+            matches.forEach((m, i) => {
+                let value = clipAtNextLabel(line.slice(m.end, matches[i + 1]?.start));
+                let below = false;
+                if (!value && matches.length === 1 && lines[index + 1] && !isLabelLine(lines[index + 1])) {
+                    value = clipAtNextLabel(lines[index + 1]); below = true;
+                }
+                if (m.field === 'manufacturer') value = findManufacturer(value) || value;
+                const oem = m.field === 'manufacturer' && brands.length > 1 && /MIDEA|EQUIPMENT CO/i.test(value);
+                add(m.field, value, oem ? 62 : below ? 80 : 92, (below ? 'Pod označením ' : 'Pri označení ') + line.slice(m.start, m.end));
+            });
+        });
+        // A model is often the plate heading itself, without "Model:" or "Typ:".
+        const modelPatterns = [
+            /\b(?:KMK-\d{2,3}RY[13]|ERS[FT]-[A-Z0-9]{3,}|EHB[HX][A-Z0-9]{4,}|EHV[HX][A-Z0-9]{4,})\b/gi,
+            /\bVU[IW]?\s+\d{2,4}\/\d-\d(?:\s*\([A-Z0-9 -]+\))?(?:\s+ecoTEC\s+(?:plus|pro))?/gi,
+            /\b(?:WH-[A-Z0-9][A-Z0-9./-]{3,}|(?:MHC|MHA|MHB|MHCN)-[A-Z0-9][A-Z0-9./-]{4,}|PU[HZ]-[A-Z0-9][A-Z0-9./-]{3,}|VWL\s+\d{2,3}\/\d(?:\s+[A-Z]{1,3})?)/gi,
+            /\b(?:ecoTEC(?:\s+(?:plus|pro))?|aroTHERM(?:\s+plus)?|Tiger|Panther|Gepard|Vulkan|Biopel(?:\s+mini)?|Vitodens|Logamax)\s+[A-Z0-9][A-Z0-9 ./+-]{1,45}/gi
+        ];
+        lines.forEach(line => modelPatterns.forEach(pattern => {
+            for (const m of line.matchAll(pattern)) {
+                const value = clipAtNextLabel(m[0]);
+                const standalone = cleanValue(line.replace(/^[.\s|]+/, '')) === value;
+                add('model', value, standalone && brands.length ? 84 : /^VU[IW]?\s+\d/i.test(value) ? 84 : 60,
+                    standalone && brands.length ? 'Samostatný názov modelu na štítku so značkou' : 'Tvar označenia modelu');
+            }
+        }));
+        // Inference is explicitly flagged when a brand name is absent from the photo.
+        if (!brands.length && /\bVU[IW]?\s+\d{2,4}\/\d-\d\b/i.test(text) && /ecoTEC/i.test(text)) {
+            add('manufacturer', 'Vaillant', 65, 'Značka odvodená z radu VU / ecoTEC – potvrďte');
+        }
+        const knownDevice = out.some(c => c.field === 'manufacturer') && out.some(c => c.field === 'model');
+        // Bare "No." is not a general synonym for S/N: accept a plausible long
+        // identifier only on its own row, with stronger evidence on an HVAC plate.
+        // Never interpret Model No., Article No., NOx or an EAN as a serial here.
+        lines.forEach((line, index) => {
+            const heading = line.match(/^(?:NO\.|NR\.|N[°º]|(?:NO|NR)(?=\s|[:#=]|$))\s*(?::|#|=)?\s*(.*)$/i);
+            if (!heading) return;
+            let value = cleanValue(heading[1]);
+            if (!value && lines[index + 1] && !isLabelLine(lines[index + 1])) value = lines[index + 1];
+            // Some OCR layouts merge the separate year cell into the serial row.
+            const cells = value.match(/^([A-Z0-9][A-Z0-9._\/-]{15,39})\s+[|]?\s*((?:19|20)\d{2})$/i);
+            if (cells) {
+                value = cells[1];
+                add('year', cells[2], 65, 'Samostatný rok pri čísle – skontrolujte');
+            }
+            const compact = value.replace(/\s/g, '');
+            if (compact.length < 8 || !/^[A-Z0-9._\/-]+$/i.test(compact) ||
+                (compact.match(/\d/g) || []).length < 6 || /^\d{8}$|^\d{12,14}$/.test(compact)) return;
+            add('serial', value, knownDevice ? 84 : 60, 'Dlhé číslo pri samostatnom označení No. / Nr.');
+        });
+        // Text underneath a barcode can survive even when the small "No." is lost.
+        // This is a proposal, never sufficient evidence for automatic S/N filling.
+        if (knownDevice) lines.forEach((line, index) => {
+            if (isLabelLine(line)) return;
+            for (const m of line.matchAll(/\b[A-Z0-9]{18,40}\b/gi)) {
+                if ((m[0].match(/\d/g) || []).length < 16 || !/^\d/.test(m[0])) continue;
+                add('serial', m[0], 55, 'Dlhý identifikátor bez označenia – skontrolujte S/N');
+                const beside = cleanValue(line.slice(m.index + m[0].length));
+                const below = cleanValue(lines[index + 1] || '');
+                const year = [beside, below].find(v => /^(?:19|20)\d{2}$/.test(v));
+                if (year) add('year', year, 65, 'Samostatný rok pri čísle – skontrolujte');
+            }
+        });
+        const fuelMatch = foldLabel(text).match(/\b(?:R\s*-?\s*(?:290|32|410A|407C|134A|454B|452B|744)|G20|G31|NATURAL GAS|ERDGAS|ZEMNY PLYN|PROPANE|PROPAN|LPG|PELLET|PELETY)\b/);
+        const fuel = fuelMatch ? validField('fuel', fuelMatch[0]) : '';
+        if (fuel) add('fuel', fuel, 75, 'Palivo alebo chladivo v texte');
+        return out;
+    }
+    function barcodeCandidates(values) {
+        const out = [];
+        values.forEach((entry, index) => {
+            const raw = String(typeof entry === 'string' ? entry : entry.rawValue || '').trim();
+            const format = String(entry.format || '').toLowerCase(), pass = 'barcode-' + index;
+            if (!raw || raw.length > 6000) return;
+            const parsed = parseLabelCandidates(raw.replace(/[;\u001d]/g, '\n'), pass, 100);
+            out.push(...parsed.map(c => ({ ...c, strength: c.strength >= 80 ? 95 : c.strength, evidence: 'Označený údaj v kóde' })));
+            try {
+                const obj = JSON.parse(raw);
+                if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+                    const keys = { brand: 'manufacturer', manufacturer: 'manufacturer', vyrobca: 'manufacturer', model: 'model', type: 'model', serial: 'serial', serialnumber: 'serial', serialno: 'serial', sn: 'serial' };
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const field = keys[key.toLowerCase().replace(/[^a-z]/g, '')];
+                        const clean = field && typeof value === 'string' && validField(field, value);
+                        if (clean) out.push({ field, value: clean, strength: 95, evidence: 'Označený údaj v QR', pass, confidence: 100 });
+                    });
+                }
+            } catch (_) { /* A barcode need not contain JSON. */ }
+            // GS1 AI (21), explicitly delimited. EAN/GTIN itself is never an S/N.
+            const gs = raw.match(/(?:\(21\)|\u001d21)([A-Za-z0-9._\/-]{1,20})(?=\(|\u001d|$)/);
+            if (gs && validField('serial', gs[1])) out.push({ field: 'serial', value: gs[1], strength: 95, evidence: 'GS1: sériové číslo (21)', pass, confidence: 100 });
+            if (!parsed.length && !gs && !/ean|upc/.test(format) && !/^\d{8}$|^\d{12,14}$/.test(raw) && /^[A-Z0-9._\/-]{6,60}$/i.test(raw) && validField('serial', raw)) {
+                out.push({ field: 'serial', value: raw, strength: 40, evidence: 'Neoznačený kód – overte, či ide o S/N', pass, confidence: 100 });
+            }
+        });
+        return out;
+    }
+    function rankLabelCandidates(candidates) {
+        const result = {};
+        LABEL_FIELDS.forEach(([field]) => {
+            const groups = new Map();
+            candidates.filter(c => c.field === field && !(field === 'power' && c.pass !== 'text' && c.confidence < 75) && !(field === 'manufacturer' && c.value.length <= 3 && c.confidence < 70)).forEach(c => {
+                const key = foldLabel(c.value).replace(/\s+/g, '');
+                let group = groups.get(key);
+                if (!group) { group = { value: c.value, passes: new Set(), strength: 0, confidence: 0, evidence: '' }; groups.set(key, group); }
+                group.passes.add(c.pass);
+                if (c.strength > group.strength || (c.strength === group.strength && c.confidence > group.confidence)) {
+                    group.value = c.value; group.evidence = c.evidence;
+                }
+                group.strength = Math.max(group.strength, c.strength);
+                group.confidence = Math.max(group.confidence, c.confidence);
+            });
+            const list = [...groups.values()].map(g => ({ ...g, count: g.passes.size,
+                score: g.strength + Math.min(3, g.passes.size - 1) * 9 + g.confidence * (field === 'serial' ? .15 : .08) - (field === 'serial' ? Math.max(0, 80 - g.confidence) * 1.2 : 0) }))
+                .sort((a, b) => b.score - a.score);
+            if (!list.length) return;
+            const best = list[0], conflict = list.some((c, i) => i > 0 && c.strength >= 75 &&
+                (c.score >= best.score - 18 || (field === 'serial' && c.confidence >= 30 && similarSerialReadings(c.value, best.value))));
+            result[field] = { ...best, alternatives: list.slice(1, 5), conflict,
+                reliable: best.strength >= 80 && best.confidence >= (field === 'serial' ? 75 : 50) &&
+                    !(field === 'serial' && /\S+\s+\S+\s+\S+/.test(best.value)) &&
+                    (best.count >= 2 || best.strength === 95) && !conflict };
+        });
+        return result;
+    }
+    function similarSerialReadings(left, right) {
+        left = foldLabel(left).replace(/\s/g, ''); right = foldLabel(right).replace(/\s/g, '');
+        if (left === right || Math.abs(left.length - right.length) > 2) return false;
+        let previous = Array.from({ length: right.length + 1 }, (_, i) => i);
+        for (let i = 1; i <= left.length; i++) {
+            const row = [i];
+            for (let j = 1; j <= right.length; j++) row[j] = Math.min(row[j - 1] + 1, previous[j] + 1, previous[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1));
+            previous = row;
+        }
+        // Never silently choose between e.g. 0/O, 4/A or a missing repeated digit.
+        return previous[right.length] <= 2;
+    }
+    function extractDeviceData(text, codes = []) {
+        const ranked = rankLabelCandidates([...parseLabelCandidates(text), ...barcodeCandidates(codes)]);
+        return Object.fromEntries(LABEL_FIELDS.map(([key]) => [key, ranked[key]?.value || '']));
+    }
+    function positionedOcrText(data) {
+        const words = data.words || (data.blocks || []).flatMap(b => (b.paragraphs || []).flatMap(p => (p.lines || []).flatMap(l => l.words || [])));
+        const rows = [];
+        words.filter(w => w.text?.trim() && w.bbox).sort((a, b) => a.bbox.y0 - b.bbox.y0).forEach(w => {
+            const center = (w.bbox.y0 + w.bbox.y1) / 2, height = w.bbox.y1 - w.bbox.y0;
+            let row = rows.find(r => Math.abs(r.y - center) <= Math.max(4, Math.min(height, r.height) * .5));
+            if (!row) { row = { y: center, height, words: [] }; rows.push(row); }
+            row.words.push(w);
+        });
+        return rows.sort((a, b) => a.y - b.y).map(r => r.words.sort((a, b) => a.bbox.x0 - b.bbox.x0).map(w => w.text).join(' ')).join('\n');
+    }
+
+    function ocrLines(data) {
+        return (data.blocks || []).flatMap(b => (b.paragraphs || []).flatMap(p => p.lines || []));
+    }
+    function fieldOcrConfidence(candidate, data) {
+        if (!['serial', 'model', 'manufacturer'].includes(candidate.field)) return candidate.confidence;
+        const key = foldLabel(candidate.value).replace(/\s/g, '');
+        const words = ocrLines(data).flatMap(line => {
+            if (!foldLabel(line.text).replace(/\s/g, '').includes(key)) return [];
+            return (line.words || []).filter(w => (candidate.field === 'manufacturer' || /\d/.test(w.text)) && key.includes(foldLabel(w.text).replace(/\s/g, '')));
+        });
+        if (!words.length) return candidate.confidence;
+        return words.reduce((sum, w) => sum + w.confidence * w.text.length, 0) / words.reduce((sum, w) => sum + w.text.length, 0);
+    }
+    async function correctedOcrCanvas(data, fallback) {
+        if (!data.imageColor || !data.rotateRadians) return fallback;
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image(); image.onload = () => resolve(image); image.onerror = reject;
+            image.src = data.imageColor;
+        });
+        const canvas = newCanvas(img.naturalWidth || img.width, img.naturalHeight || img.height);
+        canvas.getContext('2d').drawImage(img, 0, 0); return canvas;
+    }
+    function focusedLabelRegions(data, source) {
+        const regions = [];
+        const pattern = /\b(?:KMK-\d{2,3}RY[13]|ERS[FT]-[A-Z0-9]{3,}|EHB[HX][A-Z0-9]{4,}|EHV[HX][A-Z0-9]{4,}|VU[IW]?\s+\d{2,4}\/\d-\d|VULKAN\s+\d+|PANTHER\s+\d+|WH-[A-Z0-9/-]+)\b/i;
+        ocrLines(data).forEach(line => {
+            if (!line.bbox || line.confidence < 25) return;
+            const text = normalizeOcrText(line.text), labels = labelMatches(text).filter(m => ['model', 'serial', 'manufacturer'].includes(m.field));
+            const standaloneBrand = brandCandidates(text).some(b => foldLabel(cleanValue(text)) === foldLabel(b.value));
+            const field = labels[0]?.field || (pattern.test(text) ? 'model' : standaloneBrand ? 'manufacturer' : '');
+            if (!field) return;
+            const b = line.bbox, h = Math.max(10, b.y1 - b.y0);
+            // Positions refer to the exact image returned by OCR after deskewing.
+            // Widen a label-only row to include the value in the adjacent table cell.
+            const left = Math.max(0, b.x0 - h * .5);
+            const right = Math.min(source.width, Math.max(b.x1 + h * 2, labels.length ? b.x0 + h * (field === 'serial' ? 32 : 24) : 0));
+            // Keep the complete line even when perspective makes its right end
+            // higher/lower than the heading. Narrow strips would cut characters.
+            const verticalMargin = Math.max(h * .8, (right - left) * .14);
+            const top = Math.max(0, b.y0 - verticalMargin);
+            const bottom = Math.min(source.height, b.y1 + verticalMargin);
+            if (right - left < 35 || bottom - top < 8) return;
+            regions.push({ field, source, anchor: b, x: left, y: top, width: right - left, height: bottom - top,
+                score: line.confidence + (labels.length ? 10 : 0), label: text });
+        });
+        return regions;
+    }
+    function cropOcrRegion(region) {
+        const scale = Math.min(4, 2400 / region.width, 1100 / region.height);
+        const canvas = newCanvas(region.width * scale + 24, region.height * scale + 24);
+        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(region.source, region.x, region.y, region.width, region.height, 12, 12, canvas.width - 24, canvas.height - 24);
+        return canvas;
+    }
+
+    function newCanvas(width, height) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(width)); c.height = Math.max(1, Math.round(height)); return c; }
+    function rotatedCanvas(source, degrees) {
+        const swap = degrees % 180 !== 0, c = newCanvas(swap ? source.height : source.width, swap ? source.width : source.height), ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.translate(c.width / 2, c.height / 2); ctx.rotate(degrees * Math.PI / 180);
+        ctx.drawImage(source, -source.width / 2, -source.height / 2); return c;
+    }
+    function selectedLabelCanvas() {
+        const source = scanState.image, r = scanState.crop || { x: 0, y: 0, width: source.width, height: source.height };
+        const scale = Math.min(3, 2400 / Math.max(r.width, r.height));
+        const c = newCanvas(r.width * scale + 32, r.height * scale + 32), ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(source, r.x, r.y, r.width, r.height, 16, 16, c.width - 32, c.height - 32); return c;
+    }
+    function processedLabelCanvas(source, mode) {
+        if (mode === 'original') return source;
+        const c = newCanvas(source.width, source.height), ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(source, 0, 0);
+        const pixels = ctx.getImageData(0, 0, c.width, c.height), d = pixels.data, histogram = new Uint32Array(256);
+        for (let i = 0; i < d.length; i += 4) {
+            const g = Math.round(.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]);
+            d[i] = d[i + 1] = d[i + 2] = g; histogram[g]++;
+        }
+        const count = d.length / 4;
+        let low = 0, high = 255, sum = 0;
+        for (; low < 254; low++) { sum += histogram[low]; if (sum >= count * .01) break; }
+        sum = 0;
+        for (; high > low + 1; high--) { sum += histogram[high]; if (sum >= count * .01) break; }
+        let threshold = 128;
+        if (mode === 'otsu') {
+            let total = 0, background = 0, weighted = 0, maxVariance = -1;
+            for (let i = 0; i < 256; i++) total += i * histogram[i];
+            for (let t = 0; t < 256; t++) {
+                background += histogram[t]; if (!background) continue;
+                const foreground = count - background; if (!foreground) break;
+                weighted += t * histogram[t];
+                const delta = weighted / background - (total - weighted) / foreground;
+                const variance = background * foreground * delta * delta;
+                if (variance > maxVariance) { maxVariance = variance; threshold = t; }
+            }
+        }
+        for (let i = 0; i < d.length; i += 4) {
+            let g = d[i];
+            if (mode === 'otsu') g = g <= threshold ? 0 : 255;
+            else if (mode === 'invert') g = 255 - g;
+            else g = Math.max(0, Math.min(255, (g - low) * 255 / Math.max(1, high - low)));
+            d[i] = d[i + 1] = d[i + 2] = g;
+        }
+        ctx.putImageData(pixels, 0, 0); return c;
+    }
+    function drawLabelEditor() {
+        const source = scanState.image; if (!source) return;
+        const canvas = byId('label-crop-canvas'), ratio = Math.min(1, 700 / source.width, 430 / source.height);
+        canvas.width = Math.round(source.width * ratio); canvas.height = Math.round(source.height * ratio);
+        const ctx = canvas.getContext('2d'); ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+        const r = scanState.crop;
+        if (r) {
+            const x = r.x * ratio, y = r.y * ratio, w = r.width * ratio, h = r.height * ratio;
+            ctx.fillStyle = '#0008'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(source, r.x, r.y, r.width, r.height, x, y, w, h);
+            ctx.strokeStyle = '#D60000'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+        }
+    }
+    function resetLabelCrop() { if (scanState.busy) return; scanState.crop = null; drawLabelEditor(); }
+    function rotateLabelPhoto() {
+        if (!scanState.image || scanState.busy) return;
+        scanState.image = rotatedCanvas(scanState.image, 90); scanState.crop = null; drawLabelEditor();
+    }
+    const cropCanvas = byId('label-crop-canvas');
+    function cropPoint(event) {
+        const r = cropCanvas.getBoundingClientRect(), source = scanState.image;
+        return { x: Math.max(0, Math.min(source.width, (event.clientX - r.left) / r.width * source.width)),
+            y: Math.max(0, Math.min(source.height, (event.clientY - r.top) / r.height * source.height)) };
+    }
+    cropCanvas.addEventListener('pointerdown', e => {
+        if (scanState.busy || !scanState.image) return;
+        e.preventDefault(); scanState.drag = cropPoint(e); cropCanvas.setPointerCapture(e.pointerId);
+    });
+    cropCanvas.addEventListener('pointermove', e => {
+        if (!scanState.drag) return;
+        const p = cropPoint(e), d = scanState.drag;
+        scanState.crop = { x: Math.min(p.x, d.x), y: Math.min(p.y, d.y), width: Math.abs(p.x - d.x), height: Math.abs(p.y - d.y) };
+        drawLabelEditor();
+    });
+    function finishCrop() {
+        scanState.drag = null;
+        if (scanState.crop && (scanState.crop.width < 25 || scanState.crop.height < 25)) scanState.crop = null;
+        drawLabelEditor();
+    }
+    cropCanvas.addEventListener('pointerup', finishCrop); cropCanvas.addEventListener('pointercancel', finishCrop);
 
     function setOcrProgress(percent, text) {
-        const wrap = document.getElementById('ocr-progress-wrap');
-        const bar = document.getElementById('ocr-progress-bar');
-        const label = document.getElementById('ocr-progress-text');
-        wrap.style.display = 'block';
-        bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-        label.textContent = text;
+        byId('ocr-progress-wrap').style.display = 'block';
+        byId('ocr-progress-bar').style.width = Math.max(0, Math.min(100, percent)) + '%';
+        byId('ocr-progress-text').textContent = text;
     }
-
-    function normalizeOcrText(text) {
-        return String(text || '')
-            .replace(/\r/g, '\n')
-            .replace(/[|]/g, 'I')
-            .replace(/[‐‑–—]/g, '-')
-            .replace(/[ \t]+/g, ' ')
-            .replace(/\n{2,}/g, '\n')
-            .trim();
+    function scanMessage(text) { byId('label-scan-result').style.display = 'block'; byId('label-scan-result').textContent = text; }
+    function scanBusy(busy) {
+        scanState.busy = busy;
+        document.querySelectorAll('[data-scan-lock]').forEach(el => { el.disabled = busy; });
+        byId('label-cancel').hidden = !busy; byId('label-close').disabled = busy;
+        byId('label-raw-text').disabled = busy;
     }
-
-    function cleanValue(value) {
-        return String(value || '')
-            .replace(/^[\s:;#=.-]+/, '')
-            .replace(/[\s:;,.]+$/, '')
-            .replace(/\s{2,}/g, ' ')
-            .trim();
-    }
-
-    function firstMatch(text, patterns) {
-        for (const pattern of patterns) {
-            const match = text.match(pattern);
-            if (match && match[1]) return cleanValue(match[1]);
-        }
-        return '';
-    }
-
-    function findManufacturer(text) {
-        const brands = [
-            ['Mitsubishi Electric', /MITSUBISHI\s+ELECTRIC/i],
-            ['Panasonic', /PANASONIC/i], ['Vaillant', /VAILLANT/i],
-            ['Protherm', /PROTHERM/i], ['Viessmann', /VIESSMANN/i],
-            ['Buderus', /BUDERUS/i], ['Bosch', /BOSCH/i],
-            ['Daikin', /DAIKIN/i], ['Midea', /MIDEA/i], ['Samsung', /SAMSUNG/i],
-            ['LG', /(?:^|\s)LG(?:\s|$)/i], ['Gree', /GREE/i], ['AUX', /(?:^|\s)AUX(?:\s|$)/i],
-            ['Baxi', /BAXI/i], ['Immergas', /IMMERGAS/i], ['Attack', /ATTACK/i],
-            ['OPOP', /OPOP/i], ['Nibe', /NIBE/i], ['Stiebel Eltron', /STIEBEL\s+ELTRON/i],
-            ['Wolf', /(?:^|\s)WOLF(?:\s|$)/i], ['Kospel', /KOSPEL/i], ['Kaisai', /KAISAI/i],
-            ['Hyundai', /HYUNDAI/i], ['De Dietrich', /DE\s+DIETRICH/i], ['Ariston', /ARISTON/i],
-            ['Junkers', /JUNKERS/i], ['Ferroli', /FERROLI/i], ['Beretta', /BERETTA/i]
-        ];
-        for (const [name, regex] of brands) if (regex.test(text)) return name;
-        return '';
-    }
-
-    function extractDeviceData(rawText, barcodeValues = []) {
-        const text = normalizeOcrText(rawText);
-        const lines = text.split('\n').map(cleanValue).filter(Boolean);
-        const joined = lines.join('\n');
-
-        const manufacturer = findManufacturer(joined);
-        let model = firstMatch(joined, [
-            /(?:^|\n)\s*(?:MODEL|MODELLO|MODELL|MODÈLE|TYP(?:E)?|TYPE|TYPENR\.?|ART\.?\s*NO\.?)\s*[:#=]?\s*([^\n]{2,60})/i,
-            /(?:^|\n)\s*(?:ZARIADENIE|DEVICE)\s*[:#=]?\s*([^\n]{3,60})/i
-        ]);
-        model = model
-            .replace(/\s+(?:S\s*\/\s*N|SN|SERIAL|SERIENNUMMER|YEAR|ROK|BAUJAHR)\b.*$/i, '')
-            .replace(/\s{2,}/g, ' ')
-            .trim();
-        if (model && /^(NO|NR|NUMBER|NUMMER)$/i.test(model)) model = '';
-
-        let serial = firstMatch(joined, [
-            /(?:SERIAL\s*(?:NO\.?|NUMBER)?|S\s*\/\s*N|SN|SER\.\s*NO\.?|SERIENNUMMER|SERIEN\s*NR\.?|VÝROBN[ÉE]\s*ČÍSLO|VYROBNE\s*CISLO)\s*[:#=]?\s*([A-Z0-9][A-Z0-9._\/-]{3,})/i,
-            /(?:FABR\.?\s*NR\.?|HERSTELLNUMMER)\s*[:#=]?\s*([A-Z0-9][A-Z0-9._\/-]{3,})/i
-        ]);
-        if (!serial && barcodeValues.length) {
-            const candidate = barcodeValues.find(v => /^[A-Z0-9._\/-]{6,}$/i.test(v) && !/^\d{13}$/.test(v));
-            serial = candidate || '';
-        }
-
-        let year = firstMatch(joined, [
-            /(?:YEAR|ROK(?:\s+VÝROBY)?|VYROBENE|BAUJAHR|MANUFACTURED|MFG\.?\s*DATE|DATE)\s*[:#=]?\s*((?:19|20)\d{2})/i
-        ]);
-        if (!year) {
-            const y = joined.match(/\b(20[0-3]\d|19[8-9]\d)\b/);
-            year = y ? y[1] : '';
-        }
-
-        let power = firstMatch(joined, [
-            /(?:NOMINAL\s+(?:HEAT(?:ING)?\s+)?OUTPUT|HEATING\s+CAPACITY|HEAT\s+OUTPUT|WÄRMELEISTUNG|WAERMELEISTUNG|MENOVIT[ÝY]\s+VÝKON|VYKON|OUTPUT|CAPACITY)\s*[:#=]?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*kW/i,
-            /(?:P\s*NOM|Q\s*NOM|P\s*MAX|Q\s*MAX)\s*[:#=]?\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*kW/i,
-            /\b(\d{1,3}(?:[.,]\d{1,2})?)\s*kW\b/i
-        ]).replace(',', '.');
-
-        let fuel = '';
-        const refrigerant = joined.match(/\b(R\s*[-]?\s*(?:290|32|410A|407C|134A|454B|452B|744))\b/i);
-        if (refrigerant) fuel = refrigerant[1].replace(/[\s-]/g, '').toUpperCase();
-        else if (/\b(G20|NATURAL\s+GAS|ERDGAS|ZEMN[ÝY]\s+PLYN)\b/i.test(joined)) fuel = 'Zemný plyn G20';
-        else if (/\b(G31|PROPANE|PROPAN|LPG)\b/i.test(joined)) fuel = 'Propán G31';
-        else if (/PELLET|PELETA|BIOMASS/i.test(joined)) fuel = 'Pelety';
-        else if (/ELECTRIC|ELEKTRICK|230\s*V|400\s*V/i.test(joined)) fuel = 'Elektrina';
-
-        let scenario = '';
-        if (/\bR(?:290|32|410A|407C|134A|454B|452B|744)\b/i.test(fuel)) scenario = 'tc';
-        else if (/plyn|G20|G31/i.test(fuel)) scenario = 'plyn';
-        else if (/pelet/i.test(fuel)) scenario = 'pellet';
-        else if (/elektr/i.test(fuel)) scenario = 'elektro';
-
-        return { manufacturer, model, serial, year, power, fuel, scenario, rawText: text };
-    }
-
-    async function prepareImageForOcr(file) {
-        const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+    function showLabelScanModal() { byId('label-scan-modal').style.display = 'flex'; }
+    window.closeLabelScanModal = () => { if (!scanState.busy) byId('label-scan-modal').style.display = 'none'; };
+    window.openLabelCamera = () => {
+        if (scanState.busy) return;
+        const input = byId('photo-upload'); input.value = ''; input.click();
+    };
+    window.openLabelGallery = () => {
+        if (scanState.busy) return;
+        const input = byId('photo-gallery'); input.value = ''; input.click();
+    };
+    function loadScanScript(url, symbol, timeout = 18000) {
+        if (window[symbol]) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script'); let done = false;
+            const finish = error => {
+                if (done) return; done = true; clearTimeout(timer); s.onload = s.onerror = null;
+                if (error) { s.remove(); reject(error); } else resolve();
+            };
+            const timer = setTimeout(() => finish(new Error('Načítanie knižnice trvá príliš dlho.')), timeout);
+            s.src = url; s.async = true;
+            s.onload = () => finish(window[symbol] ? null : new Error('Knižnica nie je dostupná.'));
+            s.onerror = () => finish(new Error('Knižnicu sa nepodarilo stiahnuť.'));
+            document.head.appendChild(s);
         });
-        const img = await new Promise((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve(image);
-            image.onerror = reject;
-            image.src = dataUrl;
-        });
-
-        const preview = document.getElementById('device-photo-preview');
-        preview.src = dataUrl;
-        preview.style.display = 'block';
-
-        const maxSide = 2200;
-        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const d = pixels.data;
-        for (let i = 0; i < d.length; i += 4) {
-            const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-            const contrasted = Math.max(0, Math.min(255, (gray - 128) * 1.55 + 128));
-            d[i] = d[i + 1] = d[i + 2] = contrasted;
-        }
-        ctx.putImageData(pixels, 0, 0);
-        return { canvas, img };
     }
-
-    async function detectBarcodes(imageSource) {
-        if (!('BarcodeDetector' in window)) return [];
-        try {
-            const detector = new BarcodeDetector({ formats: ['qr_code', 'data_matrix', 'code_128', 'code_39', 'ean_13', 'ean_8'] });
-            const found = await detector.detect(imageSource);
-            return found.map(x => x.rawValue).filter(Boolean);
-        } catch (e) {
-            return [];
-        }
+    async function loadScanLibrary(symbol, paths, timeout) {
+        let last;
+        for (const path of paths) { try { await loadScanScript(path, symbol, timeout); return; } catch (error) { last = error; } }
+        throw last;
     }
-
+    function limitTime(promise, milliseconds, message) {
+        let timer;
+        return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), milliseconds); })])
+            .finally(() => clearTimeout(timer));
+    }
+    async function detectBarcodes(canvas, fallback = false) {
+        const found = [];
+        if ('BarcodeDetector' in window) {
+            try {
+                const supported = await limitTime(BarcodeDetector.getSupportedFormats(), 3000, 'Kódy nedostupné');
+                const formats = ['qr_code', 'data_matrix', 'code_128', 'code_39', 'ean_13', 'ean_8'].filter(f => supported.includes(f));
+                if (formats.length) found.push(...await limitTime(new BarcodeDetector({ formats }).detect(canvas), 6000, 'Čítanie kódov trvá príliš dlho'));
+            } catch (_) { /* Continue with OCR / portable barcode reader. */ }
+        }
+        if (!found.length && fallback) {
+            try {
+                await loadScanLibrary('ZXing', [
+                    'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',
+                    'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'
+                ], 8000);
+                const hints = new Map(); hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+                const reader = new ZXing.BrowserMultiFormatReader(hints);
+                try {
+                    const decoded = await limitTime(reader.decodeFromImageUrl(canvas.toDataURL('image/png')), 6000, 'Kód sa nepodarilo prečítať');
+                    found.push({ rawValue: decoded.getText(), format: String(ZXing.BarcodeFormat[decoded.getBarcodeFormat()]).toLowerCase() });
+                } finally { reader.reset(); }
+            } catch (_) { /* A missing decoder must not discard OCR results. */ }
+        }
+        return found;
+    }
     function setFieldFromOcr(id, value) {
-        if (!value) return false;
-        const el = document.getElementById(id);
-        if (!el) return false;
-        el.value = value;
-        el.classList.add('ocr-filled');
-        setTimeout(() => el.classList.remove('ocr-filled'), 5000);
-        return true;
+        if (!value || !byId(id)) return false;
+        const el = byId(id); el.value = value; el.classList.add('ocr-filled');
+        setTimeout(() => el.classList.remove('ocr-filled'), 5000); return true;
     }
-
     function applyDeviceData(data) {
         const filled = [];
-        if (setFieldFromOcr('inp-manuf', data.manufacturer)) filled.push('výrobca');
-        if (setFieldFromOcr('inp-dev', data.model)) filled.push('typ/model');
-        if (setFieldFromOcr('inp-sn', data.serial)) filled.push('sériové číslo');
-        if (setFieldFromOcr('inp-year', data.year)) filled.push('rok');
-        if (setFieldFromOcr('inp-power', data.power)) filled.push('výkon');
-        if (setFieldFromOcr('inp-fuel', data.fuel)) filled.push('palivo/chladivo');
-        if (data.scenario) {
-            document.getElementById('inp-scenario').value = data.scenario;
-            changeScenario();
-        } else render();
-        return filled;
+        LABEL_FIELDS.forEach(([key, id, label]) => { if (setFieldFromOcr(id, data[key])) filled.push(label); });
+        // The plate cannot determine inspection results or the correct report category.
+        render(); return filled;
     }
-
-    window.handleDeviceLabelPhoto = async (event) => {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
-
-        const modal = document.getElementById('label-scan-modal');
-        const resultBox = document.getElementById('label-scan-result');
-        modal.style.display = 'flex';
-        resultBox.style.display = 'none';
-        setOcrProgress(5, 'Načítavam fotografiu štítku...');
-        document.getElementById('device-scan-status').textContent = 'Rozpoznávam údaje zo štítku...';
-
+    function showLabelResults(autoFill = false, initial = {}) {
+        scanState.results = rankLabelCandidates(scanState.candidates);
+        const container = byId('label-review-fields'); container.replaceChildren();
+        const filled = [], missing = [];
+        LABEL_FIELDS.forEach(([key, id, label]) => {
+            const candidate = scanState.results[key], value = candidate?.value || '', current = byId(id).value;
+            // Existing values and changes made while scanning must survive automatic filling.
+            if (autoFill && key !== 'power' && candidate?.reliable && !current && !initial[key]) {
+                setFieldFromOcr(id, value); filled.push(label);
+            }
+            if (!value && ['manufacturer', 'model', 'serial'].includes(key)) missing.push(label);
+            const row = document.createElement('div'); row.className = 'scan-field';
+            const header = document.createElement('label'); header.className = 'scan-field-label';
+            const check = document.createElement('input'); check.type = 'checkbox'; check.id = 'scan-use-' + key; check.checked = !!value && !!candidate?.reliable && (!current || current === value);
+            header.append(check, document.createTextNode(' ' + label)); row.append(header);
+            const input = document.createElement('input'); input.id = 'scan-value-' + key; input.type = 'text'; input.value = value; input.maxLength = 100;
+            input.setAttribute('aria-label', label); input.placeholder = 'Nerozpoznané – doplňte podľa fotografie';
+            input.addEventListener('input', () => { check.checked = !!input.value.trim(); }); row.append(input);
+            if (candidate?.alternatives.length) {
+                const select = document.createElement('select'); select.setAttribute('aria-label', 'Ďalšie návrhy: ' + label);
+                const placeholder = document.createElement('option'); placeholder.textContent = 'Ďalšie rozpoznané možnosti'; placeholder.value = ''; select.append(placeholder);
+                [candidate, ...candidate.alternatives].forEach(c => { const o = document.createElement('option'); o.textContent = c.value; o.value = c.value; select.append(o); });
+                select.addEventListener('change', () => { if (select.value) { input.value = select.value; check.checked = true; } }); row.append(select);
+            }
+            const hint = document.createElement('small');
+            hint.textContent = candidate ? (candidate.conflict ? 'Rozdielne výsledky – vyberte správny. ' : candidate.reliable ? 'Zhodné čítania alebo označený kód. ' : 'Návrh vyžaduje kontrolu. ') + candidate.evidence : 'Údaj sa nenašiel.';
+            if (current && current !== value) hint.textContent += ' V dokumente je: ' + current + '. Prepíše sa iba po vložení vybraných údajov.';
+            row.append(hint); container.append(row);
+        });
+        render();
+        byId('label-review').hidden = false;
+        byId('label-method-log').textContent = scanState.log.join('\n');
+        const message = (filled.length ? 'Do prázdnych polí vložené: ' + filled.join(', ') + '. ' : '') +
+            (missing.length ? 'Doplňte alebo skúste orezať: ' + missing.join(', ') + '. ' : 'Nájdená značka, model aj výrobné číslo. ') + 'Skontrolujte návrhy podľa fotografie.';
+        scanMessage(message); byId('device-scan-status').textContent = message;
+    }
+    function confirmLabelData() {
+        const data = {};
+        LABEL_FIELDS.forEach(([key]) => { if (byId('scan-use-' + key)?.checked) data[key] = byId('scan-value-' + key).value.trim(); });
+        const filled = applyDeviceData(data);
+        byId('device-scan-status').textContent = filled.length ? 'Údaje vložené do dokumentu: ' + filled.join(', ') + '.' : 'Neboli vybrané žiadne vyplnené údaje.';
+        closeLabelScanModal();
+    }
+    function parsePastedLabelText() {
+        if (scanState.busy) return;
+        lastLabelOcrText = byId('label-raw-text').value;
+        scanState.candidates = parseLabelCandidates(lastLabelOcrText, 'vložený text', 85);
+        scanState.log = ['Vyhľadanie označení v ručne vloženom texte.']; showLabelResults(false);
+    }
+    async function prepareImageForOcr(file) {
+        if (file.size > 40 * 1024 * 1024) throw new Error('Fotografia je príliš veľká. Vyberte súbor do 40 MB.');
+        const url = URL.createObjectURL(file);
         try {
-            const prepared = await prepareImageForOcr(file);
-            setOcrProgress(15, 'Hľadám čiarový alebo QR kód...');
-            const barcodeValues = await detectBarcodes(prepared.img);
-
-            if (!window.Tesseract) throw new Error('OCR knižnica sa nenačítala.');
-            setOcrProgress(20, 'Rozpoznávam text. Môže to chvíľu trvať...');
-            const recognition = await Tesseract.recognize(prepared.canvas, 'eng+deu', {
-                logger: message => {
-                    if (message.status === 'recognizing text') {
-                        const pct = 20 + Math.round((message.progress || 0) * 75);
-                        setOcrProgress(pct, `Rozpoznávam text ${Math.round((message.progress || 0) * 100)} %`);
-                    }
-                }
+            const img = await new Promise((resolve, reject) => {
+                const image = new Image(); image.onload = () => resolve(image);
+                image.onerror = () => reject(new Error('Tento obrázok sa nedá otvoriť. Použite JPG, PNG alebo WebP; HEIC podľa podpory prehliadača.'));
+                image.src = url;
             });
-
-            lastLabelOcrText = recognition.data.text || '';
-            const data = extractDeviceData(lastLabelOcrText, barcodeValues);
-            const filled = applyDeviceData(data);
-            setOcrProgress(100, 'Rozpoznávanie dokončené');
-
-            const summary = filled.length
-                ? `Automaticky vyplnené: <strong>${filled.join(', ')}</strong>. Údaje skontrolujte podľa fotografie.`
-                : 'Fotografia je vložená, ale údaje sa nepodarilo spoľahlivo rozpoznať. Vyplňte ich ručne alebo štítok odfoťte znova.';
-            resultBox.innerHTML = summary;
-            resultBox.style.display = 'block';
-            document.getElementById('device-scan-status').innerHTML = filled.length
-                ? `✅ Rozpoznané: ${filled.join(', ')}. Skontrolujte správnosť údajov.`
-                : '⚠️ Štítok bol odfotený, ale údaje neboli spoľahlivo rozpoznané.';
-
-            setTimeout(() => closeLabelScanModal(), filled.length ? 1700 : 2800);
+            const scale = Math.min(1, 3600 / Math.max(img.naturalWidth, img.naturalHeight));
+            const canvas = newCanvas(img.naturalWidth * scale, img.naturalHeight * scale), ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            return canvas;
+        } finally { URL.revokeObjectURL(url); }
+    }
+    function cancelLabelScan() {
+        if (!scanState.busy) return;
+        scanState.token++;
+        if (scanState.stop) scanState.stop(new Error('Zastavené používateľom.'));
+        if (scanState.worker) { Promise.resolve(scanState.worker.terminate()).catch(() => {}); scanState.worker = null; }
+        scanBusy(false);
+        if (scanState.candidates.length) showLabelResults(false);
+        byId('device-scan-status').textContent = 'Rozpoznávanie zastavené. Údaje môžete skontrolovať alebo načítať znova.';
+        setOcrProgress(0, 'Rozpoznávanie zastavené. Môžete orezať fotku alebo upraviť údaje.');
+    }
+    window.handleDeviceLabelPhoto = async event => {
+        const file = event.target.files?.[0]; if (!file || scanState.busy) return;
+        showLabelScanModal();
+        const token = ++scanState.token; scanBusy(true); byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none'; setOcrProgress(2, 'Načítavam fotografiu…');
+        try {
+            const canvas = await prepareImageForOcr(file); if (token !== scanState.token) return;
+            scanState.image = canvas; scanState.crop = null;
+            scanState.candidates = []; scanState.log = []; lastLabelOcrText = ''; byId('label-raw-text').value = '';
+            byId('label-review').hidden = true; byId('label-editor').hidden = false;
+            byId('device-photo-preview').src = canvas.toDataURL('image/jpeg', .9); byId('device-photo-preview').style.display = 'block';
+            drawLabelEditor(); scanBusy(false); await runLabelScan();
         } catch (error) {
-            console.error('OCR chyba:', error);
-            setOcrProgress(100, 'Rozpoznávanie sa nepodarilo');
-            resultBox.innerHTML = 'Fotografia bola vložená do správy, ale automatické čítanie zlyhalo. Skontrolujte internetové pripojenie alebo údaje vyplňte ručne.';
-            resultBox.style.display = 'block';
-            document.getElementById('device-scan-status').textContent = '⚠️ Automatické rozpoznanie zlyhalo. Fotografia zostala uložená v náhľade.';
+            if (token === scanState.token) { scanBusy(false); scanMessage(error.message); setOcrProgress(0, 'Fotografiu sa nepodarilo načítať.'); }
         }
     };
+    async function runLabelScan() {
+        if (!scanState.image || scanState.busy) return;
+        const token = ++scanState.token, initial = Object.fromEntries(LABEL_FIELDS.map(([key, id]) => [key, byId(id).value]));
+        scanBusy(true); scanState.candidates = []; scanState.log = []; lastLabelOcrText = '';
+        byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none';
+        let worker, passIndex = 0, passName = '', workerFailure, aborted = false;
+        const scanLayouts = [];
+        const stopped = new Promise((_, reject) => { scanState.stop = reject; });
+        // A rejection handler also covers cancellation between asynchronous steps.
+        stopped.catch(() => {});
+        const active = () => { if (token !== scanState.token) throw new Error('Zastavené'); };
+        const wait = promise => Promise.race([promise, stopped]);
+        const base = selectedLabelCanvas();
+        try {
+            setOcrProgress(5, 'Hľadám údaje v čiarovom alebo QR kóde…');
+            const codes = await wait(detectBarcodes(base)); active();
+            scanState.candidates.push(...barcodeCandidates(codes));
+            setOcrProgress(10, 'Načítavam rozpoznávanie textu. Pri prvom použití je potrebný internet…');
+            await wait(loadScanLibrary('Tesseract', [
+                'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js',
+                'https://unpkg.com/tesseract.js@7.0.0/dist/tesseract.min.js'
+            ])); active();
+            const workerError = new Promise((_, reject) => { workerFailure = reject; }); workerError.catch(() => {});
+            const creation = Tesseract.createWorker('eng', 1, {
+                logger: m => {
+                    if (token !== scanState.token) return;
+                    if (m.status === 'recognizing text') setOcrProgress(Math.min(90, 18 + passIndex * 8 + (m.progress || 0) * 7), passName + ' – ' + Math.round((m.progress || 0) * 100) + ' %');
+                }, errorHandler: error => workerFailure(new Error(String(error)))
+            }, { load_system_dawg: '0', load_freq_dawg: '0' });
+            creation.then(w => { if (aborted || token !== scanState.token) w.terminate().catch(() => {}); }).catch(() => {});
+            worker = await wait(limitTime(Promise.race([creation, workerError]), 90000, 'Rozpoznávanie sa nenačítalo. Skontrolujte internet a skúste znova.'));
+            active(); scanState.worker = worker;
+            const recognize = async (canvas, name, psm = 6, threshold = 0, autoRotate = false, regionField = '') => {
+                active(); passName = name;
+                setOcrProgress(Math.min(88, 18 + passIndex * 8), name + '…');
+                const result = await wait(limitTime(Promise.race([
+                    worker.recognize(canvas, { tessedit_pageseg_mode: String(psm), thresholding_method: String(threshold),
+                        user_defined_dpi: '300', preserve_interword_spaces: '1', rotateAuto: autoRotate }, { text: true, blocks: true, imageColor: autoRotate }), workerError
+                ]), 60000, 'Čítanie trvá príliš dlho. Orežte fotografiu len na štítok.'));
+                active(); const data = result.data, pass = 'pass-' + passIndex++;
+                scanState.log.push(name + ': ' + (data.text?.trim().length || 0) + ' znakov');
+                const parsed = parseLabelCandidates(data.text, pass, data.confidence || 0);
+                const positioned = positionedOcrText(data);
+                if (positioned && positioned !== data.text) parsed.push(...parseLabelCandidates(positioned, pass, data.confidence || 0));
+                // A row crop may contain only the value, with its heading just outside.
+                if (regionField && normalizeOcrText(data.text).split('\n').filter(Boolean).length === 1 && !parsed.some(c => c.field === regionField)) {
+                    const value = validField(regionField, normalizeOcrText(data.text).replace(/\n/g, ' '));
+                    if (value) parsed.push({ field: regionField, value, strength: 88, evidence: 'Samostatné čítanie riadka pri označení', pass, confidence: data.confidence || 0 });
+                }
+                scanState.candidates.push(...parsed.map(c => ({ ...c, confidence: fieldOcrConfidence(c, data) })));
+                if (!regionField) {
+                    const source = await wait(correctedOcrCanvas(data, canvas)); active();
+                    const regions = focusedLabelRegions(data, source);
+                    scanLayouts.push(...regions);
+                }
+                lastLabelOcrText += (lastLabelOcrText ? '\n\n' : '') + '[' + name + ']\n' + (data.text || '');
+                byId('label-raw-text').value = lastLabelOcrText;
+                return data;
+            };
+            await recognize(base, 'Pôvodná fotografia', 11);
+            let oriented = base;
+            await recognize(processedLabelCanvas(base, 'contrast'), 'Zvýraznenie textu', 6);
+            await recognize(processedLabelCanvas(base, 'otsu'), 'Čiernobiele čítanie', 6);
+            await recognize(base, 'Čítanie pri nerovnom osvetlení', 11, 2, true);
+            const complete = () => { const r = rankLabelCandidates(scanState.candidates); return ['manufacturer', 'model', 'serial'].every(k => r[k]?.reliable); };
+            const readFocusedRows = async () => {
+                const ranked = rankLabelCandidates(scanState.candidates), chosen = [];
+                for (const field of ['serial', 'model', 'manufacturer']) {
+                    if (ranked[field]?.reliable) continue;
+                    const regions = scanLayouts.filter(r => r.field === field && !r.read).sort((a, b) => b.score - a.score);
+                    for (const region of regions) {
+                        const duplicates = chosen.some(r => r.field === field && Math.abs(r.x - region.x) < 30 && Math.abs(r.y - region.y) < 30);
+                        if (!duplicates && chosen.filter(r => r.field === field).length < 2) chosen.push(region);
+                    }
+                }
+                for (const region of chosen) {
+                    region.read = true;
+                    const crop = cropOcrRegion(region);
+                    const label = region.field === 'serial' ? 'Čítanie riadka výrobného čísla' : region.field === 'model' ? 'Čítanie riadka modelu' : 'Čítanie značky';
+                    await recognize(crop, label, 6, 2, true, region.field);
+                    await recognize(processedLabelCanvas(crop, 'contrast'), label + ' – kontrola', 11, 2, true, region.field);
+                    // Read a standalone model code without adjacent address/table rows.
+                    if (region.field === 'model' && !labelMatches(region.label).length && region.label.length <= 85) {
+                        const b = region.anchor, h = Math.max(10, b.y1 - b.y0);
+                        const x = Math.max(0, b.x0 - h * .5), y = Math.max(0, b.y0 - h * .3);
+                        const row = cropOcrRegion({ source: region.source, x, y,
+                            width: Math.min(region.source.width - x, b.x1 - x + h * .5),
+                            height: Math.min(region.source.height - y, b.y1 - y + h * .3) });
+                        await recognize(row, 'Samostatný riadok modelu', 7, 0, false, 'model');
+                    }
+                }
+            };
+            if (!complete()) await readFocusedRows();
+            if (!complete()) await recognize(processedLabelCanvas(base, 'invert'), 'Svetlé písmo na tmavom štítku', 11);
+            if (!complete()) {
+                for (const angle of [180, 90, 270]) {
+                    const rotated = rotatedCanvas(base, angle);
+                    const before = rankLabelCandidates(scanState.candidates);
+                    await recognize(rotated, 'Otočenie ' + angle + '°', 11, 0, true);
+                    const after = rankLabelCandidates(scanState.candidates);
+                    if (['manufacturer', 'model', 'serial'].some(k => after[k] && (!before[k] || after[k].score > before[k].score))) oriented = rotated;
+                    if (complete()) break;
+                }
+                if (oriented !== base && !complete()) await recognize(processedLabelCanvas(oriented, 'contrast'), 'Kontrolné čítanie otočeného štítku', 6);
+                if (!complete()) await readFocusedRows();
+            }
+            if (!rankLabelCandidates(scanState.candidates).serial?.reliable && !codes.length) {
+                setOcrProgress(93, 'Doplňujúce čítanie čiarových a QR kódov…');
+                const moreCodes = await wait(detectBarcodes(oriented, true)); active();
+                scanState.candidates.push(...barcodeCandidates(moreCodes));
+            }
+            setOcrProgress(100, 'Čítanie dokončené – skontrolujte údaje.');
+            showLabelResults(true, initial);
+        } catch (error) {
+            aborted = true;
+            if (token === scanState.token) {
+                scanState.log.push(error.message || 'Čítanie zlyhalo.');
+                showLabelResults(false);
+                setOcrProgress(0, 'Čítanie nebolo dokončené.');
+                byId('device-scan-status').textContent = 'Čítanie nebolo dokončené. Skontrolujte dostupné návrhy alebo skúste fotografiu načítať znova.';
+                scanMessage((error.message || 'Automatické čítanie zlyhalo.') + ' Fotografia zostala v dokumente. Môžete skúsiť čítanie znova, vložiť text alebo doplniť údaje ručne.');
+            }
+        } finally {
+            if (worker) { try { await worker.terminate(); } catch (_) {} }
+            if (token === scanState.token) { scanState.worker = null; scanState.stop = null; scanBusy(false); }
+        }
+    }
 
     function generateNo() {
         const year = new Date().getFullYear();
-        let c = parseInt(localStorage.getItem('rev_c_v5')) || 0;
+        let c = 0;
+        try { c = parseInt(localStorage.getItem('rev_c_v5')) || 0; } catch (_) {}
         const currentCount = c + 1;
         const n = `RS2-${year}/${String(currentCount).padStart(3,'0')}`;
         const inpNo = document.getElementById('inp-no');
@@ -1079,12 +1584,9 @@
     }
 
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
-    window.onload = () => {
-        generateNo();
-        initQR();
-        changeScenario();
-        setTimeout(showLabelScanModal, 250);
-    };
+    generateNo();
+    changeScenario();
+    setTimeout(showLabelScanModal, 250);
 </script>
 </body>
 </html>
