@@ -1014,10 +1014,71 @@
                 if (year) add('year', year, 65, 'Samostatný rok pri čísle – skontrolujte');
             }
         });
+        const groupBrands = brands.filter(b => ['Vaillant', 'Protherm'].includes(b.value));
+        if (groupBrands.length === 1) lines.forEach(line => {
+            const raw = line.replace(/\s/g, '');
+            if (decodeVaillantGroupSerial(raw, groupBrands[0].value))
+                add('serial', raw, 65, 'Samostatný identifikátor vo formáte Vaillant / Protherm – skontrolujte S/N');
+        });
         const fuelMatch = foldLabel(text).match(/\b(?:R\s*-?\s*(?:290|32|410A|407C|134A|454B|452B|744)|G20|G31|NATURAL GAS|ERDGAS|ZEMNY PLYN|PROPANE|PROPAN|LPG|PELLET|PELETY)\b/);
         const fuel = fuelMatch ? validField('fuel', fuelMatch[0]) : '';
         if (fuel) add('fuel', fuel, 75, 'Palivo alebo chladivo v texte');
         return out;
+    }
+    // Documented positions: Vaillant ecoTEC plus 0020261422_00 p.9;
+    // Protherm Tiger Condens 0020294206_01 p.7. Not a universal brand checksum.
+    function decodeVaillantGroupSerial(value, brand, now = new Date()) {
+        const manufacturer = foldLabel(brand).trim();
+        if (!['VAILLANT', 'PROTHERM'].includes(manufacturer)) return null;
+        const serial = String(value || '').trim().replace(/\s/g, '');
+        // Supported numeric body with optional printed suffix. Never repair O/0,
+        // drop leading zeros or truncate a code to an assumed 21 characters.
+        if (!/^\d{20,28}(?:[A-Z]\d{1,2})?$/.test(serial)) return null;
+        const year = 2000 + Number(serial.slice(2, 4));
+        const week = Number(serial.slice(4, 6)), productCode = serial.slice(6, 16);
+        // This decoder deliberately supports the documented modern 00… products.
+        if (!/^00\d{8}$/.test(productCode) || year > now.getFullYear()) return null;
+        const jan1 = new Date(Date.UTC(year, 0, 1)).getUTCDay();
+        const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+        const maxWeek = jan1 === 4 || (jan1 === 3 && leap) ? 53 : 52;
+        if (week < 1 || week > maxWeek) return null;
+        return { serial, year: String(year), week, productCode,
+            factoryCode: manufacturer === 'VAILLANT' ? serial.slice(16, 20) : '',
+            // No factory-name or model mapping without an authoritative catalogue.
+            source: manufacturer === 'VAILLANT'
+                ? 'https://www.vaillant.sk/api/download/product/sk/_ecotec-plus-48---65-kw_299617.pdf#page=9'
+                : 'https://www.protherm.sk/pdf/produkte/navod-na-obsluhu-tiger-condens-2022-2351786.pdf#page=7' };
+    }
+    function addVaillantGroupDetails(result) {
+        const brand = result.manufacturer, serial = result.serial;
+        if (!brand || brand.conflict || !serial) return result;
+        const decoded = decodeVaillantGroupSerial(serial.value, brand.value);
+        if (!decoded) return result;
+        serial.groupInfo = decoded;
+        // Derived information is not an independent OCR vote. It cannot make
+        // an uncertain serial reliable, and is presented for explicit review.
+        const derived = { value: decoded.year, strength: 65, confidence: serial.confidence,
+            count: 0, score: 65, alternatives: [], reliable: false, conflict: !!serial.conflict,
+            derived: true, evidence: 'Rok odvodený zo sériového čísla (' + decoded.week + '. týždeň) – skontrolujte číslo aj rok' };
+        if (!result.year) result.year = derived;
+        else if (result.year.value !== decoded.year) {
+            result.year.conflict = true; result.year.reliable = false;
+            if (!result.year.alternatives.some(c => c.value === decoded.year)) result.year.alternatives.unshift(derived);
+            result.year.evidence += ' Rozpor s rokom v sériovom čísle: ' + decoded.year + '.';
+        }
+        return result;
+    }
+    function refreshLabelSerialInfo() {
+        const target = byId('scan-serial-details');
+        if (!target) return;
+        const decoded = decodeVaillantGroupSerial(byId('scan-value-serial')?.value, byId('scan-value-manufacturer')?.value);
+        target.replaceChildren();
+        if (!decoded) return;
+        target.append(document.createTextNode('Zo sériového čísla: rok ' + decoded.year + ', týždeň ' + decoded.week +
+            ', produktový kód ' + decoded.productCode + (decoded.factoryCode ? ', kód miesta výroby ' + decoded.factoryCode : '') +
+            '. Rozdelenie platí pre podporovaný formát; nepotvrdzuje správnosť OCR. '));
+        const link = document.createElement('a'); link.href = decoded.source; link.target = '_blank'; link.rel = 'noopener noreferrer';
+        link.textContent = 'Význam podľa návodu'; target.append(link);
     }
     function barcodeCandidates(values) {
         const out = [];
@@ -1073,7 +1134,7 @@
                     !(field === 'serial' && /\S+\s+\S+\s+\S+/.test(best.value)) &&
                     (best.count >= 2 || best.strength === 95) && !conflict };
         });
-        return result;
+        return addVaillantGroupDetails(result);
     }
     function similarSerialReadings(left, right) {
         left = foldLabel(left).replace(/\s/g, ''); right = foldLabel(right).replace(/\s/g, '');
@@ -1349,19 +1410,22 @@
             header.append(check, document.createTextNode(' ' + label)); row.append(header);
             const input = document.createElement('input'); input.id = 'scan-value-' + key; input.type = 'text'; input.value = value; input.maxLength = 100;
             input.setAttribute('aria-label', label); input.placeholder = 'Nerozpoznané – doplňte podľa fotografie';
-            input.addEventListener('input', () => { check.checked = !!input.value.trim(); }); row.append(input);
+            input.addEventListener('input', () => { check.checked = !!input.value.trim(); refreshLabelSerialInfo(); if (['serial', 'manufacturer'].includes(key) && scanState.results.year?.derived) byId('scan-use-year').checked = false; }); row.append(input);
             if (candidate?.alternatives.length) {
                 const select = document.createElement('select'); select.setAttribute('aria-label', 'Ďalšie návrhy: ' + label);
                 const placeholder = document.createElement('option'); placeholder.textContent = 'Ďalšie rozpoznané možnosti'; placeholder.value = ''; select.append(placeholder);
                 [candidate, ...candidate.alternatives].forEach(c => { const o = document.createElement('option'); o.textContent = c.value; o.value = c.value; select.append(o); });
-                select.addEventListener('change', () => { if (select.value) { input.value = select.value; check.checked = true; } }); row.append(select);
+                select.addEventListener('change', () => { if (select.value) { input.value = select.value; check.checked = true; refreshLabelSerialInfo(); if (['serial', 'manufacturer'].includes(key) && scanState.results.year?.derived) byId('scan-use-year').checked = false; } }); row.append(select);
             }
             const hint = document.createElement('small');
             hint.textContent = candidate ? (candidate.conflict ? 'Rozdielne výsledky – vyberte správny. ' : candidate.reliable ? 'Zhodné čítania alebo označený kód. ' : 'Návrh vyžaduje kontrolu. ') + candidate.evidence : 'Údaj sa nenašiel.';
             if (current && current !== value) hint.textContent += ' V dokumente je: ' + current + '. Prepíše sa iba po vložení vybraných údajov.';
-            row.append(hint); container.append(row);
+            row.append(hint);
+            if (key === 'serial') { const details = document.createElement('small'); details.id = 'scan-serial-details'; row.append(details); }
+            container.append(row);
         });
         render();
+        refreshLabelSerialInfo();
         byId('label-review').hidden = false;
         byId('label-method-log').textContent = scanState.log.join('\n');
         const message = (filled.length ? 'Do prázdnych polí vložené: ' + filled.join(', ') + '. ' : '') +
