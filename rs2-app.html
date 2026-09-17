@@ -258,6 +258,7 @@
                 <p class="scan-help">Skontrolujte návrhy podľa fotografie. Neisté návrhy treba upraviť alebo osobitne zaškrtnúť. Zaškrtnuté údaje sa prenesú do správy. Prázdne alebo nezaškrtnuté polia zachovajú pôvodný údaj.</p>
                 <div id="label-review-fields"></div>
                 <button type="button" class="btn-label-camera" data-scan-lock onclick="confirmLabelData()">VLOŽIŤ VYBRANÉ ÚDAJE DO DOKUMENTU</button>
+                <button type="button" class="btn-label-skip" data-scan-lock onclick="lookupScannedReport()">🔎 Vyhľadať protokoly podľa načítaného čísla</button>
             </div>
             <details class="scan-details">
                 <summary>Rozpoznaný text / vložiť text zo štítku</summary>
@@ -277,6 +278,14 @@
         <div class="archive-header">
             <h2 style="margin:0">📚 Spoločný cloudový archív</h2>
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
+        </div>
+        <div style="padding:12px 20px;border-bottom:1px solid #eee">
+            <label for="archive-serial-search">Výrobné číslo / S/N – presná zhoda</label>
+            <input id="archive-serial-search" type="text" maxlength="100" placeholder="Celé výrobné číslo vrátane koncovky" oninput="filterArchiveBySerial()">
+            <button type="button" onclick="openArchive(document.getElementById('archive-serial-search').value)">Obnoviť z databázy</button>
+            <button type="button" onclick="document.getElementById('archive-serial-search').value='';filterArchiveBySerial()">Všetky protokoly</button>
+            <p id="archive-search-status" role="status" aria-live="polite"></p>
+            <small>Obnovia sa uložené údaje. Fotografie a podpisy sa do tohto archívu neukladajú.</small>
         </div>
         <div class="archive-list" id="archive-list-container">
             <div style="text-align:center; padding:20px; color:#666;">Načítavam zoznam správ...</div>
@@ -355,7 +364,7 @@
             <div class="form-group"><label>Značka / výrobca</label><input type="text" id="inp-manuf" oninput="render()"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Výrobné číslo / S/N</label><input type="text" id="inp-sn" oninput="render()"></div>
+            <div class="form-group"><label>Výrobné číslo / S/N</label><input type="text" id="inp-sn" oninput="render()"><button type="button" onclick="lookupDeviceReports(document.getElementById('inp-sn').value)">🔎 Nájsť protokoly zariadenia</button></div>
             <div class="form-group"><label>Rok</label><input type="text" id="inp-year" oninput="render()"></div>
         </div>
         <div class="form-row">
@@ -619,84 +628,89 @@
         } catch (e) { alert("Chyba pri ukladaní."); }
     };
 
-    window.openArchive = async () => {
-        if (!user) return;
-        document.getElementById('archive-modal').style.display = 'flex';
+    let archiveRows = [], archiveLoaded = false, archiveRequest = 0, archiveLoadBusy = false;
+    window.cancelArchiveRequest = () => { archiveRequest++; };
+    window.filterArchiveBySerial = () => {
+        if (!archiveLoaded) return;
+        const input = document.getElementById('archive-serial-search');
         const container = document.getElementById('archive-list-container');
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Prehľadávam spoločný archív...</div>';
-
-        try {
-            // ZMENA NA VEREJNÚ CESTU (RULE 1)
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
-            const querySnapshot = await getDocs(q);
-            
-            let list = [];
-            querySnapshot.forEach(doc => list.push(doc.data()));
-            list.sort((a,b) => b.timestamp - a.timestamp);
-
-            if (list.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:20px;">Archív je prázdny.</div>';
-                return;
+        const key = window.normalizeArchiveSerial(input.value);
+        const list = window.matchArchiveSerial(archiveRows, input.value);
+        container.replaceChildren();
+        document.getElementById('archive-search-status').textContent = list.length
+            ? (key ? 'Protokoly pre S/N ' + input.value.trim() + ': ' : 'Všetky protokoly: ') + list.length
+            : key ? 'Pre toto celé výrobné číslo sa nenašiel uložený protokol. Skontrolujte číslo alebo ho opravte vyššie.' : 'Archív je prázdny.';
+        for (const item of list) {
+            const row = document.createElement('div'); row.className = 'archive-item'; row.style.cursor = 'default'; row.style.flexWrap = 'wrap'; row.style.gap = '12px';
+            const info = document.createElement('div');
+            const title = document.createElement('strong'); title.textContent = item.reportNo || item.id;
+            const customer = document.createElement('div'); customer.textContent = item.customer?.name || item.customer?.company || 'Bez mena';
+            const details = document.createElement('div'); details.textContent = (item.date || '—') + ' | ' + (item.device?.dev || '—') + ' | S/N: ' + (item.device?.sn || '—');
+            info.append(title, customer, details); row.append(info);
+            for (const [mode, label] of [['existing', 'Otvoriť protokol'], ['new', 'Nová revízia']]) {
+                const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
+                button.addEventListener('click', () => window.loadFromCloud(item.id, mode)); row.append(button);
             }
-
-            container.innerHTML = '';
-            list.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'archive-item';
-                div.innerHTML = `
-                    <div class="archive-info" onclick="loadFromCloud('${item.id}')">
-                        <span class="archive-no">${item.reportNo}</span>
-                        <span class="archive-cust">${item.customer.name || item.customer.company || 'Bez mena'}</span>
-                        <span class="archive-date">${item.date || '---'} | ${item.device.dev || '---'}</span>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        } catch (e) { container.innerHTML = '<div style="padding:20px;">Nepodarilo sa načítať archív.</div>'; }
-    };
-
-    window.loadFromCloud = async (docId) => {
-        // ZMENA NA VEREJNÚ CESTU (RULE 1)
-        const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const isNew = confirm("Vytvoriť NOVÚ revíziu pre tohto klienta?");
-
-            document.getElementById('inp-scenario').value = data.scenario;
-            document.getElementById('inp-company').value = data.customer.company;
-            document.getElementById('inp-name').value = data.customer.name;
-            document.getElementById('inp-street').value = data.customer.street;
-            document.getElementById('inp-city').value = data.customer.city;
-            document.getElementById('inp-phone').value = data.customer.phone;
-            document.getElementById('inp-email').value = data.customer.email;
-            document.getElementById('inp-dev').value = data.device.dev;
-            document.getElementById('inp-manuf').value = data.device.manuf;
-            document.getElementById('inp-sn').value = data.device.sn;
-            document.getElementById('inp-year').value = data.device.year;
-            document.getElementById('inp-power').value = data.device.power;
-            document.getElementById('inp-fuel').value = data.device.fuel;
-            document.getElementById('inp-price').value = data.result.price;
-            document.getElementById('inp-vat-payer').checked = data.result.vat;
-
-            if (isNew) {
-                document.getElementById('inp-date').valueAsDate = new Date();
-                document.getElementById('inp-notes').value = "";
-                document.getElementById('inp-status').value = "ok";
-                let c = parseInt(localStorage.getItem('rev_c_v5')) || 0;
-                c++; localStorage.setItem('rev_c_v5', c);
-                // Pri vytvorení novej revízie hneď zapíšeme číslo aj do cloudu
-                await updateCloudCounter(c);
-                window.generateNo();
-            } else {
-                document.getElementById('inp-date').value = data.date;
-                document.getElementById('inp-no').value = data.reportNo;
-                document.getElementById('inp-notes').value = data.result.notes;
-                document.getElementById('inp-status').value = data.result.status;
-            }
-            window.changeScenario();
-            window.closeArchive();
+            container.append(row);
         }
     };
+    window.openArchive = async (serial = '') => {
+        if (!user) { alert('Počkajte na pripojenie k cloudu a skúste vyhľadanie znova.'); return; }
+        const request = ++archiveRequest, userId = user.uid;
+        archiveLoaded = false; archiveRows = [];
+        document.getElementById('archive-serial-search').value = typeof serial === 'string' ? serial : '';
+        document.getElementById('archive-modal').style.display = 'flex';
+        document.getElementById('archive-list-container').replaceChildren();
+        const status = document.getElementById('archive-search-status'); status.textContent = 'Načítavam protokoly z databázy…';
+        try {
+            // Same existing collection and permissions. Filter in memory so legacy
+            // records work without a migration or a new Firestore index.
+            const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections')));
+            if (request !== archiveRequest || user?.uid !== userId) return;
+            snapshot.forEach(record => archiveRows.push({ ...record.data(), id: record.id }));
+            archiveRows.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || Number(b.timestamp || 0) - Number(a.timestamp || 0));
+            archiveLoaded = true; window.filterArchiveBySerial();
+        } catch (error) {
+            if (request === archiveRequest) status.textContent = 'Databázu sa nepodarilo načítať. Skontrolujte pripojenie a prístup k archívu, potom použite Obnoviť z databázy.';
+        }
+    };
+    window.loadFromCloud = async (docId, mode = 'existing') => {
+        if (!user || archiveLoadBusy) return;
+        if (!['existing', 'new'].includes(mode)) return;
+        if (!confirm(mode === 'new' ? 'Nahradiť rozpracované údaje klientom a zariadením z archívu a založiť novú revíziu?' : 'Otvoriť uložený protokol a nahradiť rozpracované údaje?')) return;
+        archiveLoadBusy = true;
+        const request = archiveRequest, userId = user.uid;
+        try {
+            const snapshot = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId));
+            if (request !== archiveRequest || user?.uid !== userId) return;
+            if (!snapshot.exists()) { alert('Tento protokol už v databáze nie je. Obnovte zoznam.'); return; }
+            const data = snapshot.data(), customer = data.customer || {}, device = data.device || {}, result = data.result || {};
+            const set = (id, value) => { document.getElementById(id).value = value == null ? '' : String(value); };
+            set('inp-scenario', data.scenario || 'plyn');
+            if (!document.getElementById('inp-scenario').value) set('inp-scenario', 'plyn');
+            for (const [id, key] of [['company','company'],['name','name'],['street','street'],['city','city'],['phone','phone'],['email','email']]) set('inp-' + id, customer[key]);
+            for (const [id, key] of [['dev','dev'],['manuf','manuf'],['sn','sn'],['year','year'],['power','power'],['fuel','fuel']]) set('inp-' + id, device[key]);
+            set('inp-price', result.price); document.getElementById('inp-vat-payer').checked = !!result.vat;
+            set('inp-location-note', result.locationNote);
+            if (mode === 'new') {
+                document.getElementById('inp-date').valueAsDate = new Date();
+                set('inp-notes', ''); set('inp-status', 'ok'); set('inp-invoice', '');
+                const count = (parseInt(localStorage.getItem('rev_c_v5')) || 0) + 1;
+                localStorage.setItem('rev_c_v5', count); window.generateNo();
+                await updateCloudCounter(count);
+            } else {
+                set('inp-date', data.date); set('inp-no', data.reportNo);
+                set('inp-notes', result.notes); set('inp-status', result.status || 'ok'); set('inp-invoice', result.invoice);
+            }
+            window.resetAttachmentsForArchivedReport();
+            window.changeScenario(); window.closeArchive();
+            document.getElementById('device-scan-status').textContent = mode === 'new'
+                ? 'Nová revízia s údajmi z archívu. Doplňte aktuálne výsledky, fotografiu a podpis.'
+                : 'Obnovené uložené údaje protokolu. Archív neobsahuje fotografiu ani podpis.';
+        } catch (error) { alert('Protokol sa nepodarilo načítať z databázy. Skúste znova.'); }
+        finally { archiveLoadBusy = false; }
+    };
+
 </script>
 
 <script>
@@ -1624,7 +1638,30 @@
         render();
     }
 
-    window.closeArchive = () => { document.getElementById('archive-modal').style.display = 'none'; };
+    function normalizeArchiveSerial(value) {
+        // Preserve punctuation, leading zeros and the full suffix; no O/0 repair.
+        return String(value || '').trim().replace(/\s/g, '').toUpperCase();
+    }
+    function matchArchiveSerial(rows, value) {
+        const key = normalizeArchiveSerial(value);
+        return key ? rows.filter(row => normalizeArchiveSerial(row.device?.sn) === key) : rows.slice();
+    }
+    function lookupDeviceReports(value) {
+        if (!normalizeArchiveSerial(value)) { alert('Najprv načítajte alebo zadajte celé výrobné číslo.'); return; }
+        if (typeof window.openArchive !== 'function') { alert('Cloud sa ešte nenačítal. Skontrolujte internet a skúste znova.'); return; }
+        window.closeLabelScanModal(); window.openArchive(String(value).trim());
+    }
+    function lookupScannedReport() {
+        if (scanState.busy) return;
+        lookupDeviceReports(byId('scan-value-serial')?.value || '');
+    }
+    window.resetAttachmentsForArchivedReport = () => {
+        const photo = byId('device-photo-preview'); photo.removeAttribute('src'); photo.style.display = 'none';
+        for (const id of ['preview-sig-canvas', 'full-screen-canvas']) { const canvas = byId(id); canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
+        scanState.image = null; scanState.crop = null; scanState.candidates = []; scanState.results = {}; lastLabelOcrText = '';
+        byId('label-raw-text').value = ''; byId('label-review').hidden = true; byId('label-editor').hidden = true;
+    };
+    window.closeArchive = () => { window.cancelArchiveRequest?.(); document.getElementById('archive-modal').style.display = 'none'; };
 
     function resetCounter() {
         if(confirm('Vynulovať počítadlo na 001?')) {
