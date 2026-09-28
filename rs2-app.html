@@ -371,6 +371,32 @@
             <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
             <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" oninput="render()"></div>
         </div>
+        <div class="form-group"><label>Umiestnenie spotrebiča</label><input type="text" id="inp-device-location" placeholder="Kotolňa / kuchyňa / technická miestnosť" oninput="render()"></div>
+
+        <div class="section-title">Merané hodnoty</div>
+        <div class="form-row">
+            <div class="form-group"><label>CO (ppm)</label><input type="text" id="inp-co" oninput="render()"></div>
+            <div class="form-group"><label>CO₂ (%)</label><input type="text" id="inp-co2" oninput="render()"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>O₂ (%)</label><input type="text" id="inp-o2" oninput="render()"></div>
+            <div class="form-group"><label>Teplota spalín (°C)</label><input type="text" id="inp-flue-temp" oninput="render()"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Ťah (Pa)</label><input type="text" id="inp-draft" oninput="render()"></div>
+            <div class="form-group"><label>Tlak plynu (mbar)</label><input type="text" id="inp-gas-pressure" oninput="render()"></div>
+        </div>
+        <div class="form-group"><label>Tlak vykurovacej sústavy (bar)</label><input type="text" id="inp-system-pressure" oninput="render()"></div>
+
+        <div class="section-title">Spalínová cesta</div>
+        <div class="form-row">
+            <div class="form-group"><label>Typ odvodu spalín</label><input type="text" id="inp-flue-type" placeholder="Komín / turbo / koncentrický" oninput="render()"></div>
+            <div class="form-group"><label>Stav</label><input type="text" id="inp-flue-state" placeholder="Vyhovuje / nevyhovuje" oninput="render()"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Vyústenie</label><input type="text" id="inp-flue-outlet" placeholder="Strecha / fasáda" oninput="render()"></div>
+            <div class="form-group"><label>Poznámka</label><input type="text" id="inp-flue-note" oninput="render()"></div>
+        </div>
 
         <div class="section-title">Výsledok</div>
         <div class="form-group"><label>Nedostatky</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
@@ -441,6 +467,7 @@
                         <div class="vtz-row"><span class="vtz-label">S/N:</span> <span class="vtz-val" id="out-sn">—</span></div>
                         <div class="vtz-row"><span class="vtz-label">Rok:</span> <span class="vtz-val" id="out-year">—</span></div>
                         <div class="vtz-row"><span class="vtz-label">Parametre:</span> <span class="vtz-val" id="out-params">—</span></div>
+                        <div class="vtz-row"><span class="vtz-label">Umiestnenie:</span> <span class="vtz-val" id="out-device-location">—</span></div>
                         <div class="vtz-row"><span class="vtz-label">Skupina:</span> <span class="vtz-val" id="out-group">—</span></div>
                     </div>
                     <div class="notes-photo-container">
@@ -451,10 +478,20 @@
                     </div>
                 </div>
 
-                <div class="section-header">3. OSTATNÉ ZISTENIA / POZNÁMKY</div>
+                <div class="section-header">3. MERANÉ HODNOTY A SPALÍNOVÁ CESTA</div>
+                <table class="data-table">
+                    <tbody>
+                        <tr><th>CO</th><td id="out-co">—</td><th>CO₂</th><td id="out-co2">—</td><th>O₂</th><td id="out-o2">—</td></tr>
+                        <tr><th>Teplota spalín</th><td id="out-flue-temp">—</td><th>Ťah</th><td id="out-draft">—</td><th>Tlak plynu</th><td id="out-gas-pressure">—</td></tr>
+                        <tr><th>Tlak sústavy</th><td id="out-system-pressure">—</td><th>Typ odvodu</th><td id="out-flue-type">—</td><th>Stav</th><td id="out-flue-state">—</td></tr>
+                        <tr><th>Vyústenie</th><td id="out-flue-outlet">—</td><th colspan="2">Poznámka spalínovej cesty</th><td colspan="2" id="out-flue-note">—</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="section-header">4. OSTATNÉ ZISTENIA / POZNÁMKY</div>
                 <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
 
-                <div class="section-header">4. CELKOVÉ HODNOTENIE A ZÁVER</div>
+                <div class="section-header">5. CELKOVÉ HODNOTENIE A ZÁVER</div>
                 <div class="conclusion-text" id="out-conclusion">—</div>
                 
                 <div class="footer-area">
@@ -598,6 +635,22 @@
                 year: document.getElementById('inp-year').value,
                 power: document.getElementById('inp-power').value,
                 fuel: document.getElementById('inp-fuel').value,
+                location: document.getElementById('inp-device-location').value,
+            },
+            measurements: {
+                co: document.getElementById('inp-co').value,
+                co2: document.getElementById('inp-co2').value,
+                o2: document.getElementById('inp-o2').value,
+                flueTemp: document.getElementById('inp-flue-temp').value,
+                draft: document.getElementById('inp-draft').value,
+                gasPressure: document.getElementById('inp-gas-pressure').value,
+                systemPressure: document.getElementById('inp-system-pressure').value,
+            },
+            flue: {
+                type: document.getElementById('inp-flue-type').value,
+                state: document.getElementById('inp-flue-state').value,
+                outlet: document.getElementById('inp-flue-outlet').value,
+                note: document.getElementById('inp-flue-note').value,
             },
             result: {
                 notes: document.getElementById('inp-notes').value,
@@ -684,12 +737,15 @@
             const snapshot = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId));
             if (request !== archiveRequest || user?.uid !== userId) return;
             if (!snapshot.exists()) { alert('Tento protokol už v databáze nie je. Obnovte zoznam.'); return; }
-            const data = snapshot.data(), customer = data.customer || {}, device = data.device || {}, result = data.result || {};
+            const data = snapshot.data(), customer = data.customer || {}, device = data.device || {}, measurements = data.measurements || {}, flue = data.flue || {}, result = data.result || {};
             const set = (id, value) => { document.getElementById(id).value = value == null ? '' : String(value); };
             set('inp-scenario', data.scenario || 'plyn');
             if (!document.getElementById('inp-scenario').value) set('inp-scenario', 'plyn');
             for (const [id, key] of [['company','company'],['name','name'],['street','street'],['city','city'],['phone','phone'],['email','email']]) set('inp-' + id, customer[key]);
             for (const [id, key] of [['dev','dev'],['manuf','manuf'],['sn','sn'],['year','year'],['power','power'],['fuel','fuel']]) set('inp-' + id, device[key]);
+            set('inp-device-location', device.location);
+            for (const [id, key] of [['co','co'],['co2','co2'],['o2','o2'],['flue-temp','flueTemp'],['draft','draft'],['gas-pressure','gasPressure'],['system-pressure','systemPressure']]) set('inp-' + id, measurements[key]);
+            for (const [id, key] of [['flue-type','type'],['flue-state','state'],['flue-outlet','outlet'],['flue-note','note']]) set('inp-' + id, flue[key]);
             set('inp-price', result.price); document.getElementById('inp-vat-payer').checked = !!result.vat;
             set('inp-location-note', result.locationNote);
             if (mode === 'new') {
@@ -754,6 +810,19 @@
         const pwr = document.getElementById('inp-power').value;
         const fl = document.getElementById('inp-fuel').value;
         document.getElementById('out-params').textContent = (pwr ? pwr + " kW " : "") + (fl ? "/ " + fl : "");
+        document.getElementById('out-device-location').textContent = document.getElementById('inp-device-location').value || "—";
+        const val = id => document.getElementById(id).value || "—";
+        document.getElementById('out-co').textContent = val('inp-co') === "—" ? "—" : val('inp-co') + " ppm";
+        document.getElementById('out-co2').textContent = val('inp-co2') === "—" ? "—" : val('inp-co2') + " %";
+        document.getElementById('out-o2').textContent = val('inp-o2') === "—" ? "—" : val('inp-o2') + " %";
+        document.getElementById('out-flue-temp').textContent = val('inp-flue-temp') === "—" ? "—" : val('inp-flue-temp') + " °C";
+        document.getElementById('out-draft').textContent = val('inp-draft') === "—" ? "—" : val('inp-draft') + " Pa";
+        document.getElementById('out-gas-pressure').textContent = val('inp-gas-pressure') === "—" ? "—" : val('inp-gas-pressure') + " mbar";
+        document.getElementById('out-system-pressure').textContent = val('inp-system-pressure') === "—" ? "—" : val('inp-system-pressure') + " bar";
+        document.getElementById('out-flue-type').textContent = val('inp-flue-type');
+        document.getElementById('out-flue-state').textContent = val('inp-flue-state');
+        document.getElementById('out-flue-outlet').textContent = val('inp-flue-outlet');
+        document.getElementById('out-flue-note').textContent = val('inp-flue-note');
         const note = document.getElementById('inp-notes').value;
         document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
         document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
