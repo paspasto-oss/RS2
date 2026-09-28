@@ -133,7 +133,16 @@
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        .tech-sig-img { width: 32mm !important; height: 32mm !important; object-fit: contain; display: block; margin: 0 auto -4mm auto; position: relative; z-index: 10; }
+        .tech-sig-img {
+            width: 40mm !important;
+            height: 40mm !important;
+            object-fit: contain;
+            display: block;
+            margin: -7mm 0 -7mm auto;
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
 
         /* QR Page */
         .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
