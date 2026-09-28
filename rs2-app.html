@@ -98,7 +98,8 @@
         .report-meta { text-align: right; max-width: 65%; }
         
         .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
-        .report-no { font-size: 11px; margin-top: 6px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
+        .report-subtitle { font-size: 7.2px; line-height: 1.25; color: #555; margin-top: 3px; max-width: 115mm; }
+        .report-no { font-size: 11px; margin-top: 5px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
 
         .info-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 10px; margin-bottom: 10px; }
         .box { border: 1px solid #ddd; padding: 8px; border-radius: 2px; }
@@ -442,6 +443,7 @@
                     </div>
                     <div class="report-meta">
                         <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
+                        <div class="report-subtitle" id="out-subtitle">Vyhotovená podľa príslušných právnych a technických predpisov.</div>
                         <div class="report-no" id="out-no">Číslo: -</div>
                     </div>
                 </div>
@@ -786,11 +788,41 @@
     let isDrawing = false;
 
     const SCENARIOS = {
-        plyn: { title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bh (do 0,5 MW)", rows: [["Tlak plynu na vstupe (HUP)", "1.8 - 2.5 kPa", "2.1 kPa"], ["Tesnosť spojov (detektor)", "0 ppm", "0 ppm"], ["Koncentrácia CO v spalinách", "< 100 ppm", "14 ppm"], ["Ťah komína / Teplota spalín", "min. 3 Pa", "12 Pa"], ["Funkcia blokovacích prvkov", "vypnutie < 1s", "0.5 s"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Vizuálna kontrola umiestnenia", "TPP 704 01", "Bez závad"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška termostatu / regulácie", "Plynulá", "OK"], ["Kontrola horáka a výmenníka", "Čisté", "Vyhovuje"]] },
-        elektro: { title: "SPRÁVA O ODBORNEJ PREHLIADKE ELEKTRICKÉHO KOTLA", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bf", rows: [["Vizuálna kontrola pripojenia", "Bez poškodenia", "Vyhovuje"], ["Izolačný odpor el. častí", "> 0.5 MΩ", "V norme"], ["Kontrola vyhrievacích telies", "R-nom", "V norme"], ["Funkcia bezp. termostatu", "Vypína", "OK"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška regulácie / stýkačov", "Plynulá", "OK"], ["Tesnosť vodných spojov", "Bez úniku", "OK"], ["Funkcia poistného ventilu", "Funkčný", "OK"], ["Kontrola el. rozvádzača", "Pevné spoje", "Vyhovuje"]] },
-        pellet: { title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY", law: "STN EN 303-5", group: "Biomasa", rows: [["Vizuálna kontrola telesa", "Čisté", "Vyhovuje"], ["Funkčnosť podávača", "Plynulá", "OK"], ["Tesnosť spaľovacej komory", "Bez úniku", "OK"], ["Ťah komína", "10-20 Pa", "15 Pa"], ["Teplota spalín", "100-180 °C", "145 °C"], ["Obsah CO v spalinách", "V norme", "120 ppm"], ["Obsah O2", "6 - 10 %", "8.2 %"], ["Účinnosť spaľovania", "> 85 %", "91.5 %"], ["Kontrola ventilátora", "Tichý chod", "OK"], ["Funkcia bezp. klapky", "Funkčná", "Vyhovuje"]] },
-        tc: { title: "SPRÁVA O KONTROLE TEPELNÉHO ČERPADLA", law: "Zákon č. 286/2009 Z.z.", group: "F-plyny", rows: [["Kontrola úniku (Detektor)", "Bez úniku", "OK"], ["Vizuálna kontrola okruhu", "Bez oleja", "Negatívna"], ["Kontrola bezp. prvkov", "Funkčné", "Vyhovuje"], ["Prúd kompresora", "I-nom", "V norme"], ["Tlak chladiva", "Podľa T-ok", "V norme"], ["Funkčná skúška Chlad/Teplo", "Funkčná", "OK"], ["Tlak vo vykurovacej sústave", "> 1.0 bar", "1.5 bar"], ["Kontrola prietoku (flow switch)", "Funkčný", "OK"], ["Čistota vonkajšej jednotky", "Priechodná", "Bez závad"], ["Kontrola el. spojov", "Pevné", "OK"]] },
-        rozvod: { title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU", law: "Vyhl. MPSVR SR č. 508/2009 Z.z.", group: "Skupina Bg", rows: [["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"], ["Kontrola upevnenia potrubia", "Pevné", "OK"], ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"], ["Stav protikoróznej ochrany", "Bez korózie", "OK"], ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"], ["Kontrola označenia potrubia", "Jasné", "OK"], ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"], ["Ochrana pred mech. poškodením", "Dostatočná", "OK"], ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"], ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]] }
+        plyn: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA",
+            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
+            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+            group: "Skupina Bh (do 0,5 MW)",
+            rows: [["Tlak plynu na vstupe (HUP)", "1.8 - 2.5 kPa", "2.1 kPa"], ["Tesnosť spojov (detektor)", "0 ppm", "0 ppm"], ["Koncentrácia CO v spalinách", "< 100 ppm", "14 ppm"], ["Ťah komína / Teplota spalín", "min. 3 Pa", "12 Pa"], ["Funkcia blokovacích prvkov", "vypnutie < 1s", "0.5 s"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Vizuálna kontrola umiestnenia", "TPP 704 01", "Bez závad"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška termostatu / regulácie", "Plynulá", "OK"], ["Kontrola horáka a výmenníka", "Čisté", "Vyhovuje"]]
+        },
+        elektro: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE ELEKTRICKÉHO KOTLA",
+            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
+            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+            group: "Skupina Bf",
+            rows: [["Vizuálna kontrola pripojenia", "Bez poškodenia", "Vyhovuje"], ["Izolačný odpor el. častí", "> 0.5 MΩ", "V norme"], ["Kontrola vyhrievacích telies", "R-nom", "V norme"], ["Funkcia bezp. termostatu", "Vypína", "OK"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška regulácie / stýkačov", "Plynulá", "OK"], ["Tesnosť vodných spojov", "Bez úniku", "OK"], ["Funkcia poistného ventilu", "Funkčný", "OK"], ["Kontrola el. rozvádzača", "Pevné spoje", "Vyhovuje"]]
+        },
+        pellet: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY",
+            subtitle: "Vyhotovená podľa STN EN 303-5, pokynov výrobcu a príslušných technických a bezpečnostných predpisov.",
+            law: "STN EN 303-5; pokyny výrobcu",
+            group: "Biomasa",
+            rows: [["Vizuálna kontrola telesa", "Čisté", "Vyhovuje"], ["Funkčnosť podávača", "Plynulá", "OK"], ["Tesnosť spaľovacej komory", "Bez úniku", "OK"], ["Ťah komína", "10-20 Pa", "15 Pa"], ["Teplota spalín", "100-180 °C", "145 °C"], ["Obsah CO v spalinách", "V norme", "120 ppm"], ["Obsah O2", "6 - 10 %", "8.2 %"], ["Účinnosť spaľovania", "> 85 %", "91.5 %"], ["Kontrola ventilátora", "Tichý chod", "OK"], ["Funkcia bezp. klapky", "Funkčná", "Vyhovuje"]]
+        },
+        tc: {
+            title: "SPRÁVA O KONTROLE TEPELNÉHO ČERPADLA",
+            subtitle: "Vyhotovená podľa príslušných technických predpisov a pokynov výrobcu; pri zariadeniach s F-plynmi aj podľa nariadenia (EÚ) 2024/573 a zákona č. 286/2009 Z. z.",
+            law: "Technické predpisy; pri F-plynoch nariadenie (EÚ) 2024/573 a zákon č. 286/2009 Z. z.",
+            group: "Tepelné čerpadlo",
+            rows: [["Kontrola úniku (Detektor)", "Bez úniku", "OK"], ["Vizuálna kontrola okruhu", "Bez oleja", "Negatívna"], ["Kontrola bezp. prvkov", "Funkčné", "Vyhovuje"], ["Prúd kompresora", "I-nom", "V norme"], ["Tlak chladiva", "Podľa T-ok", "V norme"], ["Funkčná skúška Chlad/Teplo", "Funkčná", "OK"], ["Tlak vo vykurovacej sústave", "> 1.0 bar", "1.5 bar"], ["Kontrola prietoku (flow switch)", "Funkčný", "OK"], ["Čistota vonkajšej jednotky", "Priechodná", "Bez závad"], ["Kontrola el. spojov", "Pevné", "OK"]]
+        },
+        rozvod: {
+            title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU",
+            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
+            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+            group: "Skupina Bg",
+            rows: [["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"], ["Kontrola upevnenia potrubia", "Pevné", "OK"], ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"], ["Stav protikoróznej ochrany", "Bez korózie", "OK"], ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"], ["Kontrola označenia potrubia", "Jasné", "OK"], ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"], ["Ochrana pred mech. poškodením", "Dostatočná", "OK"], ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"], ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]]
+        }
     };
 
     function initQR() {
@@ -891,11 +923,13 @@
         const data = SCENARIOS[s];
         
         const outTitle = document.getElementById('out-title');
+        const outSubtitle = document.getElementById('out-subtitle');
         const outLaw = document.getElementById('out-law');
         const outGroup = document.getElementById('out-group');
         const tbody = document.getElementById('out-table-body');
 
         if(outTitle) outTitle.textContent = data.title;
+        if(outSubtitle) outSubtitle.textContent = data.subtitle || '';
         if(outLaw) outLaw.textContent = data.law;
         if(outGroup) outGroup.textContent = data.group;
         
