@@ -85,9 +85,11 @@
         }
 
         .a4-page { 
-            width: 210mm; height: 297mm; background: white; padding: 10mm 15mm; box-sizing: border-box; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden; 
+            width: 210mm; height: 297mm; background: white; padding: 8mm 15mm; box-sizing: border-box; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; overflow: hidden;
+            break-inside: avoid; page-break-inside: avoid;
         }
+        .a4-page + .a4-page { break-before: page; page-break-before: always; }
 
         .header { border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
         .brand h1 { color: var(--black); margin: 0; font-size: 22px; font-weight: 900; }
@@ -119,19 +121,19 @@
         .notes-photo-container { flex: 1; border: 1px dashed #ccc; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa; }
         #device-photo-preview { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
 
-        .footer-area { margin-top: auto; padding-bottom: 5mm; }
+        .footer-area { margin-top: auto; padding-bottom: 0; break-inside: avoid; page-break-inside: avoid; }
         .conclusion-text { font-size: 12px; margin-top: 5px; text-align: justify; line-height: 1.4; color: #000; }
         
-        .status-box { margin: 15mm auto 8px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
+        .status-box { margin: 4mm auto 5px auto; border: 2px solid var(--success); padding: 8px; text-align: center; font-size: 11px; font-weight: 900; color: var(--success); width: 90%; background: #f0fdf4; text-transform: uppercase; }
         .status-box.danger { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
 
-        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .signatures { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 3px; break-inside: avoid; page-break-inside: avoid; }
         .sig-box { width: 32%; text-align: center; font-size: 9px; position: relative; }
         .sig-line { border-top: 1px solid #000; margin-top: 2px; padding-top: 2px; font-weight: 700; }
         .sig-canvas-container { width: 100%; height: 50px; border: 2px dashed #D60000; cursor: pointer; background: #fffafa; transition: border 0.2s; }
         #preview-sig-canvas { width: 100%; height: 100%; display: block; }
         
-        .tech-sig-img { width: 42mm !important; height: 42mm !important; object-fit: contain; display: block; margin: 0 auto -5mm auto; position: relative; z-index: 10; }
+        .tech-sig-img { width: 32mm !important; height: 32mm !important; object-fit: contain; display: block; margin: 0 auto -4mm auto; position: relative; z-index: 10; }
 
         /* QR Page */
         .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -860,7 +862,13 @@
     async function shareAsPDF() {
         const element = document.getElementById('printable-content');
         const reportNo = document.getElementById('inp-no').value;
-        const opt = { margin: 0, filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`, html2canvas: { scale: 3, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } };
+        const opt = {
+            margin: 0,
+            filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`,
+            html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 794 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+            pagebreak: { mode: ['css', 'legacy'], before: '.a4-page + .a4-page', avoid: ['.a4-page', '.footer-area', '.signatures'] }
+        };
         try {
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
