@@ -338,8 +338,9 @@
         <div class="form-group" style="background:#f0f9ff; padding:10px; border-radius:6px;">
             <label><input type="checkbox" id="inp-vat-payer" onchange="render()" style="width:auto;"> Platca DPH (23 %)</label>
             <div style="margin-top:5px;">
-                <label>Cena (€)</label>
-                <input type="number" id="inp-price" value="80" oninput="render()">
+                <label>Cena na úhradu (€)</label>
+                <input type="number" id="inp-price" value="80" min="0" step="0.01" oninput="render()">
+                <small style="font-size:10px;color:#6b7280;">Predvolená cena 80 €, sumu môžete pred vystavením protokolu upraviť.</small>
             </div>
         </div>
 
