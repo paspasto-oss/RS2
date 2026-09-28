@@ -1081,6 +1081,26 @@
 
             if (/\bR\s*-?\s*290\b/i.test(text)) add('fuel', 'R290', 104, 'Vaillant aroTHERM: chladivo R290 uvedené na štítku');
         }
+
+        // Vaillant ecoTEC servisná nálepka: často obsahuje iba model + čiarový kód
+        // + celé výrobné číslo, bez samostatného loga alebo názvu Vaillant.
+        const vaillantBoilerModel = text.match(/\b(VU[IW]?\s+\d{2,4}\s*\/\s*\d-\d(?:\s*\([A-Z0-9 -]+\))?\s+ecoTEC\s+(?:plus|pro))\b/i);
+        if (vaillantBoilerModel) {
+            const normalizedModel = vaillantBoilerModel[1]
+                .replace(/\s*\/\s*/g, '/')
+                .replace(/\s+/g, ' ')
+                .trim();
+            add('manufacturer', 'Vaillant', 112, 'Vaillant: modelový rad VU / ecoTEC na servisnej nálepke');
+            add('model', normalizedModel, 112, 'Vaillant ecoTEC: celý model zo servisnej nálepky');
+
+            lines.forEach(line => {
+                const raw = line.replace(/\s+/g, '');
+                const decoded = decodeVaillantGroupSerial(raw, 'Vaillant');
+                if (!decoded) return;
+                add('serial', decoded.serial, 112, 'Vaillant ecoTEC: výrobné číslo pod čiarovým kódom');
+                add('year', decoded.year, 96, 'Rok odvodený z overenej štruktúry Vaillant S/N (' + decoded.week + '. týždeň)');
+            });
+        }
         lines.forEach((line, index) => {
             const matches = labelMatches(line);
             matches.forEach((m, i) => {
@@ -1109,9 +1129,11 @@
                     standalone && brands.length ? 'Samostatný názov modelu na štítku so značkou' : 'Tvar označenia modelu');
             }
         }));
-        // Inference is explicitly flagged when a brand name is absent from the photo.
-        if (!brands.length && /\bVU[IW]?\s+\d{2,4}\/\d-\d\b/i.test(text) && /ecoTEC/i.test(text)) {
-            add('manufacturer', 'Vaillant', 65, 'Značka odvodená z radu VU / ecoTEC – potvrďte');
+        // Ak OCR zachytí iba časť malej servisnej nálepky, VU/VUI/VUW + ecoTEC
+        // je stále silný identifikátor Vaillant. Pri plnom modeli vyššie dostane
+        // kandidát vyššiu váhu; toto je záložná vetva.
+        if (!brands.length && /\bVU[IW]?\s+\d{2,4}\s*\/\s*\d-\d\b/i.test(text) && /ecoTEC/i.test(text)) {
+            add('manufacturer', 'Vaillant', 88, 'Značka odvodená z radu VU / ecoTEC');
         }
         const knownDevice = out.some(c => c.field === 'manufacturer') && out.some(c => c.field === 'model');
         // Bare "No." is not a general synonym for S/N: accept a plausible long
@@ -1528,12 +1550,18 @@
         // preto sa zámerne nepoužíva ako hodnota inp-power.
         const model = String(data.model || byId('inp-dev')?.value || '');
         const refrigerant = String(data.fuel || byId('inp-fuel')?.value || '');
-        if (/\baroTHERM\b|\bVWL\s+\d{2,3}\s*\/\s*\d/i.test(model) || /^R(?:290|32|410A|407C|454B|452B|744)$/i.test(refrigerant)) {
-            const scenario = byId('inp-scenario');
-            if (scenario && scenario.value !== 'tc') {
-                scenario.value = 'tc';
-                window.changeScenario();
-            }
+        const scenario = byId('inp-scenario');
+        const isHeatPump = /\baroTHERM\b|\bVWL\s+\d{2,3}\s*\/\s*\d/i.test(model) ||
+            /^R(?:290|32|410A|407C|454B|452B|744)$/i.test(refrigerant);
+        const isVaillantGasBoiler = /\becoTEC\b/i.test(model) &&
+            /\bVU[IW]?\s+\d{2,4}\s*\/\s*\d-\d\b/i.test(model);
+
+        if (scenario && isHeatPump && scenario.value !== 'tc') {
+            scenario.value = 'tc';
+            window.changeScenario();
+        } else if (scenario && isVaillantGasBoiler && scenario.value !== 'plyn') {
+            scenario.value = 'plyn';
+            window.changeScenario();
         }
         render(); return filled;
     }
