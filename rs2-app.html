@@ -1049,6 +1049,38 @@
             const oem = brands.length > 1 && lines.some(line => /GD\s+MIDEA|MANUFACTURER.*MIDEA/i.test(line)) && b.value === 'Midea';
             add('manufacturer', b.value, oem ? 62 : ownLine ? 104 : b.strength, oem ? 'OEM výrobca uvedený na štítku' : ownLine ? 'Samostatne uvedená značka' : 'Značka v texte');
         });
+
+        // Vaillant aroTHERM plus: názov radu a presný typ VWL bývajú na
+        // samostatných riadkoch. Znaky v sériovom čísle neopravujeme; odstraňujeme
+        // iba medzery, ktoré môže OCR vložiť medzi bloky čísla.
+        const isVaillant = brands.some(b => b.value === 'Vaillant');
+        const arothermSeries = /\baroTHERM\s+plus\b/i.test(text);
+        const vwlTypeMatch = text.match(/\bVWL\s+(\d{2,3})\s*\/\s*(\d)(?:\s+([A-Z]{1,3}))?(?:\s+(R\d+))?\b/i);
+        if (isVaillant && (arothermSeries || vwlTypeMatch)) {
+            if (vwlTypeMatch) {
+                const code = ['VWL', vwlTypeMatch[1] + '/' + vwlTypeMatch[2], vwlTypeMatch[3] || '', vwlTypeMatch[4] || '']
+                    .filter(Boolean).join(' ');
+                add('model', (arothermSeries ? 'aroTHERM plus ' : '') + code, 112,
+                    'Vaillant aroTHERM: názov radu a typ VWL zo štítku');
+            }
+
+            lines.forEach((line, index) => {
+                const serialLine = line.match(/SERIAL\s*[- ]*NO\.?\s*[:#]?\s*([A-Z0-9][A-Z0-9 ]{19,34})\s*$/i);
+                if (serialLine) {
+                    add('serial', serialLine[1].replace(/\s+/g, ''), 112, 'Vaillant Serial-No na štítku');
+                    return;
+                }
+                if (/^SERIAL\s*[- ]*NO\.?\s*[:#]?\s*$/i.test(line) && lines[index + 1]) {
+                    const serial = lines[index + 1].replace(/\s+/g, '');
+                    if (/^[A-Z0-9]{20,32}$/i.test(serial)) add('serial', serial, 112, 'Vaillant Serial-No na nasledujúcom riadku');
+                }
+            });
+
+            const manufactureDate = text.match(/(?:^|\n)\s*(0?[1-9]|1[0-2])\s*[\/. -]\s*((?:19|20)\d{2})\s*(?:\n|$)/m);
+            if (manufactureDate) add('year', manufactureDate[2], 96, 'Vaillant: dátum výroby MM/RRRR na štítku');
+
+            if (/\bR\s*-?\s*290\b/i.test(text)) add('fuel', 'R290', 104, 'Vaillant aroTHERM: chladivo R290 uvedené na štítku');
+        }
         lines.forEach((line, index) => {
             const matches = labelMatches(line);
             matches.forEach((m, i) => {
@@ -1066,7 +1098,7 @@
         const modelPatterns = [
             /\b(?:KMK-\d{2,3}RY[13]|ERS[FT]-[A-Z0-9]{3,}|EHB[HX][A-Z0-9]{4,}|EHV[HX][A-Z0-9]{4,})\b/gi,
             /\bVU[IW]?\s+\d{2,4}\/\d-\d(?:\s*\([A-Z0-9 -]+\))?(?:\s+ecoTEC\s+(?:plus|pro))?/gi,
-            /\b(?:WH-[A-Z0-9][A-Z0-9./-]{3,}|(?:MHC|MHA|MHB|MHCN)-[A-Z0-9][A-Z0-9./-]{4,}|PU[HZ]-[A-Z0-9][A-Z0-9./-]{3,}|VWL\s+\d{2,3}\/\d(?:\s+[A-Z]{1,3})?)/gi,
+            /\b(?:WH-[A-Z0-9][A-Z0-9./-]{3,}|(?:MHC|MHA|MHB|MHCN)-[A-Z0-9][A-Z0-9./-]{4,}|PU[HZ]-[A-Z0-9][A-Z0-9./-]{3,}|VWL\s+\d{2,3}\s*\/\s*\d(?:\s+[A-Z]{1,3})?(?:\s+R\d+)?)/gi,
             /\b(?:ecoTEC(?:\s+(?:plus|pro))?|aroTHERM(?:\s+plus)?|Tiger|Panther|Gepard|Vulkan|Biopel(?:\s+mini)?|Vitodens|Logamax)\s+[A-Z0-9][A-Z0-9 ./+-]{1,45}/gi
         ];
         lines.forEach(line => modelPatterns.forEach(pattern => {
@@ -1490,7 +1522,19 @@
     function applyDeviceData(data) {
         const filled = [];
         LABEL_FIELDS.forEach(([key, id, label]) => { if (setFieldFromOcr(id, data[key])) filled.push(label); });
-        // The plate cannot determine inspection results or the correct report category.
+
+        // Spoľahlivý identifikátor tepelného čerpadla nastaví správnu kategóriu.
+        // Pmax na Vaillant štítku je maximálny elektrický príkon, nie tepelný výkon,
+        // preto sa zámerne nepoužíva ako hodnota inp-power.
+        const model = String(data.model || byId('inp-dev')?.value || '');
+        const refrigerant = String(data.fuel || byId('inp-fuel')?.value || '');
+        if (/\baroTHERM\b|\bVWL\s+\d{2,3}\s*\/\s*\d/i.test(model) || /^R(?:290|32|410A|407C|454B|452B|744)$/i.test(refrigerant)) {
+            const scenario = byId('inp-scenario');
+            if (scenario && scenario.value !== 'tc') {
+                scenario.value = 'tc';
+                window.changeScenario();
+            }
+        }
         render(); return filled;
     }
     function showLabelResults(autoFill = false, initial = {}) {
