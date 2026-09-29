@@ -147,29 +147,90 @@
             pointer-events: none;
         }
 
-        /* Prvá A4 musí vždy obsahovať aj podpisy a 40 mm pečiatku.
-           Po rozšírení legislatívnych tabuliek používame kompaktnejší layout
-           iba na revíznej strane; platobná strana ostáva bez zmeny. */
-        .report-page .header { margin-bottom: 10px; padding-bottom: 5px; }
-        .report-page .brand h1 { font-size: 19px; }
-        .report-page .brand .sub { font-size: 7px; line-height: 1.2; }
-        .report-page .report-type { font-size: 12px; line-height: 1.15; }
-        .report-page .report-subtitle { font-size: 6.5px; line-height: 1.18; margin-top: 2px; }
-        .report-page .report-no { font-size: 9px; margin-top: 3px; padding: 1px 6px; }
+        /* Revízna A4 – čitateľný layout s podpisovou zónou.
+           Hustota tabuliek sa mení podľa počtu riadkov konkrétneho zariadenia. */
+        .report-page { padding: 8mm 12mm 7mm; }
 
-        .report-page .info-grid { gap: 7px; margin-bottom: 5px; }
-        .report-page .box { padding: 5px 6px; }
-        .report-page .box-title { font-size: 9.5px; margin-bottom: 3px; padding-bottom: 2px; }
-        .report-page .row-item { margin-bottom: 1px; font-size: 8.5px; line-height: 1.15; }
+        .report-page .header { margin-bottom: 13px; padding-bottom: 6px; }
+        .report-page .brand h1 { font-size: 20px; }
+        .report-page .brand .sub { font-size: 7.4px; line-height: 1.25; }
+        .report-page .report-type { font-size: 13px; line-height: 1.16; }
+        .report-page .report-subtitle { font-size: 7.2px; line-height: 1.22; margin-top: 2px; }
+        .report-page .report-no { font-size: 9.5px; margin-top: 4px; padding: 1px 6px; }
 
-        .report-page .section-header { padding: 2px 6px; font-size: 8.5px; margin-top: 4px; }
-        .report-page .data-table { margin-top: 3px; font-size: 8px; line-height: 1.12; }
+        .report-page .info-grid { gap: 8px; margin-bottom: 7px; }
+        .report-page .box { padding: 6px 7px; }
+        .report-page .box-title { font-size: 10px; margin-bottom: 3px; padding-bottom: 2px; }
+        .report-page .row-item { margin-bottom: 2px; font-size: 9.2px; line-height: 1.2; gap: 10px; }
+        .report-page .row-item strong { text-align: right; overflow-wrap: anywhere; }
+
+        .report-page .section-header {
+            padding: 3px 7px;
+            font-size: 9.3px;
+            margin-top: 5px;
+            line-height: 1.15;
+        }
+
+        .report-page .data-table {
+            width: 100%;
+            table-layout: fixed;
+            margin-top: 3px;
+            font-size: 9.1px;
+            line-height: 1.18;
+        }
         .report-page .data-table th,
-        .report-page .data-table td { padding: 2px 4px; }
+        .report-page .data-table td {
+            padding: 3px 5px;
+            vertical-align: middle;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+        .report-page .main-check-table th:nth-child(1) { width: 34%; }
+        .report-page .main-check-table th:nth-child(2) { width: 34%; }
+        .report-page .main-check-table th:nth-child(3) { width: 20%; }
+        .report-page .main-check-table th:nth-child(4) { width: 12%; }
+        .report-page .extra-check-table th:nth-child(1) { width: 31%; }
+        .report-page .extra-check-table th:nth-child(2) { width: 44%; }
+        .report-page .extra-check-table th:nth-child(3) { width: 25%; }
 
-        .report-page .section-2-container { height: 92px; margin-top: 3px; gap: 7px; }
-        .report-page .vtz-box { padding: 4px; font-size: 8px; }
-        .report-page .conclusion-text { font-size: 9px; line-height: 1.22; margin-top: 3px; }
+        .report-page.density-tight .data-table { font-size: 8.6px; line-height: 1.13; }
+        .report-page.density-tight .data-table th,
+        .report-page.density-tight .data-table td { padding: 2.3px 4px; }
+        .report-page.density-tight .section-header { font-size: 8.8px; margin-top: 4px; }
+
+        .report-page.density-normal .data-table { font-size: 9.25px; }
+        .report-page.density-normal .data-table th,
+        .report-page.density-normal .data-table td { padding: 3.2px 5px; }
+
+        .report-page.density-relaxed .data-table { font-size: 9.8px; line-height: 1.22; }
+        .report-page.density-relaxed .data-table th,
+        .report-page.density-relaxed .data-table td { padding: 4px 5px; }
+        .report-page.density-relaxed .section-header { font-size: 9.7px; margin-top: 6px; }
+
+        .report-page .section-2-container { height: 104px; margin-top: 3px; gap: 8px; }
+        .report-page .vtz-box { padding: 5px 6px; font-size: 8.8px; }
+        .report-page .vtz-row { padding: 1px 0; gap: 8px; }
+        .report-page .vtz-val { text-align: right; overflow-wrap: anywhere; }
+
+        .report-page .section-2-container.no-photo {
+            height: auto;
+            min-height: 76px;
+        }
+        .report-page .section-2-container.no-photo .notes-photo-container { display: none; }
+        .report-page .section-2-container.no-photo .vtz-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 14px;
+            row-gap: 1px;
+            width: 100%;
+        }
+        .report-page .section-2-container.no-photo .vtz-row { min-width: 0; }
+
+        .report-page .conclusion-text {
+            font-size: 10px;
+            line-height: 1.3;
+            margin-top: 4px;
+        }
 
         .report-page .footer-area {
             margin-top: auto;
@@ -179,27 +240,62 @@
             z-index: 20;
         }
         .report-page .status-box {
-            margin: 2mm auto 2px auto;
-            padding: 4px;
-            font-size: 8.5px;
-            width: 92%;
+            box-sizing: border-box;
+            width: 100%;
+            margin: 3mm 0 2mm;
+            padding: 5px 7px;
+            font-size: 9px;
+            line-height: 1.15;
         }
+
         .report-page .signatures {
-            height: 46px;
-            min-height: 46px;
-            margin-top: 1px;
-            align-items: flex-end;
+            height: 38mm;
+            min-height: 38mm;
+            margin-top: 0;
+            align-items: stretch;
             flex-shrink: 0;
             position: relative;
         }
-        .report-page .sig-box { font-size: 8px; min-height: 44px; }
-        .report-page .sig-canvas-container { height: 34px; }
-        .report-page .sig-line { margin-top: 1px; padding-top: 1px; }
+        .report-page .sig-box {
+            min-height: 38mm;
+            font-size: 8.5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .report-page .sig-line {
+            margin-top: 1px;
+            padding-top: 2px;
+            position: relative;
+            z-index: 20;
+        }
+        .report-page .customer-sign-box .sig-canvas-container {
+            height: 18mm;
+            margin-bottom: 2mm;
+            border-width: 1px;
+        }
+        .report-page .tech-box { overflow: visible; }
         .report-page .tech-sig-img {
             width: 40mm !important;
             height: 40mm !important;
-            right: -1mm;
-            bottom: -3mm;
+            right: 1mm;
+            bottom: 4mm;
+            z-index: 10;
+        }
+
+        /* HTML2PDF nepoužíva @media print – finálny export preto čistí
+           ovládacie prvky, rám podpisu a prázdny foto-box cez túto triedu. */
+        body.pdf-exporting .report-page .sig-canvas-container {
+            border: none !important;
+            background: transparent !important;
+        }
+        body.pdf-exporting .report-page .btn-reset { display: none !important; }
+        body.pdf-exporting .report-page .notes-photo-container {
+            background: #fff;
+        }
+        body.pdf-exporting .report-page .section-2-container.no-photo .notes-photo-container {
+            display: none !important;
         }
 
         /* QR Page */
@@ -283,7 +379,8 @@
             .preview-container { transform: none !important; margin: 0 !important; }
             .preview-scroll-wrapper { overflow: visible !important; }
             .a4-page { margin: 0 auto; box-shadow: none; page-break-after: always; border: none !important; }
-            .sig-canvas-container { border: none !important; }
+            .sig-canvas-container { border: none !important; background: transparent !important; }
+            .report-page .section-2-container.no-photo .notes-photo-container { display: none !important; }
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -567,7 +664,7 @@
                 </div>
 
                 <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
-                <table class="data-table">
+                <table class="data-table main-check-table">
                     <thead><tr><th>Predmet kontroly</th><th>Požiadavka</th><th>Zistenie / hodnota</th><th>Výsledok</th></tr></thead>
                     <tbody id="out-table-body"></tbody>
                 </table>
@@ -593,7 +690,7 @@
 
                 <div id="out-extra-section">
                     <div class="section-header" id="out-extra-title">3. DOPLŇUJÚCE MERANIA A SKÚŠKY</div>
-                    <table class="data-table">
+                    <table class="data-table extra-check-table">
                         <thead><tr><th>Parameter / skúška</th><th>Požiadavka</th><th>Zistenie / hodnota</th></tr></thead>
                         <tbody id="out-extra-body"></tbody>
                     </table>
@@ -607,12 +704,12 @@
                 <div class="footer-area">
                     <div class="status-box" id="out-status-box">ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY</div>
                     <div class="signatures">
-                        <div class="sig-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
-                        <div class="sig-box">
+                        <div class="sig-box date-box"><div class="sig-line">Dátum: <span id="out-date-sig">—</span></div></div>
+                        <div class="sig-box customer-sign-box">
                             <div class="sig-canvas-container" onclick="openModal()"><canvas id="preview-sig-canvas"></canvas></div>
                             <div class="sig-line">Podpis prevádzkovateľa</div>
                         </div>
-                        <div class="sig-box">
+                        <div class="sig-box tech-box">
                             <img id="out-tech-stamp" src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'">
                             <div class="sig-line" id="out-tech-sign-label">Revízny technik</div>
                         </div>
@@ -1541,6 +1638,24 @@
         catch (error) { console.warn('Platobný QR kód nie je dostupný.', error); }
     }
 
+    function syncReportLayout() {
+        const page = document.querySelector('.report-page');
+        if (!page) return;
+
+        const data = currentScenarioData();
+        const rows = (data.rows?.length || 0) + (data.extraRows?.length || 0);
+        page.classList.remove('density-tight','density-normal','density-relaxed');
+        page.classList.add(rows >= 19 ? 'density-tight' : rows >= 14 ? 'density-normal' : 'density-relaxed');
+
+        const photo = document.getElementById('device-photo-preview');
+        const section2 = page.querySelector('.section-2-container');
+        if (section2) {
+            const src = photo?.getAttribute('src') || '';
+            const hasPhoto = !!src && photo.style.display !== 'none';
+            section2.classList.toggle('no-photo', !hasPhoto);
+        }
+    }
+
     function render() {
         if(!qr) initQR();
         const scenarioDataForRender = currentScenarioData();
@@ -1586,6 +1701,7 @@
         document.getElementById('out-params').textContent = (pwr ? pwr + " kW " : "") + (fl ? "/ " + fl : "");
         document.getElementById('out-device-location').textContent = document.getElementById('inp-device-location').value || "—";
         renderScenarioTables();
+        syncReportLayout();
         const note = document.getElementById('inp-notes').value;
         document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
         document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
@@ -1644,11 +1760,19 @@
             pagebreak: { mode: ['css', 'legacy'], before: '.a4-page + .a4-page', avoid: ['.a4-page', '.footer-area', '.signatures'] }
         };
         try {
+            syncReportLayout();
+            document.body.classList.add('pdf-exporting');
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
             const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
             if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
             else window.open(URL.createObjectURL(pdfBlob));
-        } catch (err) { alert("Chyba PDF."); }
+        } catch (err) {
+            console.error(err);
+            alert("Chyba PDF.");
+        } finally {
+            document.body.classList.remove('pdf-exporting');
+        }
     }
 
     function fieldValue(id, unit = '') {
