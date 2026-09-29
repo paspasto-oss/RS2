@@ -200,7 +200,7 @@
         .label-scan-result { display:none; margin-top:14px; padding:12px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; font-size:12px; line-height:1.45; }
         .device-scan-panel { background:#fff7f7; border:1px solid #fecaca; border-radius:8px; padding:10px; margin-bottom:10px; }
         .device-scan-status { font-size:11px; color:#475569; line-height:1.35; margin-top:6px; }
-        [hidden] { display: none !important; }
+        [hidden], .hidden { display: none !important; }
         .label-scan-card button:disabled { opacity: .55; cursor: wait; }
         .scan-help { font-size: 12px; color: #475569; line-height: 1.5; }
         #label-crop-canvas { display: block; max-width: 100%; height: auto; margin: 12px auto; touch-action: none; cursor: crosshair; background: #eef2f7; }
@@ -552,8 +552,8 @@
                             <div class="sig-line">Podpis prevádzkovateľa</div>
                         </div>
                         <div class="sig-box">
-                            <img src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'">
-                            <div class="sig-line">Revízny technik</div>
+                            <img id="out-tech-stamp" src="Razitko Technika.png" class="tech-sig-img" onerror="this.style.display='none'">
+                            <div class="sig-line" id="out-tech-sign-label">Revízny technik</div>
                         </div>
                     </div>
                 </div>
@@ -866,6 +866,7 @@
         "group": "PZ skupina B h – spotreba plynu spaľovaním",
         "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
         "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
+        "signatureLabel": "Revízny technik PZ",
         "statutory": true,
         "nextInspectionYears": 1,
         "extraTitle": "3. MERANÉ HODNOTY A SPALINOVÁ CESTA",
@@ -987,6 +988,7 @@
         "group": "Elektrické zariadenie – presné zaradenie podľa inštalácie a vonkajších vplyvov",
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Tento protokol nenahrádza OPaOS VTZ elektrického bez podpisu príslušného RT EZ.",
+        "signatureLabel": "Servisný / kontrolný technik",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. ELEKTRICKÉ A HYDRAULICKÉ MERANIA",
@@ -1082,6 +1084,7 @@
         "group": "Kotol na biomasu / vykurovací systém",
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Rozsah kontroly podľa oprávnenia technika a dokumentácie výrobcu.",
+        "signatureLabel": "Servisný / kontrolný technik",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. SPAĽOVANIE, SPALINY A VYKUROVACÍ OKRUH",
@@ -1187,6 +1190,7 @@
         "group": "Tepelné čerpadlo – podľa chladiva a konštrukcie",
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Rozsah podľa oprávnenia technika; pri F-plynoch sa vyžaduje príslušná odborná spôsobilosť.",
+        "signatureLabel": "Servisný / kontrolný technik",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. CHLADIVOVÝ, HYDRAULICKÝ A PREVÁDZKOVÝ STAV",
@@ -1282,6 +1286,7 @@
         "group": "PZ skupina B g – rozvod plynu",
         "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
         "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
+        "signatureLabel": "Revízny technik PZ",
         "statutory": true,
         "nextInspectionYears": 3,
         "extraTitle": "3. MERANIE A SKÚŠKA ROZVODU PLYNU",
@@ -1351,6 +1356,27 @@
 
     function render() {
         if(!qr) initQR();
+        const scenarioDataForRender = currentScenarioData();
+        applyScenarioVisibility(scenarioDataForRender);
+        const outTitleRender = document.getElementById('out-title');
+        const outSubtitleRender = document.getElementById('out-subtitle');
+        const outLawRender = document.getElementById('out-law');
+        const outGroupRender = document.getElementById('out-group');
+        const techHeadingRender = document.getElementById('out-tech-heading');
+        const techCertRender = document.getElementById('out-tech-cert');
+        const companyAuthRender = document.getElementById('out-company-auth');
+        const techStampRender = document.getElementById('out-tech-stamp');
+        const techSignLabelRender = document.getElementById('out-tech-sign-label');
+        if(outTitleRender) outTitleRender.textContent = scenarioDataForRender.title;
+        if(outSubtitleRender) outSubtitleRender.textContent = scenarioDataForRender.subtitle || '';
+        if(outLawRender) outLawRender.textContent = scenarioDataForRender.law;
+        if(outGroupRender) outGroupRender.textContent = scenarioDataForRender.group;
+        if(techHeadingRender) techHeadingRender.textContent = scenarioDataForRender.techHeading || 'TECHNIK / ÚDAJE';
+        if(techCertRender) techCertRender.textContent = scenarioDataForRender.techCert || '—';
+        if(companyAuthRender) companyAuthRender.style.display = scenarioDataForRender.statutory ? '' : 'none';
+        if(techStampRender) techStampRender.style.display = scenarioDataForRender.statutory ? 'block' : 'none';
+        if(techSignLabelRender) techSignLabelRender.textContent = scenarioDataForRender.signatureLabel || 'Technik';
+
         const reportNo = document.getElementById('inp-no').value;
         const outNo = document.getElementById('out-no');
         const outPayNote = document.getElementById('out-pay-note');
@@ -1524,6 +1550,10 @@
         if(techHeading) techHeading.textContent = data.techHeading || 'TECHNIK / ÚDAJE';
         if(techCert) techCert.textContent = data.techCert || '—';
         if(companyAuth) companyAuth.style.display = data.statutory ? '' : 'none';
+        const techStamp = document.getElementById('out-tech-stamp');
+        const techSignLabel = document.getElementById('out-tech-sign-label');
+        if(techStamp) techStamp.style.display = data.statutory ? 'block' : 'none';
+        if(techSignLabel) techSignLabel.textContent = data.signatureLabel || 'Technik';
         applyScenarioVisibility(data);
         renderScenarioTables();
         render();
