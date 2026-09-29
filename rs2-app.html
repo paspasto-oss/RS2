@@ -328,9 +328,9 @@
             <label>KATEGÓRIA</label>
             <select id="inp-scenario" onchange="changeScenario()">
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
-                <option value="elektro">⚡ ELEKTRICKÝ KOTOL (Skupina Bf)</option>
+                <option value="elektro">⚡ ELEKTRICKÝ KOTOL (elektrické zariadenie)</option>
                 <option value="pellet">🪵 PELETOVÝ KOTOL (Biomasa)</option>
-                <option value="tc">❄️ TEPELNÉ ČERPADLO (F-Plyny)</option>
+                <option value="tc">❄️ TEPELNÉ ČERPADLO (podľa chladiva)</option>
                 <option value="rozvod">🌐 ROZVOD PLYNU (Skupina Bg)</option>
             </select>
         </div>
@@ -382,35 +382,73 @@
         </div>
         <div class="form-row">
             <div class="form-group"><label>Výkon (kW)</label><input type="text" id="inp-power" oninput="render()"></div>
-            <div class="form-group"><label>Palivo</label><input type="text" id="inp-fuel" oninput="render()"></div>
+            <div class="form-group"><label>Palivo / chladivo</label><input type="text" id="inp-fuel" oninput="render()"></div>
         </div>
         <div class="form-group"><label>Umiestnenie spotrebiča</label><input type="text" id="inp-device-location" placeholder="Kotolňa / kuchyňa / technická miestnosť" oninput="render()"></div>
 
-        <div class="section-title">Merané hodnoty</div>
-        <div class="form-row">
-            <div class="form-group"><label>CO (ppm)</label><input type="text" id="inp-co" oninput="render()"></div>
-            <div class="form-group"><label>CO₂ (%)</label><input type="text" id="inp-co2" oninput="render()"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>O₂ (%)</label><input type="text" id="inp-o2" oninput="render()"></div>
-            <div class="form-group"><label>Teplota spalín (°C)</label><input type="text" id="inp-flue-temp" oninput="render()"></div>
-        </div>
-        <div class="form-row">
+        <div id="combustion-measurements">
+            <div class="section-title">Spaľovanie / spaliny</div>
+            <div class="form-row">
+                <div class="form-group"><label>CO (ppm)</label><input type="text" id="inp-co" oninput="render()"></div>
+                <div class="form-group"><label>CO₂ (%)</label><input type="text" id="inp-co2" oninput="render()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>O₂ (%)</label><input type="text" id="inp-o2" oninput="render()"></div>
+                <div class="form-group"><label>Teplota spalín (°C)</label><input type="text" id="inp-flue-temp" oninput="render()"></div>
+            </div>
             <div class="form-group"><label>Ťah (Pa)</label><input type="text" id="inp-draft" oninput="render()"></div>
-            <div class="form-group"><label>Tlak plynu (mbar)</label><input type="text" id="inp-gas-pressure" oninput="render()"></div>
-        </div>
-        <div class="form-group"><label>Tlak vykurovacej sústavy (bar)</label><input type="text" id="inp-system-pressure" oninput="render()"></div>
-
-        <div class="section-title">Spalínová cesta</div>
-        <div class="form-row">
-            <div class="form-group"><label>Typ odvodu spalín</label><input type="text" id="inp-flue-type" placeholder="Komín / turbo / koncentrický" oninput="render()"></div>
-            <div class="form-group"><label>Stav</label><input type="text" id="inp-flue-state" placeholder="Vyhovuje / nevyhovuje" oninput="render()"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>Vyústenie</label><input type="text" id="inp-flue-outlet" placeholder="Strecha / fasáda" oninput="render()"></div>
-            <div class="form-group"><label>Poznámka</label><input type="text" id="inp-flue-note" oninput="render()"></div>
         </div>
 
+        <div id="gas-measurements">
+            <div class="section-title">Plynová časť</div>
+            <div class="form-row">
+                <div class="form-group"><label>Tlak plynu (mbar)</label><input type="text" id="inp-gas-pressure" oninput="render()"></div>
+                <div class="form-group"><label>Tesnosť plynu / výsledok</label><input type="text" id="inp-gas-tightness" placeholder="Bez úniku / OK" oninput="render()"></div>
+            </div>
+        </div>
+
+        <div id="hydraulic-measurements">
+            <div class="section-title">Vykurovací okruh</div>
+            <div class="form-group"><label>Tlak vykurovacej sústavy (bar)</label><input type="text" id="inp-system-pressure" oninput="render()"></div>
+        </div>
+
+        <div id="electrical-measurements" class="hidden">
+            <div class="section-title">Elektrické merania</div>
+            <div class="form-row">
+                <div class="form-group"><label>Napájacie napätie (V)</label><input type="text" id="inp-supply-voltage" oninput="render()"></div>
+                <div class="form-group"><label>Spojitosť PE / ochranného vodiča (Ω)</label><input type="text" id="inp-pe-continuity" oninput="render()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Izolačný odpor (MΩ)</label><input type="text" id="inp-insulation-resistance" oninput="render()"></div>
+                <div class="form-group"><label>Impedancia poruchovej slučky Zs (Ω)</label><input type="text" id="inp-loop-impedance" oninput="render()"></div>
+            </div>
+            <div class="form-group"><label>Čas vybavenia RCD (ms, ak je použitý)</label><input type="text" id="inp-rcd-time" oninput="render()"></div>
+        </div>
+
+        <div id="heatpump-measurements" class="hidden">
+            <div class="section-title">Chladivový okruh / tepelné čerpadlo</div>
+            <div class="form-row">
+                <div class="form-group"><label>Množstvo chladiva (kg)</label><input type="text" id="inp-refrigerant-charge" oninput="render()"></div>
+                <div class="form-group"><label>Tlak chladiva (bar)</label><input type="text" id="inp-refrigerant-pressure" oninput="render()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Prúd kompresora (A)</label><input type="text" id="inp-compressor-current" oninput="render()"></div>
+                <div class="form-group"><label>Prietok vykurovacej vody (l/min)</label><input type="text" id="inp-flow" oninput="render()"></div>
+            </div>
+            <div class="form-group"><label>Kontrola tesnosti chladivového okruhu</label><input type="text" id="inp-leak-check" placeholder="Bez zisteného úniku / OK" oninput="render()"></div>
+        </div>
+
+        <div id="flue-section">
+            <div class="section-title">Spalínová cesta</div>
+            <div class="form-row">
+                <div class="form-group"><label>Typ odvodu spalín</label><input type="text" id="inp-flue-type" placeholder="Komín / turbo / koncentrický" oninput="render()"></div>
+                <div class="form-group"><label>Stav</label><input type="text" id="inp-flue-state" placeholder="Vyhovuje / nevyhovuje" oninput="render()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Vyústenie</label><input type="text" id="inp-flue-outlet" placeholder="Strecha / fasáda" oninput="render()"></div>
+                <div class="form-group"><label>Poznámka</label><input type="text" id="inp-flue-note" oninput="render()"></div>
+            </div>
+        </div>
         <div class="section-title">Výsledok</div>
         <div class="form-group"><label>Nedostatky</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
         <div class="form-group"><label>Umiestnenie / Poznámka</label><textarea id="inp-location-note" rows="2" oninput="render()"></textarea></div>
@@ -440,7 +478,7 @@
                 <div class="header">
                     <div class="brand">
                         <h1>SPEKTRA <span>INSTALL</span></h1>
-                        <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br>Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</div>
+                        <div class="sub">Hollého 210, 015 01 Rajec | IČO: 53690036 | IČ DPH: SK2121453268<br><span id="out-company-auth">Oprávnenie: 077/2/2021-PZ-S,O (OU,R,M)-Bd,f,g,h</span></div>
                     </div>
                     <div class="report-meta">
                         <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
@@ -451,9 +489,9 @@
 
                 <div class="info-grid">
                     <div class="box">
-                        <div class="box-title">REVIZNY TECHNIK / ÚDAJE</div>
+                        <div class="box-title" id="out-tech-heading">REVÍZNY TECHNIK / ÚDAJE</div>
                         <div class="row-item"><span>Meno:</span> <strong>Pavol Pastorek</strong></div>
-                        <div class="row-item"><span>Osvedčenie:</span> <strong>013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
+                        <div class="row-item"><span>Osvedčenie / rozsah:</span> <strong id="out-tech-cert">013-IZA/2017 PZ RT Bd,f,g,h</strong></div>
                         <div class="row-item"><span>Dátum:</span> <strong id="out-date">—</strong></div>
                         <div class="row-item"><span>Legislatíva:</span> <strong id="out-law">—</strong></div>
                     </div>
@@ -469,7 +507,7 @@
 
                 <div class="section-header">1. VÝSLEDKY MERANÍ A SKÚŠOK</div>
                 <table class="data-table">
-                    <thead><tr><th>Predmet kontroly</th><th>Predpísané</th><th>Namerané</th><th>Výsledok</th></tr></thead>
+                    <thead><tr><th>Predmet kontroly</th><th>Požiadavka</th><th>Zistenie / hodnota</th><th>Výsledok</th></tr></thead>
                     <tbody id="out-table-body"></tbody>
                 </table>
 
@@ -492,16 +530,13 @@
                     </div>
                 </div>
 
-                <div class="section-header">3. MERANÉ HODNOTY A SPALÍNOVÁ CESTA</div>
-                <table class="data-table">
-                    <tbody>
-                        <tr><th>CO</th><td id="out-co">—</td><th>CO₂</th><td id="out-co2">—</td><th>O₂</th><td id="out-o2">—</td></tr>
-                        <tr><th>Teplota spalín</th><td id="out-flue-temp">—</td><th>Ťah</th><td id="out-draft">—</td><th>Tlak plynu</th><td id="out-gas-pressure">—</td></tr>
-                        <tr><th>Tlak sústavy</th><td id="out-system-pressure">—</td><th>Typ odvodu</th><td id="out-flue-type">—</td><th>Stav</th><td id="out-flue-state">—</td></tr>
-                        <tr><th>Vyústenie</th><td id="out-flue-outlet">—</td><th colspan="2">Poznámka spalínovej cesty</th><td colspan="2" id="out-flue-note">—</td></tr>
-                    </tbody>
-                </table>
-
+                <div id="out-extra-section">
+                    <div class="section-header" id="out-extra-title">3. DOPLŇUJÚCE MERANIA A SKÚŠKY</div>
+                    <table class="data-table">
+                        <thead><tr><th>Parameter / skúška</th><th>Požiadavka</th><th>Zistenie / hodnota</th></tr></thead>
+                        <tbody id="out-extra-body"></tbody>
+                    </table>
+                </div>
                 <div class="section-header">4. OSTATNÉ ZISTENIA / POZNÁMKY</div>
                 <div style="font-size:10px; padding:5px; border:1px solid #eee; min-height:25px;" id="out-location-note">—</div>
 
@@ -625,6 +660,23 @@
 
     window.saveToCloudArchive = async () => {
         if (!user) return alert("Počkajte na pripojenie k cloudu.");
+        const scenarioDataForRender = currentScenarioData();
+        applyScenarioVisibility(scenarioDataForRender);
+        const outTitleRender = document.getElementById('out-title');
+        const outSubtitleRender = document.getElementById('out-subtitle');
+        const outLawRender = document.getElementById('out-law');
+        const outGroupRender = document.getElementById('out-group');
+        const techHeadingRender = document.getElementById('out-tech-heading');
+        const techCertRender = document.getElementById('out-tech-cert');
+        const companyAuthRender = document.getElementById('out-company-auth');
+        if(outTitleRender) outTitleRender.textContent = scenarioDataForRender.title;
+        if(outSubtitleRender) outSubtitleRender.textContent = scenarioDataForRender.subtitle || '';
+        if(outLawRender) outLawRender.textContent = scenarioDataForRender.law;
+        if(outGroupRender) outGroupRender.textContent = scenarioDataForRender.group;
+        if(techHeadingRender) techHeadingRender.textContent = scenarioDataForRender.techHeading || 'TECHNIK / ÚDAJE';
+        if(techCertRender) techCertRender.textContent = scenarioDataForRender.techCert || '—';
+        if(companyAuthRender) companyAuthRender.style.display = scenarioDataForRender.statutory ? '' : 'none';
+
         const reportNo = document.getElementById('inp-no').value;
         if (!reportNo) return alert("Zadajte číslo správy.");
 
@@ -658,7 +710,18 @@
                 flueTemp: document.getElementById('inp-flue-temp').value,
                 draft: document.getElementById('inp-draft').value,
                 gasPressure: document.getElementById('inp-gas-pressure').value,
+                gasTightness: document.getElementById('inp-gas-tightness').value,
                 systemPressure: document.getElementById('inp-system-pressure').value,
+                supplyVoltage: document.getElementById('inp-supply-voltage').value,
+                peContinuity: document.getElementById('inp-pe-continuity').value,
+                insulationResistance: document.getElementById('inp-insulation-resistance').value,
+                loopImpedance: document.getElementById('inp-loop-impedance').value,
+                rcdTime: document.getElementById('inp-rcd-time').value,
+                refrigerantCharge: document.getElementById('inp-refrigerant-charge').value,
+                refrigerantPressure: document.getElementById('inp-refrigerant-pressure').value,
+                compressorCurrent: document.getElementById('inp-compressor-current').value,
+                flow: document.getElementById('inp-flow').value,
+                leakCheck: document.getElementById('inp-leak-check').value,
             },
             flue: {
                 type: document.getElementById('inp-flue-type').value,
@@ -758,7 +821,14 @@
             for (const [id, key] of [['company','company'],['name','name'],['street','street'],['city','city'],['phone','phone'],['email','email']]) set('inp-' + id, customer[key]);
             for (const [id, key] of [['dev','dev'],['manuf','manuf'],['sn','sn'],['year','year'],['power','power'],['fuel','fuel']]) set('inp-' + id, device[key]);
             set('inp-device-location', device.location);
-            for (const [id, key] of [['co','co'],['co2','co2'],['o2','o2'],['flue-temp','flueTemp'],['draft','draft'],['gas-pressure','gasPressure'],['system-pressure','systemPressure']]) set('inp-' + id, measurements[key]);
+            for (const [id, key] of [
+                ['co','co'],['co2','co2'],['o2','o2'],['flue-temp','flueTemp'],['draft','draft'],
+                ['gas-pressure','gasPressure'],['gas-tightness','gasTightness'],['system-pressure','systemPressure'],
+                ['supply-voltage','supplyVoltage'],['pe-continuity','peContinuity'],['insulation-resistance','insulationResistance'],
+                ['loop-impedance','loopImpedance'],['rcd-time','rcdTime'],['refrigerant-charge','refrigerantCharge'],
+                ['refrigerant-pressure','refrigerantPressure'],['compressor-current','compressorCurrent'],
+                ['flow','flow'],['leak-check','leakCheck']
+            ]) set('inp-' + id, measurements[key]);
             for (const [id, key] of [['flue-type','type'],['flue-state','state'],['flue-outlet','outlet'],['flue-note','note']]) set('inp-' + id, flue[key]);
             set('inp-price', result.price); document.getElementById('inp-vat-payer').checked = !!result.vat;
             set('inp-location-note', result.locationNote);
@@ -789,42 +859,489 @@
     let isDrawing = false;
 
     const SCENARIOS = {
-        plyn: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA",
-            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
-            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
-            group: "Skupina Bh (do 0,5 MW)",
-            rows: [["Tlak plynu na vstupe (HUP)", "1.8 - 2.5 kPa", "2.1 kPa"], ["Tesnosť spojov (detektor)", "0 ppm", "0 ppm"], ["Koncentrácia CO v spalinách", "< 100 ppm", "14 ppm"], ["Ťah komína / Teplota spalín", "min. 3 Pa", "12 Pa"], ["Funkcia blokovacích prvkov", "vypnutie < 1s", "0.5 s"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Vizuálna kontrola umiestnenia", "TPP 704 01", "Bez závad"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška termostatu / regulácie", "Plynulá", "OK"], ["Kontrola horáka a výmenníka", "Čisté", "Vyhovuje"]]
+    "plyn": {
+        "title": "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA",
+        "subtitle": "Vyhotovená podľa § 13 a § 16 Vyhlášky MPSVR SR č. 508/2009 Z. z. v rozsahu plynového zariadenia skupiny B písm. h) a podľa príslušných technických predpisov.",
+        "law": "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+        "group": "PZ skupina B h – spotreba plynu spaľovaním",
+        "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
+        "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
+        "statutory": true,
+        "nextInspectionYears": 1,
+        "extraTitle": "3. MERANÉ HODNOTY A SPALINOVÁ CESTA",
+        "form": {
+            "combustion": true,
+            "gas": true,
+            "hydraulic": true,
+            "electrical": false,
+            "heatPump": false,
+            "flue": true
         },
-        elektro: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE ELEKTRICKÉHO KOTLA",
-            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
-            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
-            group: "Skupina Bf",
-            rows: [["Vizuálna kontrola pripojenia", "Bez poškodenia", "Vyhovuje"], ["Izolačný odpor el. častí", "> 0.5 MΩ", "V norme"], ["Kontrola vyhrievacích telies", "R-nom", "V norme"], ["Funkcia bezp. termostatu", "Vypína", "OK"], ["Tlak vo vykurovacej sústave", "1.0 - 2.0 bar", "1.5 bar"], ["Kontrola expanznej nádoby", "Funkčná", "OK"], ["Skúška regulácie / stýkačov", "Plynulá", "OK"], ["Tesnosť vodných spojov", "Bez úniku", "OK"], ["Funkcia poistného ventilu", "Funkčný", "OK"], ["Kontrola el. rozvádzača", "Pevné spoje", "Vyhovuje"]]
+        "rows": [
+            {
+                "label": "Vizuálna kontrola spotrebiča a pripojenia",
+                "required": "Bez poškodenia a netesnosti"
+            },
+            {
+                "label": "Funkcia uzáveru plynu",
+                "required": "Funkčný"
+            },
+            {
+                "label": "Bezpečnostné a blokovacie prvky",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Horák a výmenník",
+                "required": "Bez závad / podľa výrobcu"
+            },
+            {
+                "label": "Regulácia a termostat",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Tesnosť vodných spojov",
+                "required": "Bez úniku"
+            },
+            {
+                "label": "Expanzná nádoba a poistné prvky",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Napojenie odvodu spalín",
+                "required": "Bezpečné a tesné"
+            },
+            {
+                "label": "Vetranie priestoru",
+                "required": "Vyhovujúce"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "Tlak plynu",
+                "required": "Podľa výrobcu a prevádzkových podmienok",
+                "field": "inp-gas-pressure",
+                "unit": "mbar"
+            },
+            {
+                "label": "Tesnosť plynu",
+                "required": "Bez úniku",
+                "field": "inp-gas-tightness"
+            },
+            {
+                "label": "CO v spalinách",
+                "required": "Podľa výrobcu / technických požiadaviek",
+                "field": "inp-co",
+                "unit": "ppm"
+            },
+            {
+                "label": "CO₂",
+                "required": "Podľa nastavenia spaľovania",
+                "field": "inp-co2",
+                "unit": "%"
+            },
+            {
+                "label": "O₂",
+                "required": "Podľa nastavenia spaľovania",
+                "field": "inp-o2",
+                "unit": "%"
+            },
+            {
+                "label": "Teplota spalín",
+                "required": "Podľa výrobcu",
+                "field": "inp-flue-temp",
+                "unit": "°C"
+            },
+            {
+                "label": "Ťah",
+                "required": "Podľa typu spotrebiča a spalínovej cesty",
+                "field": "inp-draft",
+                "unit": "Pa"
+            },
+            {
+                "label": "Tlak vykurovacej sústavy",
+                "required": "Podľa projektu / výrobcu",
+                "field": "inp-system-pressure",
+                "unit": "bar"
+            },
+            {
+                "label": "Typ odvodu spalín",
+                "required": "Podľa dokumentácie",
+                "field": "inp-flue-type"
+            },
+            {
+                "label": "Stav spalínovej cesty",
+                "required": "Bez zistených nedostatkov",
+                "field": "inp-flue-state"
+            },
+            {
+                "label": "Vyústenie",
+                "required": "Podľa dokumentácie",
+                "field": "inp-flue-outlet"
+            }
+        ]
+    },
+    "elektro": {
+        "title": "KONTROLNÝ PROTOKOL ELEKTRICKÉHO KOTLA",
+        "subtitle": "Elektrické zariadenie sa posudzuje podľa Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných STN. Odbornú prehliadku a odbornú skúšku VTZ elektrického môže vykonať iba revízny technik elektrických zariadení v rozsahu svojho osvedčenia.",
+        "law": "Vyhl. MPSVR SR č. 508/2009 Z. z.; príloha č. 1 III. časť a príloha č. 8",
+        "group": "Elektrické zariadenie – presné zaradenie podľa inštalácie a vonkajších vplyvov",
+        "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
+        "techCert": "Tento protokol nenahrádza OPaOS VTZ elektrického bez podpisu príslušného RT EZ.",
+        "statutory": false,
+        "nextInspectionYears": null,
+        "extraTitle": "3. ELEKTRICKÉ A HYDRAULICKÉ MERANIA",
+        "form": {
+            "combustion": false,
+            "gas": false,
+            "hydraulic": true,
+            "electrical": true,
+            "heatPump": false,
+            "flue": false
         },
-        pellet: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE KOTLA NA PELETY",
-            subtitle: "Vyhotovená podľa STN EN 303-5, pokynov výrobcu a príslušných technických a bezpečnostných predpisov.",
-            law: "STN EN 303-5; pokyny výrobcu",
-            group: "Biomasa",
-            rows: [["Vizuálna kontrola telesa", "Čisté", "Vyhovuje"], ["Funkčnosť podávača", "Plynulá", "OK"], ["Tesnosť spaľovacej komory", "Bez úniku", "OK"], ["Ťah komína", "10-20 Pa", "15 Pa"], ["Teplota spalín", "100-180 °C", "145 °C"], ["Obsah CO v spalinách", "V norme", "120 ppm"], ["Obsah O2", "6 - 10 %", "8.2 %"], ["Účinnosť spaľovania", "> 85 %", "91.5 %"], ["Kontrola ventilátora", "Tichý chod", "OK"], ["Funkcia bezp. klapky", "Funkčná", "Vyhovuje"]]
+        "rows": [
+            {
+                "label": "Vizuálna kontrola pripojenia a krytov",
+                "required": "Bez poškodenia"
+            },
+            {
+                "label": "Ochrana pred zásahom elektrickým prúdom",
+                "required": "Podľa projektu a STN"
+            },
+            {
+                "label": "Ochranný vodič / pospájanie",
+                "required": "Spoľahlivé pripojenie"
+            },
+            {
+                "label": "Istenie a odpojovacie prvky",
+                "required": "Podľa menovitých údajov"
+            },
+            {
+                "label": "Bezpečnostný termostat",
+                "required": "Funkčný"
+            },
+            {
+                "label": "Regulácia / stýkače",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Vyhrievacie telesá",
+                "required": "Bez zisteného poškodenia"
+            },
+            {
+                "label": "Tesnosť vodných spojov",
+                "required": "Bez úniku"
+            },
+            {
+                "label": "Poistný ventil a expanzná nádoba",
+                "required": "Funkčné"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "Napájacie napätie",
+                "required": "Podľa menovitých údajov zariadenia",
+                "field": "inp-supply-voltage",
+                "unit": "V"
+            },
+            {
+                "label": "Spojitosť PE / ochranného vodiča",
+                "required": "Podľa príslušnej STN a spôsobu ochrany",
+                "field": "inp-pe-continuity",
+                "unit": "Ω"
+            },
+            {
+                "label": "Izolačný odpor",
+                "required": "Podľa príslušnej STN a menovitého napätia",
+                "field": "inp-insulation-resistance",
+                "unit": "MΩ"
+            },
+            {
+                "label": "Impedancia poruchovej slučky Zs",
+                "required": "Podľa istenia a požadovaného času odpojenia",
+                "field": "inp-loop-impedance",
+                "unit": "Ω"
+            },
+            {
+                "label": "Čas vybavenia RCD",
+                "required": "Podľa typu RCD, ak je použitý",
+                "field": "inp-rcd-time",
+                "unit": "ms"
+            },
+            {
+                "label": "Tlak vykurovacej sústavy",
+                "required": "Podľa projektu / výrobcu",
+                "field": "inp-system-pressure",
+                "unit": "bar"
+            }
+        ]
+    },
+    "pellet": {
+        "title": "KONTROLNÝ / SERVISNÝ PROTOKOL KOTLA NA BIOMASU",
+        "subtitle": "Kontrola podľa pokynov výrobcu a príslušných technických noriem. Zákon č. 314/2012 Z. z. upravuje pravidelnú kontrolu vykurovacích systémov z hľadiska energetickej účinnosti pri celkovom účinnom menovitom tepelnom výkone nad 70 kW.",
+        "law": "Pokyny výrobcu a technické normy; pri systémoch > 70 kW zákon č. 314/2012 Z. z.",
+        "group": "Kotol na biomasu / vykurovací systém",
+        "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
+        "techCert": "Rozsah kontroly podľa oprávnenia technika a dokumentácie výrobcu.",
+        "statutory": false,
+        "nextInspectionYears": null,
+        "extraTitle": "3. SPAĽOVANIE, SPALINY A VYKUROVACÍ OKRUH",
+        "form": {
+            "combustion": true,
+            "gas": false,
+            "hydraulic": true,
+            "electrical": false,
+            "heatPump": false,
+            "flue": true
         },
-        tc: {
-            title: "SPRÁVA O KONTROLE TEPELNÉHO ČERPADLA",
-            subtitle: "Vyhotovená podľa príslušných technických predpisov a pokynov výrobcu; pri zariadeniach s F-plynmi aj podľa nariadenia (EÚ) 2024/573 a zákona č. 286/2009 Z. z.",
-            law: "Technické predpisy; pri F-plynoch nariadenie (EÚ) 2024/573 a zákon č. 286/2009 Z. z.",
-            group: "Tepelné čerpadlo",
-            rows: [["Kontrola úniku (Detektor)", "Bez úniku", "OK"], ["Vizuálna kontrola okruhu", "Bez oleja", "Negatívna"], ["Kontrola bezp. prvkov", "Funkčné", "Vyhovuje"], ["Prúd kompresora", "I-nom", "V norme"], ["Tlak chladiva", "Podľa T-ok", "V norme"], ["Funkčná skúška Chlad/Teplo", "Funkčná", "OK"], ["Tlak vo vykurovacej sústave", "> 1.0 bar", "1.5 bar"], ["Kontrola prietoku (flow switch)", "Funkčný", "OK"], ["Čistota vonkajšej jednotky", "Priechodná", "Bez závad"], ["Kontrola el. spojov", "Pevné", "OK"]]
+        "rows": [
+            {
+                "label": "Vizuálna kontrola telesa kotla",
+                "required": "Bez poškodenia"
+            },
+            {
+                "label": "Spaľovacia komora a tesnosť dvierok",
+                "required": "Bez netesnosti"
+            },
+            {
+                "label": "Horák / retorta / rošt",
+                "required": "Čistý a funkčný"
+            },
+            {
+                "label": "Podávač paliva",
+                "required": "Plynulý chod"
+            },
+            {
+                "label": "Ventilátor",
+                "required": "Funkčný"
+            },
+            {
+                "label": "Bezpečnostný termostat a ochrany",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Poistný ventil a expanzná nádoba",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Tesnosť vodných spojov",
+                "required": "Bez úniku"
+            },
+            {
+                "label": "Napojenie na komín / dymovod",
+                "required": "Bezpečné a tesné"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "CO v spalinách",
+                "required": "Podľa výrobcu a nastavenia spaľovania",
+                "field": "inp-co",
+                "unit": "ppm"
+            },
+            {
+                "label": "CO₂",
+                "required": "Podľa výrobcu a nastavenia spaľovania",
+                "field": "inp-co2",
+                "unit": "%"
+            },
+            {
+                "label": "O₂",
+                "required": "Podľa výrobcu a nastavenia spaľovania",
+                "field": "inp-o2",
+                "unit": "%"
+            },
+            {
+                "label": "Teplota spalín",
+                "required": "Podľa výrobcu",
+                "field": "inp-flue-temp",
+                "unit": "°C"
+            },
+            {
+                "label": "Komínový ťah",
+                "required": "Podľa výrobcu / projektu komína",
+                "field": "inp-draft",
+                "unit": "Pa"
+            },
+            {
+                "label": "Tlak vykurovacej sústavy",
+                "required": "Podľa projektu / výrobcu",
+                "field": "inp-system-pressure",
+                "unit": "bar"
+            },
+            {
+                "label": "Typ odvodu spalín",
+                "required": "Podľa dokumentácie",
+                "field": "inp-flue-type"
+            },
+            {
+                "label": "Stav spalínovej cesty",
+                "required": "Bez zistených nedostatkov",
+                "field": "inp-flue-state"
+            }
+        ]
+    },
+    "tc": {
+        "title": "KONTROLNÝ / SERVISNÝ PROTOKOL TEPELNÉHO ČERPADLA",
+        "subtitle": "Kontrola podľa technických predpisov a pokynov výrobcu. Povinnosti podľa nariadenia (EÚ) 2024/573 a zákona č. 286/2009 Z. z. sa uplatňujú iba na zariadenia s príslušnými fluórovanými skleníkovými plynmi a podľa stanovených prahov.",
+        "law": "Technické predpisy a pokyny výrobcu; pri F-plynoch nariadenie (EÚ) 2024/573 a zákon č. 286/2009 Z. z.",
+        "group": "Tepelné čerpadlo – podľa chladiva a konštrukcie",
+        "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
+        "techCert": "Rozsah podľa oprávnenia technika; pri F-plynoch sa vyžaduje príslušná odborná spôsobilosť.",
+        "statutory": false,
+        "nextInspectionYears": null,
+        "extraTitle": "3. CHLADIVOVÝ, HYDRAULICKÝ A PREVÁDZKOVÝ STAV",
+        "form": {
+            "combustion": false,
+            "gas": false,
+            "hydraulic": true,
+            "electrical": false,
+            "heatPump": true,
+            "flue": false
         },
-        rozvod: {
-            title: "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU",
-            subtitle: "Vyhotovená v zmysle Vyhlášky MPSVR SR č. 508/2009 Z. z. a príslušných technických predpisov a noriem.",
-            law: "Vyhl. MPSVR SR č. 508/2009 Z. z.",
-            group: "Skupina Bg",
-            rows: [["Vizuálna kontrola trasy rozvodu", "Bez poškodenia", "Vyhovuje"], ["Kontrola upevnenia potrubia", "Pevné", "OK"], ["Tesnosť spojov a armatúr", "0 ppm", "0 ppm"], ["Stav protikoróznej ochrany", "Bez korózie", "OK"], ["Kontrola funkcie uzáverov (HUP)", "Funkčné", "Vyhovuje"], ["Kontrola označenia potrubia", "Jasné", "OK"], ["Priechodnosť vetracích otvorov", "Priechodné", "Vyhovuje"], ["Ochrana pred mech. poškodením", "Dostatočná", "OK"], ["Kontrola prechodov cez murivo", "Utesnené", "Vyhovuje"], ["Skúška tesnosti prevádzkovým tlakom", "Bez poklesu", "OK"]]
-        }
-    };
+        "rows": [
+            {
+                "label": "Vizuálna kontrola chladivového okruhu",
+                "required": "Bez zjavného úniku / poškodenia"
+            },
+            {
+                "label": "Vonkajšia a vnútorná jednotka",
+                "required": "Bez poškodenia a znečistenia brániaceho prevádzke"
+            },
+            {
+                "label": "Elektrické pripojenia zariadenia",
+                "required": "Bez zjavného poškodenia / podľa výrobcu"
+            },
+            {
+                "label": "Bezpečnostné prvky a snímače",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Obeh / prietok vykurovacej vody",
+                "required": "Funkčný"
+            },
+            {
+                "label": "Tesnosť hydraulických spojov",
+                "required": "Bez úniku"
+            },
+            {
+                "label": "Odmrazovanie a odvod kondenzátu",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Funkčná skúška vykurovania",
+                "required": "Funkčná"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "Chladivo",
+                "required": "Podľa výrobného štítku",
+                "field": "inp-fuel"
+            },
+            {
+                "label": "Množstvo chladiva",
+                "required": "Podľa výrobného štítku",
+                "field": "inp-refrigerant-charge",
+                "unit": "kg"
+            },
+            {
+                "label": "Kontrola tesnosti chladivového okruhu",
+                "required": "Bez zisteného úniku",
+                "field": "inp-leak-check"
+            },
+            {
+                "label": "Tlak chladiva",
+                "required": "Podľa výrobcu a prevádzkového stavu",
+                "field": "inp-refrigerant-pressure",
+                "unit": "bar"
+            },
+            {
+                "label": "Prúd kompresora",
+                "required": "Podľa menovitých údajov / prevádzkového stavu",
+                "field": "inp-compressor-current",
+                "unit": "A"
+            },
+            {
+                "label": "Prietok vykurovacej vody",
+                "required": "Podľa výrobcu",
+                "field": "inp-flow",
+                "unit": "l/min"
+            },
+            {
+                "label": "Tlak vykurovacej sústavy",
+                "required": "Podľa projektu / výrobcu",
+                "field": "inp-system-pressure",
+                "unit": "bar"
+            }
+        ]
+    },
+    "rozvod": {
+        "title": "SPRÁVA O ODBORNEJ PREHLIADKE ROZVODU PLYNU",
+        "subtitle": "Vyhotovená podľa § 13 a § 16 Vyhlášky MPSVR SR č. 508/2009 Z. z. v rozsahu plynového zariadenia skupiny B písm. g).",
+        "law": "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+        "group": "PZ skupina B g – rozvod plynu",
+        "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
+        "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
+        "statutory": true,
+        "nextInspectionYears": 3,
+        "extraTitle": "3. MERANIE A SKÚŠKA ROZVODU PLYNU",
+        "form": {
+            "combustion": false,
+            "gas": true,
+            "hydraulic": false,
+            "electrical": false,
+            "heatPump": false,
+            "flue": false
+        },
+        "rows": [
+            {
+                "label": "Vizuálna kontrola trasy rozvodu",
+                "required": "Bez poškodenia"
+            },
+            {
+                "label": "Upevnenie potrubia",
+                "required": "Pevné a bezpečné"
+            },
+            {
+                "label": "Protikorózna ochrana",
+                "required": "Bez nevyhovujúcej korózie"
+            },
+            {
+                "label": "Hlavný uzáver a ostatné uzávery",
+                "required": "Funkčné"
+            },
+            {
+                "label": "Označenie potrubia",
+                "required": "Podľa požiadaviek"
+            },
+            {
+                "label": "Vetranie priestorov",
+                "required": "Vyhovujúce"
+            },
+            {
+                "label": "Ochrana pred mechanickým poškodením",
+                "required": "Dostatočná"
+            },
+            {
+                "label": "Prestupy cez konštrukcie",
+                "required": "Vyhovujúce"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "Prevádzkový tlak plynu",
+                "required": "Podľa prevádzkových podmienok",
+                "field": "inp-gas-pressure",
+                "unit": "mbar"
+            },
+            {
+                "label": "Tesnosť rozvodu a spojov",
+                "required": "Bez úniku",
+                "field": "inp-gas-tightness"
+            }
+        ]
+    }
+};
 
     function initQR() {
         if (qr || !window.QRious) return;
@@ -855,18 +1372,7 @@
         const fl = document.getElementById('inp-fuel').value;
         document.getElementById('out-params').textContent = (pwr ? pwr + " kW " : "") + (fl ? "/ " + fl : "");
         document.getElementById('out-device-location').textContent = document.getElementById('inp-device-location').value || "—";
-        const val = id => document.getElementById(id).value || "—";
-        document.getElementById('out-co').textContent = val('inp-co') === "—" ? "—" : val('inp-co') + " ppm";
-        document.getElementById('out-co2').textContent = val('inp-co2') === "—" ? "—" : val('inp-co2') + " %";
-        document.getElementById('out-o2').textContent = val('inp-o2') === "—" ? "—" : val('inp-o2') + " %";
-        document.getElementById('out-flue-temp').textContent = val('inp-flue-temp') === "—" ? "—" : val('inp-flue-temp') + " °C";
-        document.getElementById('out-draft').textContent = val('inp-draft') === "—" ? "—" : val('inp-draft') + " Pa";
-        document.getElementById('out-gas-pressure').textContent = val('inp-gas-pressure') === "—" ? "—" : val('inp-gas-pressure') + " mbar";
-        document.getElementById('out-system-pressure').textContent = val('inp-system-pressure') === "—" ? "—" : val('inp-system-pressure') + " bar";
-        document.getElementById('out-flue-type').textContent = val('inp-flue-type');
-        document.getElementById('out-flue-state').textContent = val('inp-flue-state');
-        document.getElementById('out-flue-outlet').textContent = val('inp-flue-outlet');
-        document.getElementById('out-flue-note').textContent = val('inp-flue-note');
+        renderScenarioTables();
         const note = document.getElementById('inp-notes').value;
         document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
         document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
@@ -883,14 +1389,27 @@
             d.setFullYear(d.getFullYear() + 1);
             nextD = `${d.getDate()}. ${(d.getMonth()+1)}. ${d.getFullYear()}`;
         }
+        const scenarioKey = document.getElementById('inp-scenario').value;
+        const scenarioData = currentScenarioData();
         if(status === 'ok') {
-            statusBox.textContent = "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY";
+            statusBox.textContent = scenarioData.statutory ? "ZARIADENIE JE SPÔSOBILÉ BEZPEČNEJ PREVÁDZKY" : "KONTROLOVANÉ ZARIADENIE – BEZ ZISTENÝCH ZÁVAD BRÁNIACICH PREVÁDZKE";
             statusBox.className = "status-box";
-            conc.innerHTML = `Zariadenie <strong>JE SPÔSOBILÉ</strong> bezpečnej prevádzky v zmysle Vyhlášky MPSVR SR č. 508/2009 Z.z. a pokynov výrobcu. Nasledujúca odborná prehliadka sa odporúča vykonať v termíne do: <strong>${nextD}</strong>.`;
+            if(scenarioData.statutory){
+                let intervalText = "";
+                if(scenarioData.nextInspectionYears && dVal){
+                    const next = new Date(dVal);
+                    next.setFullYear(next.getFullYear() + scenarioData.nextInspectionYears);
+                    const nextText = next.getDate()+'. '+(next.getMonth()+1)+'. '+next.getFullYear();
+                    intervalText = ' Nasledujúca odborná prehliadka podľa príslušnej lehoty vyhlášky: <strong>'+nextText+'</strong>.';
+                }
+                conc.innerHTML = 'Na základe vykonanej odbornej prehliadky je zariadenie <strong>SPÔSOBILÉ</strong> bezpečnej prevádzky v rozsahu vykonanej kontroly.'+intervalText;
+            }else{
+                conc.innerHTML = 'Na základe vykonanej servisnej/technickej kontroly nebol zistený stav, ktorý by v rozsahu tejto kontroly bránil prevádzke zariadenia. Tento protokol nenahrádza odbornú prehliadku a odbornú skúšku iného vyhradeného technického zariadenia, ak ju vyžaduje osobitný predpis.';
+            }
         } else {
-            statusBox.textContent = "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY";
+            statusBox.textContent = scenarioData.statutory ? "ZARIADENIE NIE JE SPÔSOBILÉ PREVÁDZKY" : "ZISTENÉ NEDOSTATKY – VYŽADUJE SA NÁPRAVA";
             statusBox.className = "status-box danger";
-            conc.innerHTML = `Zariadenie <strong>NIE JE SPÔSOBILÉ</strong> bezpečnej prevádzky. <strong>OPATRENIA:</strong> Odstaviť zariadenie z prevádzky do odstránenia zistených závad.`;
+            conc.innerHTML = 'Zariadenie <strong>NIE JE VYHOVUJÚCE</strong> v rozsahu vykonanej kontroly. <strong>OPATRENIA:</strong> Odstrániť zistené nedostatky; pri bezprostrednom ohrození zariadenie odstaviť z prevádzky.';
         }
         const vat = document.getElementById('inp-vat-payer').checked;
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
@@ -919,25 +1438,94 @@
         } catch (err) { alert("Chyba PDF."); }
     }
 
-    window.changeScenario = () => {
-        const s = document.getElementById('inp-scenario').value;
-        const data = SCENARIOS[s];
-        
+    function fieldValue(id, unit = '') {
+        const el = document.getElementById(id);
+        const raw = el ? String(el.value || '').trim() : '';
+        return raw ? raw + (unit ? ' ' + unit : '') : '—';
+    }
+    
+    function currentScenarioData() {
+        const key = document.getElementById('inp-scenario')?.value || 'plyn';
+        const base = SCENARIOS[key] || SCENARIOS.plyn;
+        if (key !== 'tc') return base;
+        const fuel = String(document.getElementById('inp-fuel')?.value || '').toUpperCase().replace(/\s+/g,'');
+        const isR290 = fuel.includes('R290') || fuel.includes('PROP');
+        const isFGas = /R32|R410A|R407C|R134A|R454B|R452B/.test(fuel);
+        if (isR290) {
+            return {
+                ...base,
+                subtitle: "Kontrola podľa technických predpisov a pokynov výrobcu. Chladivo R290 (propán) nie je fluórovaný skleníkový plyn; povinnosti kontroly úniku podľa nariadenia (EÚ) 2024/573 sa naň z titulu F-plynu neuplatňujú.",
+                law: "Technické predpisy a pokyny výrobcu; R290 – mimo režimu F-plynov podľa nariadenia (EÚ) 2024/573.",
+                techCert: "Servis R290 podľa odbornej spôsobilosti, bezpečnostných požiadaviek a pokynov výrobcu."
+            };
+        }
+        if (isFGas) {
+            return {
+                ...base,
+                subtitle: "Kontrola podľa technických predpisov a pokynov výrobcu; pri splnení prahov pre kontrolu úniku aj podľa nariadenia (EÚ) 2024/573 a zákona č. 286/2009 Z. z.",
+                law: "Nariadenie (EÚ) 2024/573; zákon č. 286/2009 Z. z.; pokyny výrobcu."
+            };
+        }
+        return base;
+    }
+    
+    function renderScenarioTables() {
+        const data = currentScenarioData();
+        const tbody = document.getElementById('out-table-body');
+        const statusOk = document.getElementById('inp-status')?.value !== 'fail';
+        if (tbody) {
+            tbody.innerHTML = '';
+            (data.rows || []).forEach(r => {
+                const finding = r.field ? fieldValue(r.field, r.unit || '') : (r.finding || 'Kontrola');
+                const result = finding === '—' ? '—' : (statusOk ? 'Vyhovuje' : 'Nevyhovuje');
+                tbody.innerHTML += '<tr><td>'+r.label+'</td><td>'+(r.required || '—')+'</td><td><strong>'+finding+'</strong></td><td>'+result+'</td></tr>';
+            });
+        }
+        const extraTitle = document.getElementById('out-extra-title');
+        const extraBody = document.getElementById('out-extra-body');
+        const extraSection = document.getElementById('out-extra-section');
+        if (extraTitle) extraTitle.textContent = data.extraTitle || '3. DOPLŇUJÚCE MERANIA A SKÚŠKY';
+        if (extraBody) {
+            extraBody.innerHTML = '';
+            (data.extraRows || []).forEach(r => {
+                extraBody.innerHTML += '<tr><td>'+r.label+'</td><td>'+(r.required || '—')+'</td><td><strong>'+fieldValue(r.field, r.unit || '')+'</strong></td></tr>';
+            });
+        }
+        if (extraSection) extraSection.style.display = (data.extraRows || []).length ? '' : 'none';
+    }
+    
+    function applyScenarioVisibility(data) {
+        const form = data.form || {};
+        const toggle = (id, show) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('hidden', !show);
+        };
+        toggle('combustion-measurements', !!form.combustion);
+        toggle('gas-measurements', !!form.gas);
+        toggle('hydraulic-measurements', !!form.hydraulic);
+        toggle('electrical-measurements', !!form.electrical);
+        toggle('heatpump-measurements', !!form.heatPump);
+        toggle('flue-section', !!form.flue);
+    }
+    
+    window.changeScenario = function() {
+        const data = currentScenarioData();
         const outTitle = document.getElementById('out-title');
         const outSubtitle = document.getElementById('out-subtitle');
         const outLaw = document.getElementById('out-law');
         const outGroup = document.getElementById('out-group');
-        const tbody = document.getElementById('out-table-body');
-
+        const techHeading = document.getElementById('out-tech-heading');
+        const techCert = document.getElementById('out-tech-cert');
+        const companyAuth = document.getElementById('out-company-auth');
         if(outTitle) outTitle.textContent = data.title;
         if(outSubtitle) outSubtitle.textContent = data.subtitle || '';
         if(outLaw) outLaw.textContent = data.law;
         if(outGroup) outGroup.textContent = data.group;
-        
-        if(tbody) {
-            tbody.innerHTML = '';
-            data.rows.forEach(r => tbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td>Vyhovuje</td></tr>`);
-        }
+        if(techHeading) techHeading.textContent = data.techHeading || 'TECHNIK / ÚDAJE';
+        if(techCert) techCert.textContent = data.techCert || '—';
+        if(companyAuth) companyAuth.style.display = data.statutory ? '' : 'none';
+        applyScenarioVisibility(data);
+        renderScenarioTables();
         render();
     };
 
