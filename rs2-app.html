@@ -292,12 +292,16 @@
             <button onclick="closeArchive()" style="border:none; background:none; font-size:24px; cursor:pointer">&times;</button>
         </div>
         <div style="padding:12px 20px;border-bottom:1px solid #eee">
-            <label for="archive-serial-search">Výrobné číslo / S/N – presná zhoda</label>
-            <input id="archive-serial-search" type="text" maxlength="100" placeholder="Celé výrobné číslo vrátane koncovky" oninput="filterArchiveBySerial()">
-            <button type="button" onclick="openArchive(document.getElementById('archive-serial-search').value)">Obnoviť z databázy</button>
-            <button type="button" onclick="document.getElementById('archive-serial-search').value='';filterArchiveBySerial()">Všetky protokoly</button>
+            <label for="archive-search">Hľadať revíziu</label>
+            <input id="archive-search" type="search" maxlength="160"
+                placeholder="Meno, firma, adresa, výrobné číslo, číslo správy…"
+                oninput="filterArchive()">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <button type="button" onclick="openArchive(document.getElementById('archive-search').value)">↻ Obnoviť databázu</button>
+                <button type="button" onclick="document.getElementById('archive-search').value='';filterArchive()">Všetky revízie</button>
+            </div>
             <p id="archive-search-status" role="status" aria-live="polite"></p>
-            <small>Obnovia sa uložené údaje. Fotografie a podpisy sa do tohto archívu neukladajú.</small>
+            <small>Vyhľadáva sa podľa mena, firmy, adresy, telefónu, e-mailu, výrobného čísla, zariadenia a čísla revíznej správy. Zo záznamu je možné otvoriť pôvodnú revíziu alebo založiť novú.</small>
         </div>
         <div class="archive-list" id="archive-list-container">
             <div style="text-align:center; padding:20px; color:#666;">Načítavam zoznam správ...</div>
@@ -686,6 +690,33 @@
             reportNo: reportNo,
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
+            schemaVersion: 2,
+            search: (() => {
+                const normalize = value => String(value || '')
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+                const name = document.getElementById('inp-name').value;
+                const company = document.getElementById('inp-company').value;
+                const street = document.getElementById('inp-street').value;
+                const city = document.getElementById('inp-city').value;
+                const serial = document.getElementById('inp-sn').value;
+                const report = document.getElementById('inp-no').value;
+                const phone = document.getElementById('inp-phone').value;
+                const email = document.getElementById('inp-email').value;
+                const device = document.getElementById('inp-dev').value;
+                const manufacturer = document.getElementById('inp-manuf').value;
+                return {
+                    name: normalize(name),
+                    company: normalize(company),
+                    address: normalize(street + ' ' + city),
+                    serial: String(serial || '').replace(/\s/g,'').toUpperCase(),
+                    report: normalize(report),
+                    phone: normalize(phone),
+                    email: normalize(email),
+                    device: normalize(manufacturer + ' ' + device),
+                    all: normalize([name,company,street,city,serial,report,phone,email,manufacturer,device].join(' '))
+                };
+            })(),
             customer: {
                 company: document.getElementById('inp-company').value,
                 name: document.getElementById('inp-name').value,
@@ -760,50 +791,149 @@
 
     let archiveRows = [], archiveLoaded = false, archiveRequest = 0, archiveLoadBusy = false;
     window.cancelArchiveRequest = () => { archiveRequest++; };
-    window.filterArchiveBySerial = () => {
+
+    function normalizeArchiveSearch(value) {
+        return String(value || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+
+    function archiveSearchText(item) {
+        if (item?.search?.all) return item.search.all;
+        const customer = item?.customer || {};
+        const device = item?.device || {};
+        return normalizeArchiveSearch([
+            item?.reportNo, item?.date, item?.scenario,
+            customer.name, customer.company, customer.street, customer.city,
+            customer.phone, customer.email,
+            device.manuf, device.dev, device.sn, device.year, device.location
+        ].filter(Boolean).join(' '));
+    }
+
+    function archiveExactSerial(item) {
+        return String(item?.device?.sn || '').replace(/\s/g,'').toUpperCase();
+    }
+
+    function matchArchiveSearch(rows, value) {
+        const raw = String(value || '').trim();
+        const query = normalizeArchiveSearch(raw);
+        if (!query) return rows.slice();
+
+        const tokens = query.split(/\s+/).filter(Boolean);
+        const serialQuery = raw.replace(/\s/g,'').toUpperCase();
+        return rows
+            .map(item => {
+                const hay = archiveSearchText(item);
+                const serial = archiveExactSerial(item);
+                const matches = tokens.every(token => hay.includes(token)) ||
+                    (serialQuery.length >= 4 && serial.includes(serialQuery));
+                const exactSerial = serialQuery && serial === serialQuery;
+                const exactReport = normalizeArchiveSearch(item?.reportNo) === query;
+                return {item,matches,score:(exactSerial?1000:0)+(exactReport?900:0)+(hay.startsWith(query)?100:0)};
+            })
+            .filter(x => x.matches)
+            .sort((a,b) => b.score-a.score ||
+                String(b.item.date || '').localeCompare(String(a.item.date || '')) ||
+                Number(b.item.timestamp || 0)-Number(a.item.timestamp || 0))
+            .map(x => x.item);
+    }
+
+    window.filterArchive = () => {
         if (!archiveLoaded) return;
-        const input = document.getElementById('archive-serial-search');
+        const input = document.getElementById('archive-search');
         const container = document.getElementById('archive-list-container');
-        const key = window.normalizeArchiveSerial(input.value);
-        const list = window.matchArchiveSerial(archiveRows, input.value);
+        const queryText = input?.value || '';
+        const list = matchArchiveSearch(archiveRows, queryText);
         container.replaceChildren();
-        document.getElementById('archive-search-status').textContent = list.length
-            ? (key ? 'Protokoly pre S/N ' + input.value.trim() + ': ' : 'Všetky protokoly: ') + list.length
-            : key ? 'Pre toto celé výrobné číslo sa nenašiel uložený protokol. Skontrolujte číslo alebo ho opravte vyššie.' : 'Archív je prázdny.';
+
+        const status = document.getElementById('archive-search-status');
+        status.textContent = queryText.trim()
+            ? (list.length ? 'Nájdené revízie: ' + list.length : 'Pre „' + queryText.trim() + '“ sa nenašla žiadna uložená revízia.')
+            : 'Uložené revízie: ' + list.length;
+
         for (const item of list) {
-            const row = document.createElement('div'); row.className = 'archive-item'; row.style.cursor = 'default'; row.style.flexWrap = 'wrap'; row.style.gap = '12px';
+            const row = document.createElement('div');
+            row.className = 'archive-item';
+            row.style.cursor = 'default';
+            row.style.flexWrap = 'wrap';
+            row.style.gap = '12px';
+
             const info = document.createElement('div');
-            const title = document.createElement('strong'); title.textContent = item.reportNo || item.id;
-            const customer = document.createElement('div'); customer.textContent = item.customer?.name || item.customer?.company || 'Bez mena';
-            const details = document.createElement('div'); details.textContent = (item.date || '—') + ' | ' + (item.device?.dev || '—') + ' | S/N: ' + (item.device?.sn || '—');
-            info.append(title, customer, details); row.append(info);
-            for (const [mode, label] of [['existing', 'Otvoriť protokol'], ['new', 'Nová revízia']]) {
-                const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
-                button.addEventListener('click', () => window.loadFromCloud(item.id, mode)); row.append(button);
+            info.style.flex = '1 1 360px';
+            info.style.minWidth = '0';
+
+            const title = document.createElement('strong');
+            title.textContent = item.reportNo || item.id || 'Revízia';
+
+            const customer = document.createElement('div');
+            const customerName = item.customer?.name || item.customer?.company || 'Bez mena';
+            const company = item.customer?.company && item.customer.company !== customerName ? ' · ' + item.customer.company : '';
+            customer.textContent = customerName + company;
+
+            const address = document.createElement('div');
+            address.style.fontSize = '12px';
+            address.style.color = '#475569';
+            address.textContent = [item.customer?.street,item.customer?.city].filter(Boolean).join(', ') || 'Adresa neuvedená';
+
+            const details = document.createElement('div');
+            details.style.fontSize = '12px';
+            details.style.color = '#475569';
+            details.textContent = [
+                item.date || '—',
+                item.device?.manuf || '',
+                item.device?.dev || '',
+                item.device?.sn ? 'S/N: ' + item.device.sn : ''
+            ].filter(Boolean).join(' · ');
+
+            info.append(title, customer, address, details);
+            row.append(info);
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '8px';
+            actions.style.flexWrap = 'wrap';
+            for (const [mode, label] of [['existing', 'Otvoriť revíziu'], ['new', 'Nová revízia z údajov']]) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = label;
+                button.addEventListener('click', () => window.loadFromCloud(item.id, mode));
+                actions.append(button);
             }
+            row.append(actions);
             container.append(row);
         }
     };
-    window.openArchive = async (serial = '') => {
+
+    // Spätná kompatibilita so starými tlačidlami / uloženými odkazmi.
+    window.filterArchiveBySerial = window.filterArchive;
+
+    window.openArchive = async (search = '') => {
         if (!user) { alert('Počkajte na pripojenie k cloudu a skúste vyhľadanie znova.'); return; }
         const request = ++archiveRequest, userId = user.uid;
         archiveLoaded = false; archiveRows = [];
-        document.getElementById('archive-serial-search').value = typeof serial === 'string' ? serial : '';
+        const searchInput = document.getElementById('archive-search');
+        if (searchInput) searchInput.value = typeof search === 'string' ? search : '';
         document.getElementById('archive-modal').style.display = 'flex';
         document.getElementById('archive-list-container').replaceChildren();
-        const status = document.getElementById('archive-search-status'); status.textContent = 'Načítavam protokoly z databázy…';
+        const status = document.getElementById('archive-search-status');
+        status.textContent = 'Načítavam revízie z databázy…';
         try {
-            // Same existing collection and permissions. Filter in memory so legacy
-            // records work without a migration or a new Firestore index.
             const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections')));
             if (request !== archiveRequest || user?.uid !== userId) return;
             snapshot.forEach(record => archiveRows.push({ ...record.data(), id: record.id }));
-            archiveRows.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || Number(b.timestamp || 0) - Number(a.timestamp || 0));
-            archiveLoaded = true; window.filterArchiveBySerial();
+            archiveRows.sort((a, b) =>
+                String(b.date || '').localeCompare(String(a.date || '')) ||
+                Number(b.timestamp || 0) - Number(a.timestamp || 0)
+            );
+            archiveLoaded = true;
+            window.filterArchive();
         } catch (error) {
-            if (request === archiveRequest) status.textContent = 'Databázu sa nepodarilo načítať. Skontrolujte pripojenie a prístup k archívu, potom použite Obnoviť z databázy.';
+            console.error('Archive database load failed', error);
+            if (request === archiveRequest) status.textContent =
+                'Databázu revízií sa nepodarilo načítať. Skontrolujte pripojenie a prístup k archívu.';
         }
     };
+
     window.loadFromCloud = async (docId, mode = 'existing') => {
         if (!user || archiveLoadBusy) return;
         if (!['existing', 'new'].includes(mode)) return;
@@ -2450,7 +2580,7 @@
     }
 
     function normalizeArchiveSerial(value) {
-        // Preserve punctuation, leading zeros and the full suffix; no O/0 repair.
+        // Výrobné číslo zachovávame bez opráv znakov; odstraňujeme iba medzery.
         return String(value || '').trim().replace(/\s/g, '').toUpperCase();
     }
     function matchArchiveSerial(rows, value) {
@@ -2458,9 +2588,10 @@
         return key ? rows.filter(row => normalizeArchiveSerial(row.device?.sn) === key) : rows.slice();
     }
     function lookupDeviceReports(value) {
-        if (!normalizeArchiveSerial(value)) { alert('Najprv načítajte alebo zadajte celé výrobné číslo.'); return; }
+        if (!normalizeArchiveSerial(value)) { alert('Najprv načítajte alebo zadajte výrobné číslo.'); return; }
         if (typeof window.openArchive !== 'function') { alert('Cloud sa ešte nenačítal. Skontrolujte internet a skúste znova.'); return; }
-        window.closeLabelScanModal(); window.openArchive(String(value).trim());
+        window.closeLabelScanModal();
+        window.openArchive(String(value).trim());
     }
     function lookupScannedReport() {
         if (scanState.busy) return;
