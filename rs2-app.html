@@ -283,6 +283,13 @@
             bottom: 4mm;
             z-index: 10;
         }
+        .report-page .tech-sig-img.service-stamp {
+            width: 50mm !important;
+            height: 28mm !important;
+            right: -1mm;
+            bottom: 7mm;
+            object-fit: contain;
+        }
 
         /* HTML2PDF nepoužíva @media print – finálny export preto čistí
            ovládacie prvky, rám podpisu a prázdny foto-box cez túto triedu. */
@@ -1142,6 +1149,8 @@
     let modalCtx = document.getElementById('full-screen-canvas').getContext('2d');
     let isDrawing = false;
 
+    const SERVICE_STAMP_DATA = "data:image/webp;base64,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";
+
     const SCENARIOS = {
     "plyn": {
         "title": "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO ZARIADENIA",
@@ -1151,6 +1160,7 @@
         "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
         "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
         "signatureLabel": "Revízny technik PZ",
+        "stampType": "gas",
         "statutory": true,
         "nextInspectionYears": 1,
         "extraTitle": "3. MERANÉ HODNOTY A SPALINOVÁ CESTA",
@@ -1273,6 +1283,7 @@
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Tento protokol nenahrádza OPaOS VTZ elektrického bez podpisu príslušného RT EZ.",
         "signatureLabel": "Servisný / kontrolný technik",
+        "stampType": "service",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. ELEKTRICKÉ A HYDRAULICKÉ MERANIA",
@@ -1369,6 +1380,7 @@
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Rozsah kontroly podľa oprávnenia technika a dokumentácie výrobcu.",
         "signatureLabel": "Servisný / kontrolný technik",
+        "stampType": "service",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. SPAĽOVANIE, SPALINY A VYKUROVACÍ OKRUH",
@@ -1475,6 +1487,7 @@
         "techHeading": "SERVISNÝ / KONTROLNÝ TECHNIK",
         "techCert": "Rozsah podľa oprávnenia technika; pri F-plynoch sa vyžaduje príslušná odborná spôsobilosť.",
         "signatureLabel": "Servisný / kontrolný technik",
+        "stampType": "none",
         "statutory": false,
         "nextInspectionYears": null,
         "extraTitle": "3. CHLADIVOVÝ, HYDRAULICKÝ A PREVÁDZKOVÝ STAV",
@@ -1571,6 +1584,7 @@
         "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
         "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
         "signatureLabel": "Revízny technik PZ",
+        "stampType": "gas",
         "statutory": true,
         "nextInspectionYears": 3,
         "extraTitle": "3. MERANIE A SKÚŠKA ROZVODU PLYNU",
@@ -1676,7 +1690,12 @@
         if(techHeadingRender) techHeadingRender.textContent = scenarioDataForRender.techHeading || 'TECHNIK / ÚDAJE';
         if(techCertRender) techCertRender.textContent = scenarioDataForRender.techCert || '—';
         if(companyAuthRender) companyAuthRender.style.display = scenarioDataForRender.statutory ? '' : 'none';
-        if(techStampRender) techStampRender.style.display = scenarioDataForRender.statutory ? 'block' : 'none';
+        if(techStampRender){
+            const stampType = scenarioDataForRender.stampType || 'none';
+            techStampRender.classList.toggle('service-stamp', stampType === 'service');
+            techStampRender.src = stampType === 'service' ? SERVICE_STAMP_DATA : 'Razitko Technika.png';
+            techStampRender.style.display = stampType === 'none' ? 'none' : 'block';
+        }
         if(techSignLabelRender) techSignLabelRender.textContent = scenarioDataForRender.signatureLabel || 'Technik';
 
         const reportNo = document.getElementById('inp-no').value;
@@ -1863,7 +1882,12 @@
         if(companyAuth) companyAuth.style.display = data.statutory ? '' : 'none';
         const techStamp = document.getElementById('out-tech-stamp');
         const techSignLabel = document.getElementById('out-tech-sign-label');
-        if(techStamp) techStamp.style.display = data.statutory ? 'block' : 'none';
+        if(techStamp){
+            const stampType = data.stampType || 'none';
+            techStamp.classList.toggle('service-stamp', stampType === 'service');
+            techStamp.src = stampType === 'service' ? SERVICE_STAMP_DATA : 'Razitko Technika.png';
+            techStamp.style.display = stampType === 'none' ? 'none' : 'block';
+        }
         if(techSignLabel) techSignLabel.textContent = data.signatureLabel || 'Technik';
         applyScenarioVisibility(data);
         renderScenarioTables();
