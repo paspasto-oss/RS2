@@ -139,10 +139,67 @@
             height: 40mm !important;
             object-fit: contain;
             display: block;
-            margin: -7mm 0 -7mm auto;
-            position: relative;
+            margin: 0;
+            position: absolute;
+            right: 0;
+            bottom: -4mm;
             z-index: 10;
             pointer-events: none;
+        }
+
+        /* Prvá A4 musí vždy obsahovať aj podpisy a 40 mm pečiatku.
+           Po rozšírení legislatívnych tabuliek používame kompaktnejší layout
+           iba na revíznej strane; platobná strana ostáva bez zmeny. */
+        .report-page .header { margin-bottom: 10px; padding-bottom: 5px; }
+        .report-page .brand h1 { font-size: 19px; }
+        .report-page .brand .sub { font-size: 7px; line-height: 1.2; }
+        .report-page .report-type { font-size: 12px; line-height: 1.15; }
+        .report-page .report-subtitle { font-size: 6.5px; line-height: 1.18; margin-top: 2px; }
+        .report-page .report-no { font-size: 9px; margin-top: 3px; padding: 1px 6px; }
+
+        .report-page .info-grid { gap: 7px; margin-bottom: 5px; }
+        .report-page .box { padding: 5px 6px; }
+        .report-page .box-title { font-size: 9.5px; margin-bottom: 3px; padding-bottom: 2px; }
+        .report-page .row-item { margin-bottom: 1px; font-size: 8.5px; line-height: 1.15; }
+
+        .report-page .section-header { padding: 2px 6px; font-size: 8.5px; margin-top: 4px; }
+        .report-page .data-table { margin-top: 3px; font-size: 8px; line-height: 1.12; }
+        .report-page .data-table th,
+        .report-page .data-table td { padding: 2px 4px; }
+
+        .report-page .section-2-container { height: 92px; margin-top: 3px; gap: 7px; }
+        .report-page .vtz-box { padding: 4px; font-size: 8px; }
+        .report-page .conclusion-text { font-size: 9px; line-height: 1.22; margin-top: 3px; }
+
+        .report-page .footer-area {
+            margin-top: auto;
+            padding-bottom: 0;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 20;
+        }
+        .report-page .status-box {
+            margin: 2mm auto 2px auto;
+            padding: 4px;
+            font-size: 8.5px;
+            width: 92%;
+        }
+        .report-page .signatures {
+            height: 46px;
+            min-height: 46px;
+            margin-top: 1px;
+            align-items: flex-end;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .report-page .sig-box { font-size: 8px; min-height: 44px; }
+        .report-page .sig-canvas-container { height: 34px; }
+        .report-page .sig-line { margin-top: 1px; padding-top: 1px; }
+        .report-page .tech-sig-img {
+            width: 40mm !important;
+            height: 40mm !important;
+            right: -1mm;
+            bottom: -3mm;
         }
 
         /* QR Page */
@@ -478,7 +535,7 @@
     <section class="preview-scroll-wrapper">
         <div class="preview-container" id="printable-content">
             <!-- STRANA 1 -->
-            <div class="a4-page">
+            <div class="a4-page report-page">
                 <div class="header">
                     <div class="brand">
                         <h1>SPEKTRA <span>INSTALL</span></h1>
