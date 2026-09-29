@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 
 const html = fs.readFileSync(path.join(__dirname, '../rs2-app.html'), 'utf8');
 const start = html.indexOf('    const LABEL_FIELDS = [');
-const end = html.indexOf('    function addVaillantGroupDetails(', start);
+const end = html.indexOf('    function positionedOcrText(', start);
 assert(start >= 0 && end > start);
 
 const scope = vm.createContext({ console, Date });
