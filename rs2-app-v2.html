@@ -2070,7 +2070,8 @@
         ocrPassName: '', ocrPassIndex: 0, workerStatus: '', tesseractCdn: '',
         stream: null, barcodeTimer: null, liveBarcodeBusy: false, liveCodes: [],
         cameraDevices: [], currentCameraId: '', liveFrameReady: false, liveFrameStats: null,
-        paddle: null, paddlePromise: null, paddleModuleUrl: '' };
+        paddle: null, paddlePromise: null, paddleModuleUrl: '', paddleRetryAt: 0, paddleUnavailableReason: '',
+        lastCaptureSource: '' };
     let lastLabelOcrText = '';
     const byId = id => document.getElementById(id);
     const foldLabel = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -2717,16 +2718,13 @@
     }
     function showLabelScanModal() { byId('label-scan-modal').style.display = 'flex'; }
 
-    function liveScanCropCanvas(maxLongSide = 1800) {
+    function liveScanSourceRect() {
         const video = byId('live-scan-video');
-        if (!video || !video.videoWidth || !video.videoHeight) return null;
-
-        // The visible guide frame is left 8%, top 30%, width 84%, height 40%.
-        // object-fit:cover may crop the camera stream; translate the guide box
-        // back into source-video coordinates before extracting pixels.
         const view = byId('live-scan-view');
+        if (!video || !view || !video.videoWidth || !video.videoHeight) return null;
+
         const vw = video.videoWidth, vh = video.videoHeight;
-        const cw = view.clientWidth, ch = view.clientHeight;
+        const cw = Math.max(1, view.clientWidth), ch = Math.max(1, view.clientHeight);
         const scale = Math.max(cw / vw, ch / vh);
         const renderedW = vw * scale, renderedH = vh * scale;
         const cropX = (renderedW - cw) / 2, cropY = (renderedH - ch) / 2;
@@ -2738,14 +2736,92 @@
         sy = Math.max(0, Math.min(vh - 1, sy));
         sw = Math.max(1, Math.min(vw - sx, sw));
         sh = Math.max(1, Math.min(vh - sy, sh));
+        return { sx, sy, sw, sh, vw, vh };
+    }
 
-        const resize = Math.min(1, maxLongSide / Math.max(sw, sh));
-        const out = newCanvas(sw * resize, sh * resize);
+    function liveScanCropCanvas(maxLongSide = 1800) {
+        const video = byId('live-scan-video');
+        const r = liveScanSourceRect();
+        if (!video || !r) return null;
+        const resize = Math.min(1, maxLongSide / Math.max(r.sw, r.sh));
+        const out = newCanvas(r.sw * resize, r.sh * resize);
         const ctx = out.getContext('2d');
         ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height);
         ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, out.width, out.height);
+        ctx.drawImage(video, r.sx, r.sy, r.sw, r.sh, 0, 0, out.width, out.height);
+        scanState.lastCaptureSource = 'video '+r.vw+'×'+r.vh;
         return out;
+    }
+
+    function mapVideoRectToStill(rect, stillWidth, stillHeight) {
+        const videoAspect = rect.vw / rect.vh;
+        const stillAspect = stillWidth / stillHeight;
+        let visibleX = 0, visibleY = 0, visibleW = stillWidth, visibleH = stillHeight;
+        if (stillAspect > videoAspect) {
+            visibleW = stillHeight * videoAspect;
+            visibleX = (stillWidth - visibleW) / 2;
+        } else if (stillAspect < videoAspect) {
+            visibleH = stillWidth / videoAspect;
+            visibleY = (stillHeight - visibleH) / 2;
+        }
+        let sx = visibleX + (rect.sx / rect.vw) * visibleW;
+        let sy = visibleY + (rect.sy / rect.vh) * visibleH;
+        let sw = (rect.sw / rect.vw) * visibleW;
+        let sh = (rect.sh / rect.vh) * visibleH;
+        const mx = sw * .04, my = sh * .14;
+        sx -= mx; sy -= my; sw += mx * 2; sh += my * 2;
+        sx = Math.max(0, Math.min(stillWidth - 1, sx));
+        sy = Math.max(0, Math.min(stillHeight - 1, sy));
+        sw = Math.max(1, Math.min(stillWidth - sx, sw));
+        sh = Math.max(1, Math.min(stillHeight - sy, sh));
+        return { sx, sy, sw, sh };
+    }
+
+    async function decodeImageBlob(blob) {
+        if (typeof createImageBitmap === 'function') {
+            const bitmap = await createImageBitmap(blob);
+            return { image: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close?.() };
+        }
+        const url = URL.createObjectURL(blob);
+        try {
+            const image = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Fotografiu zo senzora sa nepodarilo dekódovať.'));
+                img.src = url;
+            });
+            return { image, width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, close: () => {} };
+        } finally { URL.revokeObjectURL(url); }
+    }
+
+    async function captureHighResolutionLabelCrop() {
+        const rect = liveScanSourceRect();
+        const track = scanState.stream?.getVideoTracks?.()[0];
+        if (!rect || !track || typeof ImageCapture !== 'function') return null;
+        try {
+            const capture = new ImageCapture(track);
+            const started = performance.now();
+            const blob = await limitTime(capture.takePhoto(), 7000, 'Foto zo senzora prekročilo časový limit.');
+            const decoded = await decodeImageBlob(blob);
+            try {
+                if (!decoded.width || !decoded.height) return null;
+                const crop = mapVideoRectToStill(rect, decoded.width, decoded.height);
+                const resize = Math.min(1, 3200 / Math.max(crop.sw, crop.sh),
+                    Math.sqrt(7_000_000 / Math.max(1, crop.sw * crop.sh)));
+                const out = newCanvas(crop.sw * resize, crop.sh * resize);
+                const ctx = out.getContext('2d');
+                ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
+                ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(decoded.image, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, out.width, out.height);
+                scanState.lastCaptureSource = 'senzor '+decoded.width+'×'+decoded.height;
+                scanState.log.push('Vysoké rozlíšenie: senzor '+decoded.width+'×'+decoded.height+
+                    ', výrez '+out.width+'×'+out.height+' px za '+Math.round(performance.now()-started)+' ms.');
+                return out;
+            } finally { decoded.close(); }
+        } catch (error) {
+            scanState.log.push('Vysoké rozlíšenie nedostupné: '+(error?.message||error)+'. Používam video frame.');
+            return null;
+        }
     }
 
     async function scanLiveBarcodeFrame() {
@@ -2886,8 +2962,8 @@
         if(hint) hint.textContent='Pripájam kameru…';
 
         const videoConstraints=deviceId
-            ? { deviceId:{exact:deviceId}, width:{ideal:1920}, height:{ideal:1080} }
-            : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} };
+            ? { deviceId:{exact:deviceId}, width:{ideal:3840}, height:{ideal:2160} }
+            : { facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2160} };
 
         const stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:false});
         scanState.stream=stream;
@@ -2896,6 +2972,22 @@
         await waitForLiveVideo(video,7000);
 
         const track=stream.getVideoTracks()[0];
+        try {
+            const caps = track?.getCapabilities?.() || {};
+            const requested = {};
+            if (caps.width?.max) requested.width = { ideal: Math.min(3840, caps.width.max) };
+            if (caps.height?.max) requested.height = { ideal: Math.min(2160, caps.height.max) };
+            const advanced = {};
+            if (Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) advanced.focusMode = 'continuous';
+            const next = { ...requested };
+            if (Object.keys(advanced).length) next.advanced = [advanced];
+            if (Object.keys(next).length) {
+                await track.applyConstraints(next);
+                await new Promise(resolve => setTimeout(resolve, 180));
+            }
+        } catch (constraintError) {
+            scanState.log.push('Kamera high-res/focus constraints: '+(constraintError?.message||constraintError));
+        }
         const settings=track?.getSettings?.() || {};
         scanState.currentCameraId=String(settings.deviceId || deviceId || '');
         const devices=await refreshCameraDevices(scanState.currentCameraId);
@@ -2987,7 +3079,9 @@
             if(status) status.textContent='Najprv počkajte, kým kamera zobrazí reálny obraz.';
             return;
         }
-        const canvas = liveScanCropCanvas(1900);
+        const existingLog = Array.isArray(scanState.log) ? scanState.log.slice(-6) : [];
+        let canvas = await captureHighResolutionLabelCrop();
+        if (!canvas) canvas = liveScanCropCanvas(2200);
         if (!canvas) return;
         const liveCodes = scanState.liveCodes.slice();
         stopLiveLabelCamera();
@@ -2995,7 +3089,9 @@
         scanState.image = canvas;
         scanState.crop = null;
         scanState.candidates = [];
-        scanState.log = ['Živý skener: OCR iba zo stredového rámčeka '+canvas.width+'×'+canvas.height+' px.'];
+        scanState.log = existingLog.concat([
+            'Živý skener: OCR zo stredového rámčeka '+canvas.width+'×'+canvas.height+' px ('+(scanState.lastCaptureSource||'kamera')+').'
+        ]);
         lastLabelOcrText = '';
         byId('label-raw-text').value = '';
         byId('label-review').hidden = true;
@@ -3200,6 +3296,10 @@
     async function loadPaddleOcrEngine() {
         if (scanState.paddle) return scanState.paddle;
         if (scanState.paddlePromise) return scanState.paddlePromise;
+        if (Date.now() < Number(scanState.paddleRetryAt || 0)) {
+            throw new Error('PaddleOCR je po chybe siete dočasne preskočený'+
+                (scanState.paddleUnavailableReason ? ': '+scanState.paddleUnavailableReason : '.'));
+        }
 
         scanState.paddlePromise = (async () => {
             const moduleUrls = [
@@ -3239,6 +3339,8 @@
             return engine;
         })().catch(error => {
             scanState.paddlePromise = null;
+            scanState.paddleUnavailableReason = String(error?.message || error || 'chyba načítania');
+            scanState.paddleRetryAt = Date.now() + 10 * 60 * 1000;
             throw error;
         });
         return scanState.paddlePromise;
@@ -3568,9 +3670,26 @@
             let totalTextChars = String(first?.text || '').trim().length;
             let oriented = base;
 
+            let second = null;
             if (totalTextChars < 12 || !rankLabelCandidates(scanState.candidates).serial) {
-                const second = await recognize(processedLabelCanvas(base, 'local'), 'Lokálny kontrast – nerovnomerné svetlo', 6, 0, false, '', true);
+                second = await recognize(processedLabelCanvas(base, 'local'), 'Lokálny kontrast – nerovnomerné svetlo', 6, 0, false, '', true);
                 totalTextChars += String(second?.text || '').trim().length;
+            }
+
+            const afterTwo = rankLabelCandidates(scanState.candidates);
+            const hasAnyIdentityAfterTwo = ['manufacturer','model','serial'].some(k => !!afterTwo[k]);
+            const bestFullPassConfidence = Math.max(Number(first?.confidence || 0), Number(second?.confidence || 0));
+            if (totalTextChars >= 12 && totalTextChars < 35 && !hasAnyIdentityAfterTwo && bestFullPassConfidence < 50) {
+                if (!codes.length) {
+                    setOcrProgress(86, 'Text je slabý – kontrolujem ešte čiarový / QR kód…');
+                    const quickCodes = await wait(detectBarcodes(base, true)); active();
+                    scanState.candidates.push(...barcodeCandidates(quickCodes));
+                    scanState.log.push('Kódy po slabom OCR: '+quickCodes.length);
+                }
+                scanState.log.push('OCR ukončené po 2 prechodoch: slabý text/confidence – ďalšie filtre by pravdepodobne len pridali šum.');
+                setOcrProgress(100, 'Text na štítku je príliš slabý. Priblížte štítok, odstráňte odlesk a odfoťte znova.');
+                showLabelResults(false, initial);
+                return;
             }
 
             // If two good variants return virtually no text, the problem is not
