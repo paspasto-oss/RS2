@@ -1937,7 +1937,8 @@
         ['fuel', 'inp-fuel', 'Palivo / chladivo']
     ];
     const scanState = { image: null, crop: null, drag: null, busy: false, token: 0,
-        worker: null, stop: null, candidates: [], results: {}, log: [] };
+        worker: null, workerPromise: null, stop: null, candidates: [], results: {}, log: [],
+        ocrPassName: '', ocrPassIndex: 0, workerStatus: '', tesseractCdn: '' };
     let lastLabelOcrText = '';
     const byId = id => document.getElementById(id);
     const foldLabel = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -2412,9 +2413,11 @@
         const source = scanState.image, r = scanState.crop || { x: 0, y: 0, width: source.width, height: source.height };
         // Small nameplate text benefits from a larger OCR raster, but keep a hard
         // pixel cap so mobile browsers do not run out of memory.
-        const longSideScale = Math.min(4, 3200 / Math.max(r.width, r.height));
-        const pixelCapScale = Math.sqrt(7_500_000 / Math.max(1, r.width * r.height));
-        const scale = Math.max(1, Math.min(longSideScale, pixelCapScale));
+        const longSideScale = Math.min(3, 2600 / Math.max(r.width, r.height));
+        const pixelCapScale = Math.sqrt(4_500_000 / Math.max(1, r.width * r.height));
+        // Important: allow scale < 1. The previous Math.max(1, …) defeated the
+        // pixel cap and could send a ~10 MP phone image through every OCR pass.
+        const scale = Math.max(0.35, Math.min(longSideScale, pixelCapScale));
         const c = newCanvas(r.width * scale + 32, r.height * scale + 32), ctx = c.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
         ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
@@ -2582,7 +2585,11 @@
     }
     async function loadScanLibrary(symbol, paths, timeout) {
         let last;
-        for (const path of paths) { try { await loadScanScript(path, symbol, timeout); return; } catch (error) { last = error; } }
+        if (window[symbol]) return '';
+        for (const path of paths) {
+            try { await loadScanScript(path, symbol, timeout); return path; }
+            catch (error) { last = error; }
+        }
         throw last;
     }
     function limitTime(promise, milliseconds, message) {
@@ -2705,9 +2712,14 @@
                 image.onerror = () => reject(new Error('Tento obrázok sa nedá otvoriť. Použite JPG, PNG alebo WebP; HEIC podľa podpory prehliadača.'));
                 image.src = url;
             });
-            const scale = Math.min(1, 3600 / Math.max(img.naturalWidth, img.naturalHeight));
+            // Full phone photos can exceed 10–20 MP. Tesseract gets slower and
+            // less stable on such canvases; 2400 px is sufficient for the first
+            // whole-label pass, while focused rows are upscaled separately.
+            const scale = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
             const canvas = newCanvas(img.naturalWidth * scale, img.naturalHeight * scale), ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             return canvas;
         } finally { URL.revokeObjectURL(url); }
     }
@@ -2716,6 +2728,7 @@
         scanState.token++;
         if (scanState.stop) scanState.stop(new Error('Zastavené používateľom.'));
         if (scanState.worker) { Promise.resolve(scanState.worker.terminate()).catch(() => {}); scanState.worker = null; }
+        scanState.workerPromise = null;
         scanBusy(false);
         if (scanState.candidates.length) showLabelResults(false);
         byId('device-scan-status').textContent = 'Rozpoznávanie zastavené. Údaje môžete skontrolovať alebo načítať znova.';
@@ -2736,12 +2749,46 @@
             if (token === scanState.token) { scanBusy(false); scanMessage(error.message); setOcrProgress(0, 'Fotografiu sa nepodarilo načítať.'); }
         }
     };
+    function workerStageText(status) {
+        const map = {
+            'loading tesseract core': 'Načítavam OCR jadro…',
+            'loaded tesseract core': 'OCR jadro načítané.',
+            'initializing tesseract': 'Inicializujem OCR…',
+            'initialized tesseract': 'OCR inicializované.',
+            'loading language traineddata': 'Načítavam jazykové dáta…',
+            'loaded language traineddata': 'Jazykové dáta načítané.',
+            'initializing api': 'Pripravujem OCR API…',
+            'initialized api': 'OCR je pripravené.'
+        };
+        return map[status] || status || '';
+    }
+
+    async function syntheticOcrSelfTest(worker, wait, active) {
+        const canvas = newCanvas(1100, 170), ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 42px Arial';
+        ctx.fillText('VAILLANT  SERIAL  21261800100215303130283346N7', 25, 95);
+        await wait(worker.setParameters({
+            tessedit_pageseg_mode: '7',
+            tessedit_char_whitelist: '',
+            preserve_interword_spaces: '1',
+            user_defined_dpi: '300'
+        }));
+        active();
+        const started = performance.now();
+        const ret = await wait(limitTime(worker.recognize(canvas), 15000, 'Interný test OCR prekročil časový limit.'));
+        active();
+        const text = String(ret?.data?.text || '').trim();
+        scanState.log.push('Interný OCR test: '+Math.round(performance.now()-started)+' ms, '+text.length+' znakov');
+        return /VAILLANT/i.test(text) && /212618/.test(text);
+    }
+
     async function runLabelScan() {
         if (!scanState.image || scanState.busy) return;
         const token = ++scanState.token, initial = Object.fromEntries(LABEL_FIELDS.map(([key, id]) => [key, byId(id).value]));
         scanBusy(true); scanState.candidates = []; scanState.log = []; lastLabelOcrText = '';
         byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none';
-        let worker, passIndex = 0, passName = '', workerFailure, aborted = false;
+        let worker, passIndex = 0, passName = '', aborted = false;
         const scanLayouts = [];
         const stopped = new Promise((_, reject) => { scanState.stop = reject; });
         // A rejection handler also covers cancellation between asynchronous steps.
@@ -2753,24 +2800,64 @@
             setOcrProgress(5, 'Hľadám údaje v čiarovom alebo QR kóde…');
             const codes = await wait(detectBarcodes(base)); active();
             scanState.candidates.push(...barcodeCandidates(codes));
-            setOcrProgress(10, 'Načítavam rozpoznávanie textu. Pri prvom použití je potrebný internet…');
-            await wait(loadScanLibrary('Tesseract', [
-                'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js',
-                'https://unpkg.com/tesseract.js@7.0.0/dist/tesseract.min.js'
-            ])); active();
-            const workerError = new Promise((_, reject) => { workerFailure = reject; }); workerError.catch(() => {});
-            const creation = Tesseract.createWorker('eng', 1, {
-                logger: m => {
-                    if (token !== scanState.token) return;
-                    if (m.status === 'recognizing text') setOcrProgress(Math.min(90, 18 + passIndex * 8 + (m.progress || 0) * 7), passName + ' – ' + Math.round((m.progress || 0) * 100) + ' %');
-                }, errorHandler: error => workerFailure(new Error(String(error)))
-            }, { load_system_dawg: '0', load_freq_dawg: '0' });
-            creation.then(w => { if (aborted || token !== scanState.token) w.terminate().catch(() => {}); }).catch(() => {});
-            worker = await wait(limitTime(Promise.race([creation, workerError]), 90000, 'Rozpoznávanie sa nenačítalo. Skontrolujte internet a skúste znova.'));
-            active(); scanState.worker = worker;
-            const recognize = async (canvas, name, psm = 6, threshold = 0, autoRotate = false, regionField = '') => {
+            setOcrProgress(10, scanState.worker ? 'OCR engine je pripravený.' : 'Načítavam OCR engine. Pri prvom použití je potrebný internet…');
+            if (!scanState.worker) {
+                const loadedFrom = await wait(loadScanLibrary('Tesseract', [
+                    'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js',
+                    'https://unpkg.com/tesseract.js@7.0.0/dist/tesseract.min.js'
+                ], 18000)); active();
+
+                if (loadedFrom) scanState.tesseractCdn = loadedFrom.includes('unpkg.com') ? 'unpkg' : 'jsdelivr';
+                if (!scanState.tesseractCdn) scanState.tesseractCdn = 'jsdelivr';
+
+                const cdn = scanState.tesseractCdn;
+                const workerPath = cdn === 'unpkg'
+                    ? 'https://unpkg.com/tesseract.js@7.0.0/dist/worker.min.js'
+                    : 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js';
+                const corePath = cdn === 'unpkg'
+                    ? 'https://unpkg.com/tesseract.js-core@7.0.0'
+                    : 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0';
+                const langPath = cdn === 'unpkg'
+                    ? 'https://unpkg.com/@tesseract.js-data/eng@1.0.0/4.0.0_best_int'
+                    : 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int';
+
+                const initStarted = performance.now();
+                const creation = Tesseract.createWorker('eng', 1, {
+                    workerPath, corePath, langPath,
+                    logger: m => {
+                        if (!scanState.busy) return;
+                        if (m.status && m.status !== scanState.workerStatus) {
+                            scanState.workerStatus = m.status;
+                            scanState.log.push('Tesseract: ' + m.status);
+                        }
+                        if (m.status === 'recognizing text') {
+                            setOcrProgress(Math.min(90, 18 + scanState.ocrPassIndex * 8 + (m.progress || 0) * 7),
+                                (scanState.ocrPassName || 'OCR') + ' – ' + Math.round((m.progress || 0) * 100) + ' %');
+                        } else if (m.status) {
+                            const stage = workerStageText(m.status);
+                            if (stage) setOcrProgress(12, stage);
+                        }
+                    },
+                    errorHandler: error => {
+                        scanState.log.push('Tesseract chyba: ' + String(error));
+                        console.error('Tesseract worker error', error);
+                    }
+                }, { load_system_dawg: '0', load_freq_dawg: '0' });
+
+                worker = await wait(limitTime(creation, 45000,
+                    'OCR engine sa nenačítal do 45 s. Pravdepodobne je blokovaný CDN/worker/core alebo jazykový súbor.'));
+                active();
+                scanState.worker = worker;
+                scanState.log.push('OCR engine pripravený za '+Math.round(performance.now()-initStarted)+' ms cez '+cdn+'.');
+            } else {
+                worker = scanState.worker;
+                scanState.log.push('Použitý už načítaný OCR worker.');
+            }
+            const recognize = async (canvas, name, psm = 6, threshold = 0, autoRotate = false, regionField = '', needLayout = false) => {
                 active(); passName = name;
+                scanState.ocrPassName = name; scanState.ocrPassIndex = passIndex;
                 setOcrProgress(Math.min(88, 18 + passIndex * 8), name + '…');
+                const started = performance.now();
 
                 const params = {
                     tessedit_pageseg_mode: String(psm),
@@ -2786,11 +2873,15 @@
                 else if (regionField === 'model') params.tessedit_char_whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-./_()+ ';
 
                 await wait(worker.setParameters(params)); active();
-                const result = await wait(limitTime(Promise.race([
-                    worker.recognize(canvas, { rotateAuto: autoRotate }, { text: true, blocks: true, imageColor: autoRotate }), workerError
-                ]), 60000, 'Čítanie trvá príliš dlho. Orežte fotografiu len na štítok.'));
+                const result = await wait(limitTime(
+                    worker.recognize(canvas, { rotateAuto: autoRotate }, { text: true, blocks: needLayout, imageColor: autoRotate }),
+                    25000,
+                    'Jeden OCR prechod prekročil 25 s. Orežte fotografiu iba na výrobný štítok.'
+                ));
                 active(); const data = result.data, pass = regionField ? 'focused-' + regionField + '-' + passIndex++ : 'pass-' + passIndex++;
-                scanState.log.push(name + ': ' + (data.text?.trim().length || 0) + ' znakov');
+                const elapsed = Math.round(performance.now() - started);
+                scanState.log.push(name + ': ' + elapsed + ' ms, ' + (data.text?.trim().length || 0) + ' znakov, conf ' + Math.round(data.confidence || 0) +
+                    ', ' + canvas.width + '×' + canvas.height);
                 const parsed = parseLabelCandidates(data.text, pass, data.confidence || 0);
                 const positioned = positionedOcrText(data);
                 if (positioned && positioned !== data.text) parsed.push(...parseLabelCandidates(positioned, pass, data.confidence || 0));
@@ -2800,7 +2891,7 @@
                     if (value) parsed.push({ field: regionField, value, strength: 88, evidence: 'Samostatné čítanie riadka pri označení', pass, confidence: data.confidence || 0 });
                 }
                 scanState.candidates.push(...parsed.map(c => ({ ...c, confidence: fieldOcrConfidence(c, data) })));
-                if (!regionField) {
+                if (!regionField && needLayout) {
                     const source = await wait(correctedOcrCanvas(data, canvas)); active();
                     const regions = focusedLabelRegions(data, source);
                     scanLayouts.push(...regions);
@@ -2809,32 +2900,50 @@
                 byId('label-raw-text').value = lastLabelOcrText;
                 return data;
             };
-            // Multi-pass strategy: different segmentation and preprocessing
-            // passes vote on the same fields. Agreement raises confidence;
-            // disagreement stays visible in the review UI.
-            await recognize(base, 'Pôvodná fotografia – riedky text', 11);
+            const scanStarted = performance.now();
+            scanState.log.push('Vstup OCR: '+base.width+'×'+base.height+' px; foto '+scanState.image.width+'×'+scanState.image.height+' px.');
+
+            // Fast-first: do not burn a minute on rotations if Tesseract cannot
+            // see any text in the first two sensible variants.
+            const first = await recognize(base, 'Pôvodná fotografia – riedky text', 11, 0, false, '', true);
+            let totalTextChars = String(first?.text || '').trim().length;
             let oriented = base;
-            await recognize(processedLabelCanvas(base, 'local'), 'Lokálny kontrast – nerovnomerné svetlo', 6);
-            await recognize(processedLabelCanvas(base, 'otsu'), 'Čiernobiele čítanie', 6);
+
+            if (totalTextChars < 12 || !rankLabelCandidates(scanState.candidates).serial) {
+                const second = await recognize(processedLabelCanvas(base, 'local'), 'Lokálny kontrast – nerovnomerné svetlo', 6, 0, false, '', true);
+                totalTextChars += String(second?.text || '').trim().length;
+            }
+
+            // If two good variants return virtually no text, the problem is not
+            // our regex parser. Distinguish OCR-engine failure from a photo/crop
+            // problem with a tiny synthetic self-test and stop early.
+            if (totalTextChars < 12) {
+                let engineOk = false;
+                try { engineOk = await syntheticOcrSelfTest(worker, wait, active); }
+                catch (testError) { scanState.log.push('Interný OCR test zlyhal: '+(testError.message||testError)); }
+
+                if (!codes.length) {
+                    setOcrProgress(82, 'Skúšam ešte čiarový / QR kód…');
+                    const quickCodes = await wait(detectBarcodes(base, true)); active();
+                    scanState.candidates.push(...barcodeCandidates(quickCodes));
+                    scanState.log.push('Kódy po nulovom OCR: '+quickCodes.length);
+                }
+
+                setOcrProgress(100, engineOk
+                    ? 'OCR engine funguje, ale z fotografie neprečítal text. Orežte štítok tesnejšie alebo odfoťte znovu.'
+                    : 'OCR engine neprešiel interným testom. Skontrolujte sieť/CDN alebo blokovanie WebWorker/WASM.');
+                showLabelResults(false, initial);
+                return;
+            }
 
             const identityComplete = () => {
                 const r = rankLabelCandidates(scanState.candidates);
                 return ['manufacturer', 'model', 'serial'].every(k => r[k]?.reliable);
             };
-            const identityScore = () => {
+            const hasIdentityCandidate = () => {
                 const r = rankLabelCandidates(scanState.candidates);
-                return ['manufacturer','model','serial'].reduce((sum,k)=>sum+(r[k]?.reliable?3:r[k]?1:0),0);
+                return ['manufacturer','model','serial'].some(k => !!r[k]);
             };
-
-            // PSM 4 (single column) is useful on classic technical plates but is
-            // skipped when the first passes already agree.
-            if (!identityComplete()) {
-                const before = identityScore();
-                await recognize(processedLabelCanvas(base, 'gamma'), 'Stĺpcové čítanie – zosvetlené tiene', 4);
-                scanState.log.push('Identita po stĺpcovom čítaní: ' + before + ' → ' + identityScore());
-            }
-
-            if (!identityComplete()) await recognize(base, 'Automatické vyrovnanie štítku', 11, 2, true);
 
             const readFocusedRows = async () => {
                 const ranked = rankLabelCandidates(scanState.candidates), chosen = [];
@@ -2843,50 +2952,38 @@
                     const regions = scanLayouts.filter(r => r.field === field && !r.read).sort((a, b) => b.score - a.score);
                     for (const region of regions) {
                         const duplicates = chosen.some(r => r.field === field && Math.abs(r.x - region.x) < 30 && Math.abs(r.y - region.y) < 30);
-                        if (!duplicates && chosen.filter(r => r.field === field).length < 2) chosen.push(region);
+                        if (!duplicates && chosen.filter(r => r.field === field).length < 1) chosen.push(region);
                     }
                 }
                 for (const region of chosen) {
                     region.read = true;
                     const crop = cropOcrRegion(region);
                     const label = region.field === 'serial' ? 'Cielené čítanie výrobného čísla' : region.field === 'model' ? 'Cielené čítanie modelu' : 'Cielené čítanie značky';
-
-                    // PSM 7 treats a focused row as one line, which is ideal for
-                    // model/SN labels. Then confirm with sparse-text PSM 11.
-                    await recognize(processedLabelCanvas(crop, 'local'), label + ' – jeden riadok', 7, 2, true, region.field);
-                    await recognize(processedLabelCanvas(crop, 'contrast'), label + ' – kontrolný prechod', 11, 2, true, region.field);
-
-                    if (region.field === 'model' && !labelMatches(region.label).length && region.label.length <= 85) {
-                        const b = region.anchor, h = Math.max(10, b.y1 - b.y0);
-                        const x = Math.max(0, b.x0 - h * .5), y = Math.max(0, b.y0 - h * .3);
-                        const row = cropOcrRegion({ source: region.source, x, y,
-                            width: Math.min(region.source.width - x, b.x1 - x + h * .5),
-                            height: Math.min(region.source.height - y, b.y1 - y + h * .3) });
-                        await recognize(row, 'Samostatný riadok modelu', 7, 0, false, 'model');
-                    }
+                    await recognize(processedLabelCanvas(crop, 'local'), label, 7, 2, false, region.field, false);
+                    if (performance.now() - scanStarted > 38000) break;
                 }
             };
 
             if (!identityComplete()) await readFocusedRows();
 
-            // Inversion is expensive and often harmful on normal white plates;
-            // use it only when identity fields still disagree/miss.
-            if (!identityComplete()) {
-                await recognize(processedLabelCanvas(base, 'invert-local'), 'Invertované lokálne zvýraznenie', 11);
+            // A third full-image pass is justified only if OCR sees text but the
+            // parser still has no useful identity proposal.
+            if (!identityComplete() && !hasIdentityCandidate() && performance.now() - scanStarted < 30000) {
+                await recognize(processedLabelCanvas(base, 'otsu'), 'Čiernobiele čítanie', 6, 0, false, '', false);
             }
 
-            if (!identityComplete()) {
-                for (const angle of [180, 90, 270]) {
-                    const rotated = rotatedCanvas(base, angle);
-                    const before = rankLabelCandidates(scanState.candidates);
-                    await recognize(rotated, 'Otočenie ' + angle + '°', 11, 0, true);
-                    const after = rankLabelCandidates(scanState.candidates);
-                    if (['manufacturer', 'model', 'serial'].some(k => after[k] && (!before[k] || after[k].score > before[k].score))) oriented = rotated;
-                    if (identityComplete()) break;
+            // Auto-rotation is one final bounded attempt. We deliberately removed
+            // the automatic 90/180/270 sweep; manual rotate exists in the UI and
+            // that sweep was the main source of 60–90 s scans.
+            if (!identityComplete() && performance.now() - scanStarted < 34000) {
+                const rotatedData = await recognize(base, 'Automatické vyrovnanie štítku', 11, 2, true, '', true);
+                if (rotatedData?.imageColor) {
+                    try { oriented = await correctedOcrCanvas(rotatedData, base); } catch (_) {}
                 }
-                if (oriented !== base && !identityComplete()) await recognize(processedLabelCanvas(oriented, 'local'), 'Lokálny kontrast otočeného štítku', 6);
                 if (!identityComplete()) await readFocusedRows();
             }
+
+            scanState.log.push('OCR pipeline spolu: '+Math.round(performance.now()-scanStarted)+' ms.');
 
             if (!rankLabelCandidates(scanState.candidates).serial?.reliable && !codes.length) {
                 setOcrProgress(93, 'Doplňujúce čítanie čiarových a QR kódov…');
@@ -2912,8 +3009,11 @@
                 scanMessage((error.message || 'Automatické čítanie zlyhalo.') + ' Fotografia zostala v dokumente. Môžete skúsiť čítanie znova, vložiť text alebo doplniť údaje ručne.');
             }
         } finally {
-            if (worker) { try { await worker.terminate(); } catch (_) {} }
-            if (token === scanState.token) { scanState.worker = null; scanState.stop = null; scanBusy(false); }
+            if (aborted && worker) {
+                try { await worker.terminate(); } catch (_) {}
+                if (scanState.worker === worker) scanState.worker = null;
+            }
+            if (token === scanState.token) { scanState.stop = null; scanBusy(false); }
         }
     }
 
