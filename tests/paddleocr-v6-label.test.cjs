@@ -13,6 +13,11 @@ assert(html.includes("PP-OCRv6_small_rec"), 'PP-OCRv6 small recognizer must be s
 assert(html.includes('async function runTesseractFallback()'), 'Tesseract must remain as an automatic fallback');
 assert(html.includes("await runTesseractFallback()"), 'Primary pipeline must call Tesseract on PaddleOCR failure');
 assert(html.includes("detectBarcodes(base)"), 'Barcode/QR detection must run before OCR');
+assert(html.includes('async function captureHighResolutionLabelCrop()'), 'Live scanner must support high-resolution still capture');
+assert(html.includes('new ImageCapture(track)'), 'High-resolution capture must use ImageCapture when available');
+assert(html.includes("width:{ideal:3840}"), 'Camera should request a high-resolution rear stream');
+assert(html.includes('paddleRetryAt = Date.now() + 10 * 60 * 1000'), 'Broken PaddleOCR fetch must be cooled down before retry');
+assert(html.includes('OCR ukončené po 2 prechodoch'), 'Low-confidence Tesseract fallback must stop before noisy extra passes');
 
 const start = html.indexOf('    const LABEL_FIELDS = [');
 const end = html.indexOf('    function addVaillantGroupDetails(', start);
