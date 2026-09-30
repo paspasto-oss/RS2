@@ -67,4 +67,22 @@ assert.equal(scope.serialStrategyForBrand('Midea').id, 'label-barcode');
 assert.equal(scope.serialStrategyForBrand('Panasonic').id, 'label-barcode');
 assert.equal(scope.serialStrategyForBrand('unknown').id, 'generic');
 
-console.log('PASS: PaddleOCR v6 integration, barcode-first flow, fallback and multi-brand label parsing.');
+// Regression: photographed Vaillant aroTHERM plus nameplate where OCR saw only R290,
+// but Code128 contains the complete factory serial and embedded product code.
+const barcodeStart = html.indexOf('    const VAILLANT_PRODUCT_CODE_MAP =');
+const barcodeEnd = html.indexOf('    function candidateSourceFamily(', barcodeStart);
+assert(barcodeStart >= 0 && barcodeEnd > barcodeStart, 'Vaillant barcode decoder block not found');
+vm.runInContext(html.slice(barcodeStart, barcodeEnd), scope);
+
+const vaillantBarcode = scope.barcodeCandidates([
+  { rawValue: '21254700100234473133064511N1', format: 'code_128' }
+]);
+assert(values(vaillantBarcode, 'serial').includes('21254700100234473133064511N1'), 'Vaillant Code128 serial');
+assert(values(vaillantBarcode, 'manufacturer').includes('Vaillant'), 'Vaillant manufacturer from product code');
+assert(values(vaillantBarcode, 'model').includes('aroTHERM plus VWL 125/6 A 400 V'), 'Vaillant model from product code');
+assert(values(vaillantBarcode, 'year').includes('2025'), 'Vaillant year from serial structure');
+assert(values(vaillantBarcode, 'fuel').includes('R290'), 'Vaillant refrigerant from identified model');
+
+assert(html.includes('top: 18%') && html.includes('height: 64%'), 'Live guide must cover most of the nameplate');
+
+console.log('PASS: PaddleOCR v6 integration, barcode-first flow, Vaillant Code128 decoding, fallback and multi-brand label parsing.');
