@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D60000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial, sans-serif' font-weight='900' font-size='40' fill='white'%3ERS2%3C/text%3E%3C/svg%3E">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RS2 Revízie">
 
@@ -456,8 +457,31 @@
             font-weight:700;
             white-space:nowrap;
         }
+        .live-camera-controls {
+            display:grid;
+            grid-template-columns:auto minmax(140px,1fr);
+            gap:6px 10px;
+            align-items:center;
+            margin-top:8px;
+            font-size:12px;
+        }
+        .live-camera-controls label { font-weight:800; }
+        .live-camera-controls select {
+            width:100%;
+            min-width:0;
+            padding:7px 8px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            background:#fff;
+        }
+        #live-camera-info {
+            grid-column:1 / -1;
+            color:#475569;
+            overflow-wrap:anywhere;
+        }
         .live-scan-toolbar { margin-top:8px; }
         .live-scan-toolbar button:first-child { background:#111827; color:#fff; border-color:#111827; }
+        .live-scan-toolbar button:disabled { opacity:.45; cursor:not-allowed; }
 
         @media(max-width: 540px) { #label-review-fields { grid-template-columns: 1fr; } #label-scan-modal { padding: 6px; } .label-scan-body { padding: 14px; } }
         .ocr-filled { border-color:#22c55e !important; background:#f0fdf4 !important; box-shadow:0 0 0 2px rgba(34,197,94,.12); }
@@ -505,11 +529,16 @@
                     </div>
                     <div class="live-scan-hint" id="live-scan-hint">Zarovnajte kód alebo text do rámčeka</div>
                 </div>
+                <div class="live-camera-controls">
+                    <label for="live-camera-select">Kamera:</label>
+                    <select id="live-camera-select" onchange="changeLiveCamera(this.value)" aria-label="Vybrať kameru"></select>
+                    <span id="live-camera-info">Pripravujem kameru…</span>
+                </div>
                 <div class="scan-toolbar live-scan-toolbar">
-                    <button type="button" data-scan-lock onclick="captureLiveLabelScan()">📸 ZACHYTIŤ A NAČÍTAŤ</button>
+                    <button type="button" id="live-capture-btn" data-scan-lock onclick="captureLiveLabelScan()" disabled>📸 ZACHYTIŤ A NAČÍTAŤ</button>
                     <button type="button" onclick="stopLiveLabelCamera()">Zrušiť kameru</button>
                 </div>
-                <small id="live-barcode-status" class="scan-help">Čiarový/QR kód sa skúša čítať priebežne.</small>
+                <small id="live-barcode-status" class="scan-help">Čakám na obraz z kamery…</small>
             </div>
 
             <div id="label-editor" hidden>
@@ -2039,7 +2068,8 @@
     const scanState = { image: null, crop: null, drag: null, busy: false, token: 0,
         worker: null, workerPromise: null, stop: null, candidates: [], results: {}, log: [],
         ocrPassName: '', ocrPassIndex: 0, workerStatus: '', tesseractCdn: '',
-        stream: null, barcodeTimer: null, liveBarcodeBusy: false, liveCodes: [] };
+        stream: null, barcodeTimer: null, liveBarcodeBusy: false, liveCodes: [],
+        cameraDevices: [], currentCameraId: '', liveFrameReady: false, liveFrameStats: null };
     let lastLabelOcrText = '';
     const byId = id => document.getElementById(id);
     const foldLabel = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -2693,7 +2723,7 @@
     }
 
     async function scanLiveBarcodeFrame() {
-        if (!scanState.stream || scanState.liveBarcodeBusy || scanState.busy) return;
+        if (!scanState.stream || !scanState.liveFrameReady || scanState.liveBarcodeBusy || scanState.busy) return;
         scanState.liveBarcodeBusy = true;
         try {
             const frame = liveScanCropCanvas(1200);
@@ -2723,17 +2753,171 @@
         scanState.barcodeTimer = setInterval(scanLiveBarcodeFrame, 450);
     }
 
-    window.stopLiveLabelCamera = () => {
+    function releaseLiveStream(hidePanel = false) {
         clearInterval(scanState.barcodeTimer); scanState.barcodeTimer = null;
         scanState.liveBarcodeBusy = false;
+        scanState.liveFrameReady = false;
+        const capture = byId('live-capture-btn');
+        if(capture) capture.disabled = true;
         if (scanState.stream) {
             scanState.stream.getTracks().forEach(track => track.stop());
             scanState.stream = null;
         }
         const video = byId('live-scan-video');
         if(video) video.srcObject = null;
-        const panel = byId('live-scan-panel');
-        if(panel) panel.hidden = true;
+        if(hidePanel) {
+            const panel = byId('live-scan-panel');
+            if(panel) panel.hidden = true;
+        }
+    }
+
+    window.stopLiveLabelCamera = () => releaseLiveStream(true);
+
+    function waitForLiveVideo(video, timeout = 7000) {
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            let done = false;
+            const finish = error => {
+                if(done) return;
+                done = true;
+                clearTimeout(timer);
+                video.removeEventListener('loadedmetadata', check);
+                video.removeEventListener('canplay', check);
+                error ? reject(error) : resolve();
+            };
+            const check = () => {
+                if(video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) finish();
+            };
+            const timer = setTimeout(() => finish(new Error('Kamera neposlala video snímku do '+Math.round(timeout/1000)+' s.')), timeout);
+            video.addEventListener('loadedmetadata', check);
+            video.addEventListener('canplay', check);
+            check();
+        });
+    }
+
+    async function measureLiveFrame(video) {
+        const canvas = newCanvas(96, 54), ctx = canvas.getContext('2d', { willReadFrequently:true });
+        const samples = [];
+        for(let pass=0; pass<3; pass++) {
+            await new Promise(resolve => setTimeout(resolve, pass ? 180 : 300));
+            if(!video.videoWidth || !video.videoHeight) continue;
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            const d = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+            let sum=0, sum2=0, n=0;
+            for(let i=0;i<d.length;i+=16) {
+                const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+                sum+=y; sum2+=y*y; n++;
+            }
+            if(n) {
+                const mean=sum/n;
+                const variance=Math.max(0,sum2/n-mean*mean);
+                samples.push({mean, deviation:Math.sqrt(variance)});
+            }
+        }
+        if(!samples.length) return {mean:0,deviation:0,black:true};
+        const mean=samples.reduce((s,x)=>s+x.mean,0)/samples.length;
+        const deviation=samples.reduce((s,x)=>s+x.deviation,0)/samples.length;
+        // A genuinely black/blocked stream has both almost zero luminance and
+        // virtually no variation. A dark boiler-room scene still has texture.
+        return {mean,deviation,black:mean<3.5 && deviation<2.2};
+    }
+
+    async function refreshCameraDevices(activeId = '') {
+        let devices=[];
+        try {
+            devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+        } catch (_) {}
+        scanState.cameraDevices=devices;
+        const select=byId('live-camera-select');
+        if(!select) return devices;
+        select.replaceChildren();
+        devices.forEach((d,index)=>{
+            const option=document.createElement('option');
+            option.value=d.deviceId;
+            option.textContent=d.label || 'Kamera '+(index+1);
+            option.selected=!!activeId && d.deviceId===activeId;
+            select.append(option);
+        });
+        select.disabled=devices.length<2;
+        if(!devices.length) {
+            const option=document.createElement('option');
+            option.value=''; option.textContent='Kamera';
+            select.append(option);
+        }
+        return devices;
+    }
+
+    async function startLiveCamera(deviceId = '', allowAutoSwitch = true) {
+        releaseLiveStream(false);
+        const panel=byId('live-scan-panel');
+        const video=byId('live-scan-video');
+        const info=byId('live-camera-info');
+        const status=byId('live-barcode-status');
+        const hint=byId('live-scan-hint');
+        panel.hidden=false;
+        if(info) info.textContent='Pripájam kameru…';
+        if(status) status.textContent='Čakám na obraz z kamery…';
+        if(hint) hint.textContent='Pripájam kameru…';
+
+        const videoConstraints=deviceId
+            ? { deviceId:{exact:deviceId}, width:{ideal:1920}, height:{ideal:1080} }
+            : { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} };
+
+        const stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:false});
+        scanState.stream=stream;
+        video.srcObject=stream;
+        await video.play();
+        await waitForLiveVideo(video,7000);
+
+        const track=stream.getVideoTracks()[0];
+        const settings=track?.getSettings?.() || {};
+        scanState.currentCameraId=String(settings.deviceId || deviceId || '');
+        const devices=await refreshCameraDevices(scanState.currentCameraId);
+        const activeDevice=devices.find(d=>d.deviceId===scanState.currentCameraId);
+        const label=track?.label || activeDevice?.label || 'kamera';
+        if(info) info.textContent=label+' • '+video.videoWidth+'×'+video.videoHeight;
+
+        const stats=await measureLiveFrame(video);
+        scanState.liveFrameStats=stats;
+        scanState.log.push('Kamera: '+label+', '+video.videoWidth+'×'+video.videoHeight+
+            ', jas '+stats.mean.toFixed(1)+', variácia '+stats.deviation.toFixed(1)+'.');
+
+        if(stats.black) {
+            if(info) info.textContent=label+' • '+video.videoWidth+'×'+video.videoHeight+' • čierny obraz';
+            if(status) status.textContent='⚠️ Kamera je aktívna, ale vracia čierny obraz. Skúšam inú kameru alebo ju vyberte zo zoznamu.';
+            if(hint) hint.textContent='Čierny obraz – vyberte inú kameru';
+
+            if(allowAutoSwitch && devices.length>1) {
+                const alternatives=devices.filter(d=>d.deviceId && d.deviceId!==scanState.currentCameraId);
+                for(const d of alternatives) {
+                    try {
+                        await startLiveCamera(d.deviceId,false);
+                        if(scanState.liveFrameReady) return;
+                    } catch (e) {
+                        scanState.log.push('Alternatívna kamera '+(d.label||d.deviceId)+': '+(e.message||e));
+                    }
+                }
+            }
+            return;
+        }
+
+        scanState.liveFrameReady=true;
+        const capture=byId('live-capture-btn');
+        if(capture) capture.disabled=false;
+        if(status) status.textContent='✅ Kamera pripravená. Čiarový/QR kód sa číta priebežne.';
+        if(hint) hint.textContent='Zarovnajte kód alebo text do rámčeka';
+        startLiveBarcodeLoop();
+    }
+
+    window.changeLiveCamera = async deviceId => {
+        if(scanState.busy || !deviceId) return;
+        try {
+            await startLiveCamera(deviceId,false);
+        } catch(error) {
+            const status=byId('live-barcode-status');
+            if(status) status.textContent='Kameru sa nepodarilo prepnúť: '+(error.message||error);
+            scanState.log.push('Prepnutie kamery: '+(error.name||'chyba')+' '+(error.message||''));
+        }
     };
 
     window.closeLabelScanModal = () => {
@@ -2745,44 +2929,38 @@
     window.openLabelCamera = async () => {
         if (scanState.busy) return;
         showLabelScanModal();
-        stopLiveLabelCamera();
+        releaseLiveStream(false);
         scanState.liveCodes = [];
         const panel = byId('live-scan-panel');
         const hint = byId('live-scan-hint');
         const status = byId('live-barcode-status');
-        if(hint) hint.textContent = 'Zarovnajte kód alebo text do rámčeka';
-        if(status) status.textContent = 'Čiarový/QR kód sa skúša čítať priebežne.';
+        const info = byId('live-camera-info');
+        panel.hidden=false;
+        if(hint) hint.textContent = 'Pripájam kameru…';
+        if(status) status.textContent = 'Čakám na obraz z kamery…';
+        if(info) info.textContent = 'Pripravujem kameru…';
 
         if (!navigator.mediaDevices?.getUserMedia) {
+            if(status) status.textContent='Tento prehliadač nepodporuje živú kameru. Otváram systémový fotoaparát.';
             const input = byId('photo-upload'); input.value=''; input.click();
             return;
         }
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: 'environment' },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                    focusMode: { ideal: 'continuous' }
-                },
-                audio: false
-            });
-            scanState.stream = stream;
-            const video = byId('live-scan-video');
-            video.srcObject = stream;
-            panel.hidden = false;
             byId('label-editor').hidden = true;
-            await video.play();
-            startLiveBarcodeLoop();
+            await startLiveCamera('',true);
         } catch (error) {
             scanState.log.push('Kamera getUserMedia: '+(error?.name||'chyba')+' '+(error?.message||''));
-            if(status) status.textContent = 'Živú kameru sa nepodarilo spustiť. Otváram systémový fotoaparát.';
+            if(status) status.textContent = 'Živú kameru sa nepodarilo spustiť: '+(error?.message||error)+'. Otváram systémový fotoaparát.';
             const input = byId('photo-upload'); input.value=''; input.click();
         }
     };
 
     window.captureLiveLabelScan = async () => {
-        if (!scanState.stream || scanState.busy) return;
+        if (!scanState.stream || !scanState.liveFrameReady || scanState.busy) {
+            const status=byId('live-barcode-status');
+            if(status) status.textContent='Najprv počkajte, kým kamera zobrazí reálny obraz.';
+            return;
+        }
         const canvas = liveScanCropCanvas(1900);
         if (!canvas) return;
         const liveCodes = scanState.liveCodes.slice();
