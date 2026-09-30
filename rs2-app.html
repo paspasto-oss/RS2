@@ -2250,31 +2250,71 @@
         });
         return out;
     }
+    function candidateSourceFamily(pass) {
+        const p = String(pass || '');
+        if (p.startsWith('barcode-')) return 'barcode';
+        if (p === 'text') return 'manual';
+        if (p.includes('focused') || p.includes('row')) return 'focused';
+        return 'ocr';
+    }
+
     function rankLabelCandidates(candidates) {
         const result = {};
         LABEL_FIELDS.forEach(([field]) => {
             const groups = new Map();
-            candidates.filter(c => c.field === field && !(field === 'power' && c.pass !== 'text' && c.confidence < 75) && !(field === 'manufacturer' && c.value.length <= 3 && c.confidence < 70)).forEach(c => {
+            candidates.filter(c =>
+                c.field === field &&
+                !(field === 'power' && c.pass !== 'text' && c.confidence < 75) &&
+                !(field === 'manufacturer' && c.value.length <= 3 && c.confidence < 70)
+            ).forEach(c => {
                 const key = foldLabel(c.value).replace(/\s+/g, '');
                 let group = groups.get(key);
-                if (!group) { group = { value: c.value, passes: new Set(), strength: 0, confidence: 0, evidence: '' }; groups.set(key, group); }
+                if (!group) {
+                    group = { value: c.value, passes: new Set(), families: new Set(), strengths: [], confidences: [], strength: 0, confidence: 0, evidence: '' };
+                    groups.set(key, group);
+                }
                 group.passes.add(c.pass);
+                group.families.add(candidateSourceFamily(c.pass));
+                group.strengths.push(Number(c.strength || 0));
+                group.confidences.push(Number(c.confidence || 0));
                 if (c.strength > group.strength || (c.strength === group.strength && c.confidence > group.confidence)) {
                     group.value = c.value; group.evidence = c.evidence;
                 }
                 group.strength = Math.max(group.strength, c.strength);
                 group.confidence = Math.max(group.confidence, c.confidence);
             });
-            const list = [...groups.values()].map(g => ({ ...g, count: g.passes.size,
-                score: g.strength + Math.min(3, g.passes.size - 1) * 9 + g.confidence * (field === 'serial' ? .15 : .08) - (field === 'serial' ? Math.max(0, 80 - g.confidence) * 1.2 : 0) }))
-                .sort((a, b) => b.score - a.score);
+
+            const list = [...groups.values()].map(g => {
+                const count = g.passes.size;
+                const familyCount = g.families.size;
+                const avgConfidence = g.confidences.reduce((a,b)=>a+b,0) / Math.max(1,g.confidences.length);
+                const agreementBonus = Math.min(4, Math.max(0, count - 1)) * 11;
+                const independentBonus = Math.max(0, familyCount - 1) * 10;
+                const serialPenalty = field === 'serial' ? Math.max(0, 78 - avgConfidence) * 1.15 : 0;
+                return {
+                    ...g, count, familyCount, avgConfidence,
+                    score: g.strength + agreementBonus + independentBonus +
+                        avgConfidence * (field === 'serial' ? .14 : .08) - serialPenalty
+                };
+            }).sort((a, b) => b.score - a.score);
+
             if (!list.length) return;
-            const best = list[0], conflict = list.some((c, i) => i > 0 && c.strength >= 75 &&
-                (c.score >= best.score - 18 || (field === 'serial' && c.confidence >= 30 && similarSerialReadings(c.value, best.value))));
-            result[field] = { ...best, alternatives: list.slice(1, 5), conflict,
-                reliable: best.strength >= 80 && best.confidence >= (field === 'serial' ? 75 : 50) &&
+            const best = list[0];
+            const conflict = list.some((alt, i) => i > 0 && alt.strength >= 75 &&
+                (alt.score >= best.score - 20 ||
+                 (field === 'serial' && alt.avgConfidence >= 30 && similarSerialReadings(alt.value, best.value))));
+
+            const explicitCodeEvidence = best.families.has('barcode');
+            const enoughAgreement = best.count >= 2 || explicitCodeEvidence;
+            result[field] = {
+                ...best,
+                alternatives: list.slice(1, 5),
+                conflict,
+                reliable: best.strength >= 80 &&
+                    best.avgConfidence >= (field === 'serial' ? 72 : 48) &&
                     !(field === 'serial' && /\S+\s+\S+\s+\S+/.test(best.value)) &&
-                    (best.count >= 2 || best.strength === 95) && !conflict };
+                    enoughAgreement && !conflict
+            };
         });
         return addVaillantGroupDetails(result);
     }
@@ -2370,25 +2410,75 @@
     }
     function selectedLabelCanvas() {
         const source = scanState.image, r = scanState.crop || { x: 0, y: 0, width: source.width, height: source.height };
-        const scale = Math.min(3, 2400 / Math.max(r.width, r.height));
+        // Small nameplate text benefits from a larger OCR raster, but keep a hard
+        // pixel cap so mobile browsers do not run out of memory.
+        const longSideScale = Math.min(4, 3200 / Math.max(r.width, r.height));
+        const pixelCapScale = Math.sqrt(7_500_000 / Math.max(1, r.width * r.height));
+        const scale = Math.max(1, Math.min(longSideScale, pixelCapScale));
         const c = newCanvas(r.width * scale + 32, r.height * scale + 32), ctx = c.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(source, r.x, r.y, r.width, r.height, 16, 16, c.width - 32, c.height - 32); return c;
     }
+    function applyLocalContrastPixels(data, width, height, tileSize = 160) {
+        const tilesX = Math.ceil(width / tileSize), tilesY = Math.ceil(height / tileSize);
+        for (let ty = 0; ty < tilesY; ty++) {
+            for (let tx = 0; tx < tilesX; tx++) {
+                const x0 = tx * tileSize, y0 = ty * tileSize;
+                const x1 = Math.min(width, x0 + tileSize), y1 = Math.min(height, y0 + tileSize);
+                let lo = 255, hi = 0;
+                for (let y = y0; y < y1; y++) {
+                    for (let x = x0; x < x1; x++) {
+                        const v = data[(y * width + x) * 4];
+                        if (v < lo) lo = v;
+                        if (v > hi) hi = v;
+                    }
+                }
+                const range = hi - lo;
+                // Blank / almost uniform areas are left alone. Stretching them
+                // would amplify JPEG noise and create false characters.
+                if (range < 18) continue;
+                for (let y = y0; y < y1; y++) {
+                    for (let x = x0; x < x1; x++) {
+                        const idx = (y * width + x) * 4;
+                        const v = Math.max(0, Math.min(255, Math.round((data[idx] - lo) * 255 / range)));
+                        data[idx] = data[idx + 1] = data[idx + 2] = v;
+                    }
+                }
+            }
+        }
+    }
+
     function processedLabelCanvas(source, mode) {
         if (mode === 'original') return source;
         const c = newCanvas(source.width, source.height), ctx = c.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(source, 0, 0);
         const pixels = ctx.getImageData(0, 0, c.width, c.height), d = pixels.data, histogram = new Uint32Array(256);
+
+        // First make a grayscale raster. Gamma variants lift shadowed text,
+        // especially on glossy boiler / heat-pump labels.
+        const useGamma = mode === 'local' || mode === 'gamma' || mode === 'invert-local';
         for (let i = 0; i < d.length; i += 4) {
-            const g = Math.round(.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]);
+            let g = Math.round(.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]);
+            if (useGamma) g = Math.round(Math.sqrt(g / 255) * 255);
             d[i] = d[i + 1] = d[i + 2] = g; histogram[g]++;
         }
+
+        if (mode === 'local' || mode === 'invert-local') {
+            applyLocalContrastPixels(d, c.width, c.height);
+            if (mode === 'invert-local') {
+                for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
+            }
+            ctx.putImageData(pixels, 0, 0);
+            return c;
+        }
+
         const count = d.length / 4;
         let low = 0, high = 255, sum = 0;
         for (; low < 254; low++) { sum += histogram[low]; if (sum >= count * .01) break; }
         sum = 0;
         for (; high > low + 1; high--) { sum += histogram[high]; if (sum >= count * .01) break; }
+
         let threshold = 128;
         if (mode === 'otsu') {
             let total = 0, background = 0, weighted = 0, maxVariance = -1;
@@ -2402,6 +2492,7 @@
                 if (variance > maxVariance) { maxVariance = variance; threshold = t; }
             }
         }
+
         for (let i = 0; i < d.length; i += 4) {
             let g = d[i];
             if (mode === 'otsu') g = g <= threshold ? 0 : 255;
@@ -2680,11 +2771,25 @@
             const recognize = async (canvas, name, psm = 6, threshold = 0, autoRotate = false, regionField = '') => {
                 active(); passName = name;
                 setOcrProgress(Math.min(88, 18 + passIndex * 8), name + '…');
+
+                const params = {
+                    tessedit_pageseg_mode: String(psm),
+                    thresholding_method: String(threshold),
+                    user_defined_dpi: '300',
+                    preserve_interword_spaces: '1',
+                    tessedit_char_whitelist: ''
+                };
+                // Focused S/N reading is deliberately conservative: serials are
+                // identifiers, not prose, so punctuation/alphanumeric whitelist
+                // reduces invented spaces and stray OCR symbols.
+                if (regionField === 'serial') params.tessedit_char_whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-./_';
+                else if (regionField === 'model') params.tessedit_char_whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-./_()+ ';
+
+                await wait(worker.setParameters(params)); active();
                 const result = await wait(limitTime(Promise.race([
-                    worker.recognize(canvas, { tessedit_pageseg_mode: String(psm), thresholding_method: String(threshold),
-                        user_defined_dpi: '300', preserve_interword_spaces: '1', rotateAuto: autoRotate }, { text: true, blocks: true, imageColor: autoRotate }), workerError
+                    worker.recognize(canvas, { rotateAuto: autoRotate }, { text: true, blocks: true, imageColor: autoRotate }), workerError
                 ]), 60000, 'Čítanie trvá príliš dlho. Orežte fotografiu len na štítok.'));
-                active(); const data = result.data, pass = 'pass-' + passIndex++;
+                active(); const data = result.data, pass = regionField ? 'focused-' + regionField + '-' + passIndex++ : 'pass-' + passIndex++;
                 scanState.log.push(name + ': ' + (data.text?.trim().length || 0) + ' znakov');
                 const parsed = parseLabelCandidates(data.text, pass, data.confidence || 0);
                 const positioned = positionedOcrText(data);
@@ -2704,12 +2809,33 @@
                 byId('label-raw-text').value = lastLabelOcrText;
                 return data;
             };
-            await recognize(base, 'Pôvodná fotografia', 11);
+            // Multi-pass strategy: different segmentation and preprocessing
+            // passes vote on the same fields. Agreement raises confidence;
+            // disagreement stays visible in the review UI.
+            await recognize(base, 'Pôvodná fotografia – riedky text', 11);
             let oriented = base;
-            await recognize(processedLabelCanvas(base, 'contrast'), 'Zvýraznenie textu', 6);
+            await recognize(processedLabelCanvas(base, 'local'), 'Lokálny kontrast – nerovnomerné svetlo', 6);
             await recognize(processedLabelCanvas(base, 'otsu'), 'Čiernobiele čítanie', 6);
-            await recognize(base, 'Čítanie pri nerovnom osvetlení', 11, 2, true);
-            const complete = () => { const r = rankLabelCandidates(scanState.candidates); return ['manufacturer', 'model', 'serial'].every(k => r[k]?.reliable); };
+
+            const identityComplete = () => {
+                const r = rankLabelCandidates(scanState.candidates);
+                return ['manufacturer', 'model', 'serial'].every(k => r[k]?.reliable);
+            };
+            const identityScore = () => {
+                const r = rankLabelCandidates(scanState.candidates);
+                return ['manufacturer','model','serial'].reduce((sum,k)=>sum+(r[k]?.reliable?3:r[k]?1:0),0);
+            };
+
+            // PSM 4 (single column) is useful on classic technical plates but is
+            // skipped when the first passes already agree.
+            if (!identityComplete()) {
+                const before = identityScore();
+                await recognize(processedLabelCanvas(base, 'gamma'), 'Stĺpcové čítanie – zosvetlené tiene', 4);
+                scanState.log.push('Identita po stĺpcovom čítaní: ' + before + ' → ' + identityScore());
+            }
+
+            if (!identityComplete()) await recognize(base, 'Automatické vyrovnanie štítku', 11, 2, true);
+
             const readFocusedRows = async () => {
                 const ranked = rankLabelCandidates(scanState.candidates), chosen = [];
                 for (const field of ['serial', 'model', 'manufacturer']) {
@@ -2723,10 +2849,13 @@
                 for (const region of chosen) {
                     region.read = true;
                     const crop = cropOcrRegion(region);
-                    const label = region.field === 'serial' ? 'Čítanie riadka výrobného čísla' : region.field === 'model' ? 'Čítanie riadka modelu' : 'Čítanie značky';
-                    await recognize(crop, label, 6, 2, true, region.field);
-                    await recognize(processedLabelCanvas(crop, 'contrast'), label + ' – kontrola', 11, 2, true, region.field);
-                    // Read a standalone model code without adjacent address/table rows.
+                    const label = region.field === 'serial' ? 'Cielené čítanie výrobného čísla' : region.field === 'model' ? 'Cielené čítanie modelu' : 'Cielené čítanie značky';
+
+                    // PSM 7 treats a focused row as one line, which is ideal for
+                    // model/SN labels. Then confirm with sparse-text PSM 11.
+                    await recognize(processedLabelCanvas(crop, 'local'), label + ' – jeden riadok', 7, 2, true, region.field);
+                    await recognize(processedLabelCanvas(crop, 'contrast'), label + ' – kontrolný prechod', 11, 2, true, region.field);
+
                     if (region.field === 'model' && !labelMatches(region.label).length && region.label.length <= 85) {
                         const b = region.anchor, h = Math.max(10, b.y1 - b.y0);
                         const x = Math.max(0, b.x0 - h * .5), y = Math.max(0, b.y0 - h * .3);
@@ -2737,26 +2866,41 @@
                     }
                 }
             };
-            if (!complete()) await readFocusedRows();
-            if (!complete()) await recognize(processedLabelCanvas(base, 'invert'), 'Svetlé písmo na tmavom štítku', 11);
-            if (!complete()) {
+
+            if (!identityComplete()) await readFocusedRows();
+
+            // Inversion is expensive and often harmful on normal white plates;
+            // use it only when identity fields still disagree/miss.
+            if (!identityComplete()) {
+                await recognize(processedLabelCanvas(base, 'invert-local'), 'Invertované lokálne zvýraznenie', 11);
+            }
+
+            if (!identityComplete()) {
                 for (const angle of [180, 90, 270]) {
                     const rotated = rotatedCanvas(base, angle);
                     const before = rankLabelCandidates(scanState.candidates);
                     await recognize(rotated, 'Otočenie ' + angle + '°', 11, 0, true);
                     const after = rankLabelCandidates(scanState.candidates);
                     if (['manufacturer', 'model', 'serial'].some(k => after[k] && (!before[k] || after[k].score > before[k].score))) oriented = rotated;
-                    if (complete()) break;
+                    if (identityComplete()) break;
                 }
-                if (oriented !== base && !complete()) await recognize(processedLabelCanvas(oriented, 'contrast'), 'Kontrolné čítanie otočeného štítku', 6);
-                if (!complete()) await readFocusedRows();
+                if (oriented !== base && !identityComplete()) await recognize(processedLabelCanvas(oriented, 'local'), 'Lokálny kontrast otočeného štítku', 6);
+                if (!identityComplete()) await readFocusedRows();
             }
+
             if (!rankLabelCandidates(scanState.candidates).serial?.reliable && !codes.length) {
                 setOcrProgress(93, 'Doplňujúce čítanie čiarových a QR kódov…');
-                const moreCodes = await wait(detectBarcodes(oriented, true)); active();
+                let moreCodes = await wait(detectBarcodes(oriented, true)); active();
+                if (!moreCodes.length && oriented !== base) moreCodes = await wait(detectBarcodes(base, true)); active();
                 scanState.candidates.push(...barcodeCandidates(moreCodes));
+                scanState.log.push('Doplňujúce kódy: ' + moreCodes.length);
             }
-            setOcrProgress(100, 'Čítanie dokončené – skontrolujte údaje.');
+            const finalRanked = rankLabelCandidates(scanState.candidates);
+            const agreed = ['manufacturer','model','serial'].filter(k => finalRanked[k]?.reliable).length;
+            setOcrProgress(100, agreed === 3
+                ? 'Čítanie dokončené – výrobca, model a S/N potvrdené viacerými prechodmi.'
+                : 'Čítanie dokončené – neisté údaje skontrolujte pred vložením.');
+            scanState.log.push('Spoľahlivá identita: ' + agreed + '/3');
             showLabelResults(true, initial);
         } catch (error) {
             aborted = true;
