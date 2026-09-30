@@ -83,6 +83,18 @@ assert(values(vaillantBarcode, 'model').includes('aroTHERM plus VWL 125/6 A 400 
 assert(values(vaillantBarcode, 'year').includes('2025'), 'Vaillant year from serial structure');
 assert(values(vaillantBarcode, 'fuel').includes('R290'), 'Vaillant refrigerant from identified model');
 
-assert(html.includes('top: 18%') && html.includes('height: 64%'), 'Live guide must cover most of the nameplate');
+assert(html.includes('top: 8%') && html.includes('height: 84%'), 'Live guide must cover nearly the whole nameplate');
+assert(!html.includes("captureLiveLabelScan();\n            }, 250);"), 'Barcode detection must not auto-capture before the whole label is framed');
+assert(html.includes('function barcodeHumanReadableCrop'), 'Tesseract fallback must support the printed S/N row below a barcode');
+assert(html.includes("'Číslo pod čiarovým kódom'"), 'Tesseract fallback must run the focused barcode-text pass');
 
-console.log('PASS: PaddleOCR v6 integration, barcode-first flow, Vaillant Code128 decoding, fallback and multi-brand label parsing.');
+const vaillantPrintedOnly = scope.parseLabelCandidates(
+  '21254700100234473133064511N1\nR290',
+  'focused-serial-test',
+  93
+);
+assert(values(vaillantPrintedOnly, 'serial').includes('21254700100234473133064511N1'), 'Printed Vaillant serial below barcode');
+assert(values(vaillantPrintedOnly, 'manufacturer').includes('Vaillant'), 'Mapped Vaillant manufacturer from printed serial');
+assert(values(vaillantPrintedOnly, 'model').includes('aroTHERM plus VWL 125/6 A 400 V'), 'Mapped Vaillant model from printed serial');
+
+console.log('PASS: PaddleOCR v6 integration, manual whole-label capture, Vaillant barcode/printed-SN decoding and bounded fallback.');
