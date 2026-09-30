@@ -378,6 +378,87 @@
         .scan-details label { display: block; margin-bottom: 8px; }
         #label-method-log { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
         #label-close, #label-cancel { margin-top: 12px; }
+
+        /* Živý skener štítku / kódu – podobný servisným čítačkám:
+           obraz sa stmaví mimo stredu a OCR/barcode pracuje iba s rámčekom. */
+        #live-scan-panel { margin-top: 14px; }
+        .live-scan-view {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: #050505;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+        }
+        #live-scan-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .live-scan-dim {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(#0009,#0009) top/100% 30% no-repeat,
+                linear-gradient(#0009,#0009) bottom/100% 30% no-repeat,
+                linear-gradient(#0009,#0009) left center/8% 40% no-repeat,
+                linear-gradient(#0009,#0009) right center/8% 40% no-repeat;
+        }
+        .live-scan-frame {
+            position: absolute;
+            left: 8%;
+            top: 30%;
+            width: 84%;
+            height: 40%;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        .live-scan-frame .corner {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-color: #ef4444;
+            border-style: solid;
+            filter: drop-shadow(0 0 2px #000);
+        }
+        .live-scan-frame .c1 { left:0; top:0; border-width:3px 0 0 3px; }
+        .live-scan-frame .c2 { right:0; top:0; border-width:3px 3px 0 0; }
+        .live-scan-frame .c3 { left:0; bottom:0; border-width:0 0 3px 3px; }
+        .live-scan-frame .c4 { right:0; bottom:0; border-width:0 3px 3px 0; }
+        .live-scan-line {
+            position:absolute;
+            left:2%;
+            right:2%;
+            top:50%;
+            height:2px;
+            background:#ef4444;
+            box-shadow:0 0 7px #ef4444;
+            animation:rs2-scan-line 1.7s ease-in-out infinite;
+        }
+        @keyframes rs2-scan-line {
+            0%,100% { transform:translateY(-52px); opacity:.55; }
+            50% { transform:translateY(52px); opacity:1; }
+        }
+        .live-scan-hint {
+            position:absolute;
+            left:50%;
+            bottom:8px;
+            transform:translateX(-50%);
+            max-width:90%;
+            padding:5px 9px;
+            border-radius:999px;
+            background:#000a;
+            color:#fff;
+            font-size:11px;
+            font-weight:700;
+            white-space:nowrap;
+        }
+        .live-scan-toolbar { margin-top:8px; }
+        .live-scan-toolbar button:first-child { background:#111827; color:#fff; border-color:#111827; }
+
         @media(max-width: 540px) { #label-review-fields { grid-template-columns: 1fr; } #label-scan-modal { padding: 6px; } .label-scan-body { padding: 14px; } }
         .ocr-filled { border-color:#22c55e !important; background:#f0fdf4 !important; box-shadow:0 0 0 2px rgba(34,197,94,.12); }
 
@@ -409,9 +490,28 @@
                 Odfoťte ostrý štítok bez odlesku. Po načítaní môžete prstom alebo myšou označiť len štítok a čítanie zopakovať. Pri prvom použití je potrebný internet na načítanie rozpoznávania; fotografia sa spracúva v tomto prehliadači.
             </div>
             <div class="label-scan-actions">
-                <button type="button" class="btn-label-camera" data-scan-lock onclick="openLabelCamera('startup')">📸 ODFOTIŤ ŠTÍTOK</button>
+                <button type="button" class="btn-label-camera" data-scan-lock onclick="openLabelCamera('startup')">📷 SPUSTIŤ SKENER ŠTÍTKU</button>
                 <button type="button" class="btn-label-skip" data-scan-lock onclick="openLabelGallery()">Vybrať fotografiu zo súborov</button>
             </div>
+
+            <div id="live-scan-panel" hidden>
+                <p class="scan-help">Priblížte sa k štítku a zarovnajte <strong>model / S/N / čiarový kód</strong> do rámčeka. Skenuje sa iba stredná oblasť, nie celá fotografia.</p>
+                <div class="live-scan-view" id="live-scan-view">
+                    <video id="live-scan-video" autoplay playsinline muted></video>
+                    <div class="live-scan-dim"></div>
+                    <div class="live-scan-frame" aria-hidden="true">
+                        <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+                        <div class="live-scan-line"></div>
+                    </div>
+                    <div class="live-scan-hint" id="live-scan-hint">Zarovnajte kód alebo text do rámčeka</div>
+                </div>
+                <div class="scan-toolbar live-scan-toolbar">
+                    <button type="button" data-scan-lock onclick="captureLiveLabelScan()">📸 ZACHYTIŤ A NAČÍTAŤ</button>
+                    <button type="button" onclick="stopLiveLabelCamera()">Zrušiť kameru</button>
+                </div>
+                <small id="live-barcode-status" class="scan-help">Čiarový/QR kód sa skúša čítať priebežne.</small>
+            </div>
+
             <div id="label-editor" hidden>
                 <p class="scan-help">Ťahaním označte štítok. Potom stlačte „Načítať vybranú oblasť“.</p>
                 <canvas id="label-crop-canvas" aria-label="Fotografia štítku; orezanie myšou alebo dotykom"></canvas>
@@ -1938,7 +2038,8 @@
     ];
     const scanState = { image: null, crop: null, drag: null, busy: false, token: 0,
         worker: null, workerPromise: null, stop: null, candidates: [], results: {}, log: [],
-        ocrPassName: '', ocrPassIndex: 0, workerStatus: '', tesseractCdn: '' };
+        ocrPassName: '', ocrPassIndex: 0, workerStatus: '', tesseractCdn: '',
+        stream: null, barcodeTimer: null, liveBarcodeBusy: false, liveCodes: [] };
     let lastLabelOcrText = '';
     const byId = id => document.getElementById(id);
     const foldLabel = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -2559,13 +2660,155 @@
         byId('label-raw-text').disabled = busy;
     }
     function showLabelScanModal() { byId('label-scan-modal').style.display = 'flex'; }
-    window.closeLabelScanModal = () => { if (!scanState.busy) byId('label-scan-modal').style.display = 'none'; };
-    window.openLabelCamera = () => {
-        if (scanState.busy) return;
-        const input = byId('photo-upload'); input.value = ''; input.click();
+
+    function liveScanCropCanvas(maxLongSide = 1800) {
+        const video = byId('live-scan-video');
+        if (!video || !video.videoWidth || !video.videoHeight) return null;
+
+        // The visible guide frame is left 8%, top 30%, width 84%, height 40%.
+        // object-fit:cover may crop the camera stream; translate the guide box
+        // back into source-video coordinates before extracting pixels.
+        const view = byId('live-scan-view');
+        const vw = video.videoWidth, vh = video.videoHeight;
+        const cw = view.clientWidth, ch = view.clientHeight;
+        const scale = Math.max(cw / vw, ch / vh);
+        const renderedW = vw * scale, renderedH = vh * scale;
+        const cropX = (renderedW - cw) / 2, cropY = (renderedH - ch) / 2;
+
+        const fx = cw * .08, fy = ch * .30, fw = cw * .84, fh = ch * .40;
+        let sx = (fx + cropX) / scale, sy = (fy + cropY) / scale;
+        let sw = fw / scale, sh = fh / scale;
+        sx = Math.max(0, Math.min(vw - 1, sx));
+        sy = Math.max(0, Math.min(vh - 1, sy));
+        sw = Math.max(1, Math.min(vw - sx, sw));
+        sh = Math.max(1, Math.min(vh - sy, sh));
+
+        const resize = Math.min(1, maxLongSide / Math.max(sw, sh));
+        const out = newCanvas(sw * resize, sh * resize);
+        const ctx = out.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height);
+        ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, out.width, out.height);
+        return out;
+    }
+
+    async function scanLiveBarcodeFrame() {
+        if (!scanState.stream || scanState.liveBarcodeBusy || scanState.busy) return;
+        scanState.liveBarcodeBusy = true;
+        try {
+            const frame = liveScanCropCanvas(1200);
+            if (!frame) return;
+            const codes = await detectBarcodes(frame, false);
+            if (!codes.length) return;
+            scanState.liveCodes = codes;
+            const status = byId('live-barcode-status');
+            const hint = byId('live-scan-hint');
+            const value = String(codes[0].rawValue || '').trim();
+            if(status) status.textContent = '✅ Kód rozpoznaný' + (value ? ': ' + value.slice(0,70) : '') + '. Zachytávam štítok…';
+            if(hint) hint.textContent = 'Kód rozpoznaný';
+            // Short delay lets the user see successful detection, then we crop
+            // exactly the guide frame and run OCR on that region only.
+            setTimeout(() => {
+                if (scanState.stream && !scanState.busy) captureLiveLabelScan();
+            }, 250);
+        } catch (_) {
+            // Continuous live decoding is best-effort; OCR capture remains available.
+        } finally {
+            scanState.liveBarcodeBusy = false;
+        }
+    }
+
+    function startLiveBarcodeLoop() {
+        clearInterval(scanState.barcodeTimer);
+        scanState.barcodeTimer = setInterval(scanLiveBarcodeFrame, 450);
+    }
+
+    window.stopLiveLabelCamera = () => {
+        clearInterval(scanState.barcodeTimer); scanState.barcodeTimer = null;
+        scanState.liveBarcodeBusy = false;
+        if (scanState.stream) {
+            scanState.stream.getTracks().forEach(track => track.stop());
+            scanState.stream = null;
+        }
+        const video = byId('live-scan-video');
+        if(video) video.srcObject = null;
+        const panel = byId('live-scan-panel');
+        if(panel) panel.hidden = true;
     };
+
+    window.closeLabelScanModal = () => {
+        if (scanState.busy) return;
+        stopLiveLabelCamera();
+        byId('label-scan-modal').style.display = 'none';
+    };
+
+    window.openLabelCamera = async () => {
+        if (scanState.busy) return;
+        showLabelScanModal();
+        stopLiveLabelCamera();
+        scanState.liveCodes = [];
+        const panel = byId('live-scan-panel');
+        const hint = byId('live-scan-hint');
+        const status = byId('live-barcode-status');
+        if(hint) hint.textContent = 'Zarovnajte kód alebo text do rámčeka';
+        if(status) status.textContent = 'Čiarový/QR kód sa skúša čítať priebežne.';
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+            const input = byId('photo-upload'); input.value=''; input.click();
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    focusMode: { ideal: 'continuous' }
+                },
+                audio: false
+            });
+            scanState.stream = stream;
+            const video = byId('live-scan-video');
+            video.srcObject = stream;
+            panel.hidden = false;
+            byId('label-editor').hidden = true;
+            await video.play();
+            startLiveBarcodeLoop();
+        } catch (error) {
+            scanState.log.push('Kamera getUserMedia: '+(error?.name||'chyba')+' '+(error?.message||''));
+            if(status) status.textContent = 'Živú kameru sa nepodarilo spustiť. Otváram systémový fotoaparát.';
+            const input = byId('photo-upload'); input.value=''; input.click();
+        }
+    };
+
+    window.captureLiveLabelScan = async () => {
+        if (!scanState.stream || scanState.busy) return;
+        const canvas = liveScanCropCanvas(1900);
+        if (!canvas) return;
+        const liveCodes = scanState.liveCodes.slice();
+        stopLiveLabelCamera();
+
+        scanState.image = canvas;
+        scanState.crop = null;
+        scanState.candidates = [];
+        scanState.log = ['Živý skener: OCR iba zo stredového rámčeka '+canvas.width+'×'+canvas.height+' px.'];
+        lastLabelOcrText = '';
+        byId('label-raw-text').value = '';
+        byId('label-review').hidden = true;
+        byId('label-editor').hidden = false;
+        byId('device-photo-preview').src = canvas.toDataURL('image/jpeg', .92);
+        byId('device-photo-preview').style.display = 'block';
+        drawLabelEditor();
+
+        // Preserve code evidence already found by the live scanner. runLabelScan
+        // will also try the code once more on the captured crop.
+        scanState.liveCodes = liveCodes;
+        await runLabelScan();
+    };
+
     window.openLabelGallery = () => {
         if (scanState.busy) return;
+        stopLiveLabelCamera();
         const input = byId('photo-gallery'); input.value = ''; input.click();
     };
     function loadScanScript(url, symbol, timeout = 18000) {
@@ -2736,6 +2979,7 @@
     }
     window.handleDeviceLabelPhoto = async event => {
         const file = event.target.files?.[0]; if (!file || scanState.busy) return;
+        stopLiveLabelCamera();
         showLabelScanModal();
         const token = ++scanState.token; scanBusy(true); byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none'; setOcrProgress(2, 'Načítavam fotografiu…');
         try {
@@ -2786,7 +3030,14 @@
     async function runLabelScan() {
         if (!scanState.image || scanState.busy) return;
         const token = ++scanState.token, initial = Object.fromEntries(LABEL_FIELDS.map(([key, id]) => [key, byId(id).value]));
-        scanBusy(true); scanState.candidates = []; scanState.log = []; lastLabelOcrText = '';
+        scanBusy(true);
+        const liveSeed = barcodeCandidates(scanState.liveCodes || []);
+        scanState.candidates = liveSeed.slice();
+        const preservedLog = Array.isArray(scanState.log) ? scanState.log.slice(-4) : [];
+        scanState.log = preservedLog;
+        if(liveSeed.length) scanState.log.push('Živý skener: '+liveSeed.length+' kandidátov z kódu.');
+        scanState.liveCodes = [];
+        lastLabelOcrText = '';
         byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none';
         let worker, passIndex = 0, passName = '', aborted = false;
         const scanLayouts = [];
