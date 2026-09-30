@@ -403,17 +403,17 @@
             inset: 0;
             pointer-events: none;
             background:
-                linear-gradient(#0009,#0009) top/100% 18% no-repeat,
-                linear-gradient(#0009,#0009) bottom/100% 18% no-repeat,
-                linear-gradient(#0009,#0009) left center/8% 64% no-repeat,
-                linear-gradient(#0009,#0009) right center/8% 64% no-repeat;
+                linear-gradient(#0009,#0009) top/100% 8% no-repeat,
+                linear-gradient(#0009,#0009) bottom/100% 8% no-repeat,
+                linear-gradient(#0009,#0009) left center/5% 84% no-repeat,
+                linear-gradient(#0009,#0009) right center/5% 84% no-repeat;
         }
         .live-scan-frame {
             position: absolute;
-            left: 8%;
-            top: 18%;
-            width: 84%;
-            height: 64%;
+            left: 5%;
+            top: 8%;
+            width: 90%;
+            height: 84%;
             box-sizing: border-box;
             pointer-events: none;
         }
@@ -519,7 +519,7 @@
             </div>
 
             <div id="live-scan-panel" hidden>
-                <p class="scan-help">Priblížte sa k štítku a zarovnajte <strong>model / S/N / čiarový kód</strong> do rámčeka. Skenuje sa iba stredná oblasť, nie celá fotografia.</p>
+                <p class="scan-help">Priblížte sa a držte <strong>celý výrobný štítok</strong> v červenom rámčeku – značka/model hore aj S/N/čiarový kód dole. Kód sa číta priebežne, fotografiu zachytíte tlačidlom.</p>
                 <div class="live-scan-view" id="live-scan-view">
                     <video id="live-scan-video" autoplay playsinline muted></video>
                     <div class="live-scan-dim"></div>
@@ -2316,6 +2316,20 @@
             if (decodeVaillantGroupSerial(raw, groupBrands[0].value))
                 add('serial', raw, 65, 'Samostatný identifikátor vo formáte Vaillant / Protherm – skontrolujte S/N');
         });
+        // Even if BarcodeDetector/ZXing misses the bars, the human-readable
+        // factory S/N printed below them is often clear enough for OCR. For a
+        // serial whose embedded product code is in our verified Vaillant map,
+        // promote the complete identity.
+        for (const m of text.matchAll(/\b\d{20,28}(?:[A-Z]\d{1,2})?\b/g)) {
+            const mapped = decodeMappedVaillantSerial(m[0]);
+            if (!mapped) continue;
+            add('serial', mapped.serial, 114, 'Vaillant S/N prečítané z textu pod čiarovým kódom');
+            add('manufacturer', mapped.manufacturer, 112, 'Výrobca podľa Vaillant produktového kódu ' + mapped.productCode);
+            add('model', mapped.model, 112, 'Model podľa Vaillant produktového kódu ' + mapped.productCode);
+            add('year', mapped.year, 100, 'Rok zo štruktúry Vaillant S/N');
+            add('fuel', mapped.fuel, 100, 'Chladivo identifikovaného modelu');
+        }
+
         const fuelMatch = foldLabel(text).match(/\b(?:R\s*-?\s*(?:290|32|410A|407C|134A|454B|452B|744)|G20|G31|NATURAL GAS|ERDGAS|ZEMNY PLYN|PROPANE|PROPAN|LPG|PELLET|PELETY)\b/);
         const fuel = fuelMatch ? validField('fuel', fuelMatch[0]) : '';
         if (fuel) add('fuel', fuel, 75, 'Palivo alebo chladivo v texte');
@@ -2591,6 +2605,26 @@
         return canvas;
     }
 
+    function barcodeHumanReadableCrop(code, source) {
+        const b = code?.boundingBox;
+        if (!b || !source || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !b.width || !b.height) return null;
+        // Human-readable digits are printed directly below the bars. Start in
+        // the lower half of the detector box and extend below it generously.
+        const marginX = b.width * .07;
+        const sx = Math.max(0, b.x - marginX);
+        const sy = Math.max(0, b.y + b.height * .52);
+        const sw = Math.min(source.width - sx, b.width + marginX * 2);
+        const sh = Math.min(source.height - sy, Math.max(22, b.height * .85));
+        if (sw < 80 || sh < 12) return null;
+        const scale = Math.min(4.5, 2800 / sw, 700 / sh);
+        const out = newCanvas(sw * scale + 24, sh * scale + 24);
+        const ctx = out.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(source, sx, sy, sw, sh, 12, 12, out.width - 24, out.height - 24);
+        return out;
+    }
+
     function newCanvas(width, height) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(width)); c.height = Math.max(1, Math.round(height)); return c; }
     function rotatedCanvas(source, degrees) {
         const swap = degrees % 180 !== 0, c = newCanvas(swap ? source.height : source.width, swap ? source.width : source.height), ctx = c.getContext('2d');
@@ -2760,7 +2794,7 @@
         const renderedW = vw * scale, renderedH = vh * scale;
         const cropX = (renderedW - cw) / 2, cropY = (renderedH - ch) / 2;
 
-        const fx = cw * .08, fy = ch * .18, fw = cw * .84, fh = ch * .64;
+        const fx = cw * .05, fy = ch * .08, fw = cw * .90, fh = ch * .84;
         let sx = (fx + cropX) / scale, sy = (fy + cropY) / scale;
         let sw = fw / scale, sh = fh / scale;
         sx = Math.max(0, Math.min(vw - 1, sx));
@@ -2867,13 +2901,10 @@
             const status = byId('live-barcode-status');
             const hint = byId('live-scan-hint');
             const value = String(codes[0].rawValue || '').trim();
-            if(status) status.textContent = '✅ Kód rozpoznaný' + (value ? ': ' + value.slice(0,70) : '') + '. Zachytávam štítok…';
-            if(hint) hint.textContent = 'Kód rozpoznaný';
-            // Short delay lets the user see successful detection, then we crop
-            // exactly the guide frame and run OCR on that region only.
-            setTimeout(() => {
-                if (scanState.stream && !scanState.busy) captureLiveLabelScan();
-            }, 250);
+            if(status) status.textContent = '✅ Kód rozpoznaný' + (value ? ': ' + value.slice(0,70) : '') + '. Zarovnajte celý štítok a stlačte ZACHYTIŤ A NAČÍTAŤ.';
+            if(hint) hint.textContent = 'Kód rozpoznaný – držte celý štítok v ráme';
+            // Kód je iba dôkaz pre identitu. Nezachytávame automaticky:
+            // používateľ musí mať čas dostať do rámčeka aj značku/model.
         } catch (_) {
             // Continuous live decoding is best-effort; OCR capture remains available.
         } finally {
@@ -3696,6 +3727,21 @@
             };
             const scanStarted = performance.now();
             scanState.log.push('Vstup OCR: '+base.width+'×'+base.height+' px; foto '+scanState.image.width+'×'+scanState.image.height+' px.');
+
+            // If BarcodeDetector found the bars but did not decode a useful S/N,
+            // read only the printed number below the barcode before doing full OCR.
+            if (!rankLabelCandidates(scanState.candidates).serial?.reliable) {
+                for (const code of codes.slice(0,2)) {
+                    const region = barcodeHumanReadableCrop(code, base);
+                    if (!region) continue;
+                    await recognize(processedLabelCanvas(region, 'local'),
+                        'Číslo pod čiarovým kódom', 7, 2, false, 'serial', false);
+                    if (rankLabelCandidates(scanState.candidates).serial?.reliable) {
+                        scanState.log.push('S/N potvrdené z riadku pod čiarovým kódom.');
+                        break;
+                    }
+                }
+            }
 
             // Fast-first: do not burn a minute on rotations if Tesseract cannot
             // see any text in the first two sensible variants.
