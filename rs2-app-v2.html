@@ -403,17 +403,17 @@
             inset: 0;
             pointer-events: none;
             background:
-                linear-gradient(#0009,#0009) top/100% 30% no-repeat,
-                linear-gradient(#0009,#0009) bottom/100% 30% no-repeat,
-                linear-gradient(#0009,#0009) left center/8% 40% no-repeat,
-                linear-gradient(#0009,#0009) right center/8% 40% no-repeat;
+                linear-gradient(#0009,#0009) top/100% 18% no-repeat,
+                linear-gradient(#0009,#0009) bottom/100% 18% no-repeat,
+                linear-gradient(#0009,#0009) left center/8% 64% no-repeat,
+                linear-gradient(#0009,#0009) right center/8% 64% no-repeat;
         }
         .live-scan-frame {
             position: absolute;
             left: 8%;
-            top: 30%;
+            top: 18%;
             width: 84%;
-            height: 40%;
+            height: 64%;
             box-sizing: border-box;
             pointer-events: none;
         }
@@ -2380,6 +2380,27 @@
         const link = document.createElement('a'); link.href = decoded.source; link.target = '_blank'; link.rel = 'noopener noreferrer';
         link.textContent = 'Význam podľa návodu'; target.append(link);
     }
+    const VAILLANT_PRODUCT_CODE_MAP = {
+        '0010023441': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 35/6 A 230 V', fuel:'R290' },
+        '0010023442': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 55/6 A 230 V', fuel:'R290' },
+        '0010023443': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 75/6 A 230 V', fuel:'R290' },
+        '0010023444': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 105/6 A 230 V', fuel:'R290' },
+        '0010023445': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 105/6 A 400 V', fuel:'R290' },
+        '0010023446': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 125/6 A 230 V', fuel:'R290' },
+        '0010023447': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 125/6 A 400 V', fuel:'R290' },
+        '0010031659': { manufacturer:'Vaillant', model:'aroTHERM plus VWL 65/6 A 230 V', fuel:'R290' }
+    };
+    function decodeMappedVaillantSerial(value, now = new Date()) {
+        const serial = String(value || '').trim().replace(/\s/g, '');
+        if (!/^\d{20,28}(?:[A-Z]\d{1,2})?$/.test(serial)) return null;
+        const year = 2000 + Number(serial.slice(2,4));
+        const week = Number(serial.slice(4,6));
+        const productCode = serial.slice(6,16);
+        const product = VAILLANT_PRODUCT_CODE_MAP[productCode];
+        if (!product || year < 2000 || year > now.getFullYear() + 1 || week < 1 || week > 53) return null;
+        return { serial, year:String(year), week, productCode, ...product };
+    }
+
     function barcodeCandidates(values) {
         const out = [];
         values.forEach((entry, index) => {
@@ -2402,7 +2423,17 @@
             // GS1 AI (21), explicitly delimited. EAN/GTIN itself is never an S/N.
             const gs = raw.match(/(?:\(21\)|\u001d21)([A-Za-z0-9._\/-]{1,20})(?=\(|\u001d|$)/);
             if (gs && validField('serial', gs[1])) out.push({ field: 'serial', value: gs[1], strength: 95, evidence: 'GS1: sériové číslo (21)', pass, confidence: 100 });
-            if (!parsed.length && !gs && !/ean|upc/.test(format) && !/^\d{8}$|^\d{12,14}$/.test(raw) && /^[A-Z0-9._\/-]{6,60}$/i.test(raw) && validField('serial', raw)) {
+
+            const mappedVaillant = decodeMappedVaillantSerial(raw);
+            if (mappedVaillant) {
+                out.push(
+                    { field:'serial', value:mappedVaillant.serial, strength:118, evidence:'Vaillant čiarový kód – produkt '+mappedVaillant.productCode, pass, confidence:100 },
+                    { field:'manufacturer', value:mappedVaillant.manufacturer, strength:116, evidence:'Vaillant produktový kód '+mappedVaillant.productCode, pass, confidence:100 },
+                    { field:'model', value:mappedVaillant.model, strength:116, evidence:'Model podľa produktového kódu '+mappedVaillant.productCode, pass, confidence:100 },
+                    { field:'year', value:mappedVaillant.year, strength:104, evidence:'Rok zo štruktúry S/N, týždeň '+mappedVaillant.week, pass, confidence:100 },
+                    { field:'fuel', value:mappedVaillant.fuel, strength:104, evidence:'Chladivo identifikovaného modelu', pass, confidence:100 }
+                );
+            } else if (!parsed.length && !gs && !/ean|upc/.test(format) && !/^\d{8}$|^\d{12,14}$/.test(raw) && /^[A-Z0-9._\/-]{6,60}$/i.test(raw) && validField('serial', raw)) {
                 out.push({ field: 'serial', value: raw, strength: 40, evidence: 'Neoznačený kód – overte, či ide o S/N', pass, confidence: 100 });
             }
         });
@@ -2729,7 +2760,7 @@
         const renderedW = vw * scale, renderedH = vh * scale;
         const cropX = (renderedW - cw) / 2, cropY = (renderedH - ch) / 2;
 
-        const fx = cw * .08, fy = ch * .30, fw = cw * .84, fh = ch * .40;
+        const fx = cw * .08, fy = ch * .18, fw = cw * .84, fh = ch * .64;
         let sx = (fx + cropX) / scale, sy = (fy + cropY) / scale;
         let sw = fw / scale, sh = fh / scale;
         sx = Math.max(0, Math.min(vw - 1, sx));
@@ -3478,7 +3509,9 @@
             codes = await wait(detectBarcodes(base));
             active();
             scanState.candidates.push(...barcodeCandidates(codes));
-            scanState.log.push('Kódy pred OCR: ' + codes.length + '.');
+            scanState.log.push('Kódy pred OCR: ' + codes.length + (codes.length
+                ? ' · ' + codes.slice(0,3).map(code => (code.format||'kód')+': '+String(code.rawValue||'').slice(0,80)).join(' | ')
+                : '') + '.');
 
             setOcrProgress(12, scanState.paddle ? 'PaddleOCR v6 je pripravený.' : 'Načítavam PaddleOCR v6 small – prvé spustenie môže chvíľu trvať…');
             const first = await runPaddlePass(base, 'PaddleOCR v6 – fotografia', 'paddle-v6-original', 20);
@@ -3679,7 +3712,7 @@
             const afterTwo = rankLabelCandidates(scanState.candidates);
             const hasAnyIdentityAfterTwo = ['manufacturer','model','serial'].some(k => !!afterTwo[k]);
             const bestFullPassConfidence = Math.max(Number(first?.confidence || 0), Number(second?.confidence || 0));
-            if (totalTextChars >= 12 && totalTextChars < 35 && !hasAnyIdentityAfterTwo && bestFullPassConfidence < 50) {
+            if (totalTextChars >= 12 && !hasAnyIdentityAfterTwo && bestFullPassConfidence < 60) {
                 if (!codes.length) {
                     setOcrProgress(86, 'Text je slabý – kontrolujem ešte čiarový / QR kód…');
                     const quickCodes = await wait(detectBarcodes(base, true)); active();
