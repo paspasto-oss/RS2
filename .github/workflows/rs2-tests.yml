@@ -1,0 +1,31 @@
+name: RS2 tests
+
+on:
+  pull_request:
+    paths:
+      - 'rs2-app*.html'
+      - 'index.html'
+      - 'tests/**'
+      - '.github/workflows/rs2-tests.yml'
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - 'rs2-app*.html'
+      - 'index.html'
+      - 'tests/**'
+      - '.github/workflows/rs2-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run RS2 regression tests
+        run: |
+          set -e
+          for test_file in tests/*.test.cjs; do
+            echo "==> $test_file"
+            node "$test_file"
+          done
