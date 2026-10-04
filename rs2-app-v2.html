@@ -16,6 +16,8 @@
     <!-- Knižnice -->
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" onload="if(window.render) render()"></script>
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -596,6 +598,7 @@
         <div class="archive-list" id="archive-list-container">
             <div style="text-align:center; padding:20px; color:#666;">Načítavam zoznam správ...</div>
         </div>
+        <button id="archive-more" type="button" onclick="loadMoreArchive()" hidden>Načítať ďalších 30 protokolov</button>
     </div>
 </div>
 
@@ -744,11 +747,13 @@
             </div>
         </div>
         <div class="section-title">Výsledok</div>
+        <div id="inspection-checks"></div>
         <div class="form-group"><label>Nedostatky</label><input type="text" id="inp-notes" placeholder="V čase prehliadky..." oninput="render()"></div>
         <div class="form-group"><label>Umiestnenie / Poznámka</label><textarea id="inp-location-note" rows="2" oninput="render()"></textarea></div>
         <div class="form-group">
             <label>Hodnotenie</label>
             <select id="inp-status" onchange="render()">
+                <option value="pending">Kontrola nedokončená</option>
                 <option value="ok">✅ SPÔSOBILÉ</option>
                 <option value="fail">❌ NESPÔSOBILÉ</option>
             </select>
@@ -878,7 +883,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, query, getDoc, updateDoc, runTransaction, orderBy, documentId, limit, startAfter } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDHX-eHMl0nV_rIKqdHsPNbj13R6yxhAqs",
@@ -896,6 +901,7 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'rs2-v5';
 
     let user = null;
+    let openedArchiveId = null, saveBusy = false;
 
     // RULE 3 - Auth s fallbackom pri chybe tokenu
     const initAuth = async () => {
@@ -947,12 +953,17 @@
     async function updateCloudCounter(newVal) {
         if (!user) return;
         try {
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global_counter'), { value: newVal });
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global_counter');
+            await runTransaction(db, async transaction => {
+                const snapshot = await transaction.get(ref);
+                transaction.set(ref, { value: Math.max(snapshot.data()?.value || 0, newVal) });
+            });
         } catch (e) { console.log("Chyba update counter."); }
     }
     window.updateCloudCounter = updateCloudCounter;
 
     window.saveToCloudArchive = async () => {
+        if (saveBusy) return;
         if (!user) return alert("Počkajte na pripojenie k cloudu.");
         const scenarioDataForRender = currentScenarioData();
         applyScenarioVisibility(scenarioDataForRender);
@@ -981,6 +992,7 @@
             date: document.getElementById('inp-date').value,
             scenario: document.getElementById('inp-scenario').value,
             schemaVersion: 2,
+            checks: window.inspectionChecks || {},
             search: (() => {
                 const normalize = value => String(value || '')
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -1062,8 +1074,20 @@
         };
 
         try {
+            saveBusy = true;
+            const attachments = await window.collectReportAttachments();
+            data.schemaVersion = 3;
+            data.hasAttachments = !!(attachments.photo || attachments.signature);
+            const attachmentRef = doc(db, 'artifacts', appId, 'public', 'data', 'inspection_attachments', docId);
             // ZMENA NA VEREJNÚ CESTU (RULE 1) - aby to všetci videli rovnako
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId), data);
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId);
+            await runTransaction(db, async transaction => {
+                const existing = await transaction.get(ref);
+                if (existing.exists() && openedArchiveId !== docId) throw new Error('duplicate-report');
+                transaction.set(ref, data);
+                transaction.set(attachmentRef, attachments);
+            });
+            openedArchiveId = docId;
             
             // Zároveň aktualizuj globálne počítadlo v cloude
             const m = reportNo.match(/\/(\d+)/);
@@ -1076,10 +1100,18 @@
             toast.textContent = "Uložené do spoločného cloudu ✅";
             toast.style.opacity = "1";
             setTimeout(() => toast.style.opacity = "0", 2000);
-        } catch (e) { alert("Chyba pri ukladaní."); }
+        } catch (e) {
+            console.error('Archive save failed', e);
+            alert(e.message === 'duplicate-report' ? 'Toto číslo protokolu už existuje. Zadajte nové číslo alebo otvorte pôvodný protokol z archívu.' :
+                e.message === 'attachments-too-large' ? 'Prílohy sú príliš veľké. Zmenšite fotografiu a skúste znova. Protokol nebol uložený.' :
+                e.code === 'permission-denied' ? 'Databáza nepovolila uloženie protokolu alebo príloh. Skontrolujte Firebase pravidlá. Protokol nebol uložený.' :
+                'Chyba pri ukladaní. Údaje zostali vo formulári.');
+        }
+        finally { saveBusy = false; }
     };
 
     let archiveRows = [], archiveLoaded = false, archiveRequest = 0, archiveLoadBusy = false;
+    let archiveCursor = null, archiveHasMore = true, archivePageBusy = false;
     window.cancelArchiveRequest = () => { archiveRequest++; };
 
     function normalizeArchiveSearch(value) {
@@ -1140,6 +1172,9 @@
         status.textContent = queryText.trim()
             ? (list.length ? 'Nájdené revízie: ' + list.length : 'Pre „' + queryText.trim() + '“ sa nenašla žiadna uložená revízia.')
             : 'Uložené revízie: ' + list.length;
+        if (archiveHasMore) status.textContent += ' · Vyhľadávanie v načítaných protokoloch; ďalšie načítate tlačidlom dole.';
+        document.getElementById('archive-more').hidden = !archiveHasMore;
+        document.getElementById('archive-more').disabled = archivePageBusy;
 
         for (const item of list) {
             const row = document.createElement('div');
@@ -1201,6 +1236,7 @@
         if (!user) { alert('Počkajte na pripojenie k cloudu a skúste vyhľadanie znova.'); return; }
         const request = ++archiveRequest, userId = user.uid;
         archiveLoaded = false; archiveRows = [];
+        archiveCursor = null; archiveHasMore = true; archivePageBusy = false;
         const searchInput = document.getElementById('archive-search');
         if (searchInput) searchInput.value = typeof search === 'string' ? search : '';
         document.getElementById('archive-modal').style.display = 'flex';
@@ -1208,9 +1244,11 @@
         const status = document.getElementById('archive-search-status');
         status.textContent = 'Načítavam revízie z databázy…';
         try {
-            const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections')));
+            const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'), orderBy(documentId(), 'desc'), limit(30)));
             if (request !== archiveRequest || user?.uid !== userId) return;
             snapshot.forEach(record => archiveRows.push({ ...record.data(), id: record.id }));
+            archiveCursor = snapshot.docs?.at(-1) || null;
+            archiveHasMore = snapshot.size === 30;
             archiveRows.sort((a, b) =>
                 String(b.date || '').localeCompare(String(a.date || '')) ||
                 Number(b.timestamp || 0) - Number(a.timestamp || 0)
@@ -1224,6 +1262,23 @@
         }
     };
 
+    window.loadMoreArchive = async () => {
+        if (!user || archivePageBusy || !archiveHasMore || !archiveCursor) return;
+        const request = archiveRequest, userId = user.uid;
+        archivePageBusy = true; window.filterArchive();
+        try {
+            const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'), orderBy(documentId(), 'desc'), startAfter(archiveCursor), limit(30)));
+            if (request !== archiveRequest || user?.uid !== userId) return;
+            snapshot.forEach(record => { if (!archiveRows.some(row => row.id === record.id)) archiveRows.push({...record.data(), id:record.id}); });
+            archiveCursor = snapshot.docs.at(-1) || archiveCursor;
+            archiveHasMore = snapshot.size === 30;
+        } catch (error) {
+            if (request === archiveRequest) alert('Ďalšie protokoly sa nepodarilo načítať. Skúste znova.');
+        } finally {
+            if (request === archiveRequest) { archivePageBusy = false; window.filterArchive(); }
+        }
+    };
+
     window.loadFromCloud = async (docId, mode = 'existing') => {
         if (!user || archiveLoadBusy) return;
         if (!['existing', 'new'].includes(mode)) return;
@@ -1234,7 +1289,15 @@
             const snapshot = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId));
             if (request !== archiveRequest || user?.uid !== userId) return;
             if (!snapshot.exists()) { alert('Tento protokol už v databáze nie je. Obnovte zoznam.'); return; }
+            let attachments = null;
+            if (mode === 'existing' && snapshot.data().hasAttachments) {
+                const media = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inspection_attachments', docId));
+                if (!media.exists()) throw new Error('missing-attachments');
+                attachments = media.data();
+                if (request !== archiveRequest || user?.uid !== userId) return;
+            }
             const data = snapshot.data(), customer = data.customer || {}, device = data.device || {}, measurements = data.measurements || {}, flue = data.flue || {}, result = data.result || {};
+            window.inspectionChecks = mode === 'new' ? {} : (data.checks || {});
             const set = (id, value) => { document.getElementById(id).value = value == null ? '' : String(value); };
             set('inp-scenario', data.scenario || 'plyn');
             if (!document.getElementById('inp-scenario').value) set('inp-scenario', 'plyn');
@@ -1253,20 +1316,24 @@
             set('inp-price', result.price); document.getElementById('inp-vat-payer').checked = !!result.vat;
             set('inp-location-note', result.locationNote);
             if (mode === 'new') {
+                for (const id of ['co','co2','o2','flue-temp','draft','gas-pressure','gas-tightness','system-pressure','supply-voltage','pe-continuity','insulation-resistance','loop-impedance','rcd-time','refrigerant-charge','refrigerant-pressure','compressor-current','flow','leak-check','flue-type','flue-state','flue-outlet','flue-note']) set('inp-' + id, '');
+                openedArchiveId = null;
                 document.getElementById('inp-date').valueAsDate = new Date();
-                set('inp-notes', ''); set('inp-status', 'ok'); set('inp-invoice', '');
+                set('inp-notes', ''); set('inp-status', 'pending'); set('inp-invoice', '');
                 const count = (parseInt(localStorage.getItem('rev_c_v5')) || 0) + 1;
                 localStorage.setItem('rev_c_v5', count); window.generateNo();
                 await updateCloudCounter(count);
             } else {
+                openedArchiveId = docId;
                 set('inp-date', data.date); set('inp-no', data.reportNo);
                 set('inp-notes', result.notes); set('inp-status', result.status || 'ok'); set('inp-invoice', result.invoice);
             }
             window.resetAttachmentsForArchivedReport();
+            if (attachments) await window.restoreReportAttachments(attachments);
             window.changeScenario(); window.closeArchive();
             document.getElementById('device-scan-status').textContent = mode === 'new'
                 ? 'Nová revízia s údajmi z archívu. Doplňte aktuálne výsledky, fotografiu a podpis.'
-                : 'Obnovené uložené údaje protokolu. Archív neobsahuje fotografiu ani podpis.';
+                : attachments ? 'Obnovený protokol vrátane uložených príloh.' : 'Obnovený starší protokol bez archivovaných príloh.';
         } catch (error) { alert('Protokol sa nepodarilo načítať z databázy. Skúste znova.'); }
         finally { archiveLoadBusy = false; }
     };
@@ -1853,7 +1920,9 @@
         const note = document.getElementById('inp-notes').value;
         document.getElementById('out-notes-text').textContent = note ? note : "V čase prehliadky neboli zistené závady.";
         document.getElementById('out-location-note').textContent = document.getElementById('inp-location-note').value || "—";
-        const status = document.getElementById('inp-status').value;
+        const checkScenario = document.getElementById('inp-scenario').value;
+        const checkStates = (scenarioDataForRender.rows || []).map((_, index) => window.inspectionChecks?.[checkScenario + ':' + index] || '');
+        const status = checkStates.includes('fail') ? 'fail' : checkStates.includes('') ? 'pending' : document.getElementById('inp-status').value;
         const dVal = document.getElementById('inp-date').value;
         const statusBox = document.getElementById('out-status-box');
         const conc = document.getElementById('out-conclusion');
@@ -1893,33 +1962,82 @@
         const total = vat ? base * 1.23 : base;
         const vs = document.getElementById('inp-invoice').value || "";
         if (qr) qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
+        if (status === 'pending') {
+            statusBox.textContent = 'KONTROLA NEDOKONČENÁ';
+            conc.textContent = 'Doplňte výsledky jednotlivých kontrol pred vydaním protokolu.';
+        }
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = vs || "—";
     }
 
-    async function shareAsPDF() {
-        const element = document.getElementById('printable-content');
-        const reportNo = document.getElementById('inp-no').value;
-        const opt = {
-            margin: 0,
-            filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`,
-            html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 794 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-            pagebreak: { mode: ['css', 'legacy'], before: '.a4-page + .a4-page', avoid: ['.a4-page', '.footer-area', '.signatures'] }
-        };
+    async function waitForPdfLibraries() {
+        for (let i = 0; i < 50; i++) {
+            if (window.html2canvas && window.jspdf?.jsPDF) return;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        throw new Error('PDF knižnica sa nenačítala.');
+    }
+
+    async function buildSharePdfBlob() {
+        await waitForPdfLibraries();
+        syncReportLayout();
+        document.body.classList.add('pdf-exporting');
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        const container = document.getElementById('printable-content');
+        const previousTransform = container.style.transform;
+        const previousMarginBottom = container.style.marginBottom;
+        container.style.transform = 'none';
+        container.style.marginBottom = '0';
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
         try {
-            syncReportLayout();
-            document.body.classList.add('pdf-exporting');
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
+            const pages = Array.from(container.querySelectorAll(':scope > .a4-page'));
+            if (!pages.length) throw new Error('PDF nemá žiadnu stranu.');
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const canvas = await window.html2canvas(page, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: page.scrollWidth,
+                    windowHeight: page.scrollHeight,
+                    width: page.scrollWidth,
+                    height: page.scrollHeight
+                });
+                if (i > 0) pdf.addPage('a4', 'portrait');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+            }
+
+            return pdf.output('blob');
+        } finally {
+            container.style.transform = previousTransform;
+            container.style.marginBottom = previousMarginBottom;
+            document.body.classList.remove('pdf-exporting');
+        }
+    }
+
+    async function shareAsPDF() {
+        const reportNo = document.getElementById('inp-no').value;
+        const filename = `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`;
+        try {
+            const pdfBlob = await buildSharePdfBlob();
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+            if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+                await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
+            }
             else window.open(URL.createObjectURL(pdfBlob));
         } catch (err) {
             console.error(err);
-            alert("Chyba PDF.");
-        } finally {
-            document.body.classList.remove('pdf-exporting');
+            if (err.name !== 'AbortError') alert("Chyba PDF. Skontrolujte pripojenie a skúste znova.");
         }
     }
 
@@ -1927,6 +2045,9 @@
         const el = document.getElementById(id);
         const raw = el ? String(el.value || '').trim() : '';
         return raw ? raw + (unit ? ' ' + unit : '') : '—';
+    }
+    function escapeReportText(value) {
+        return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     }
     
     function currentScenarioData() {
@@ -1956,14 +2077,32 @@
     
     function renderScenarioTables() {
         const data = currentScenarioData();
+        window.inspectionChecks ||= {};
+        const checks = document.getElementById('inspection-checks');
+        const scenario = document.getElementById('inp-scenario').value;
+        if (checks.dataset.scenario !== scenario) {
+            checks.replaceChildren(); checks.dataset.scenario = scenario;
+            (data.rows || []).forEach((row, index) => {
+                const key = scenario + ':' + index;
+                const label = document.createElement('label'); label.textContent = row.label;
+                const select = document.createElement('select'); select.dataset.checkKey = key;
+                for (const [value, text] of [['','Nevykonané'],['ok','Vyhovuje'],['fail','Nevyhovuje'],['na','Netýka sa']]) {
+                    const option = document.createElement('option'); option.value = value; option.textContent = text; select.append(option);
+                }
+                select.onchange = () => { window.inspectionChecks[key] = select.value; if (select.value === 'fail') document.getElementById('inp-status').value = 'fail'; render(); };
+                label.append(select); checks.append(label);
+            });
+        }
+        checks.querySelectorAll('select').forEach(select => { select.value = window.inspectionChecks[select.dataset.checkKey] || ''; });
         const tbody = document.getElementById('out-table-body');
         const statusOk = document.getElementById('inp-status')?.value !== 'fail';
         if (tbody) {
             tbody.innerHTML = '';
-            (data.rows || []).forEach(r => {
+            (data.rows || []).forEach((r, index) => {
                 const finding = r.field ? fieldValue(r.field, r.unit || '') : (r.finding || 'Kontrola');
-                const result = finding === '—' ? '—' : (statusOk ? 'Vyhovuje' : 'Nevyhovuje');
-                tbody.innerHTML += '<tr><td>'+r.label+'</td><td>'+(r.required || '—')+'</td><td><strong>'+finding+'</strong></td><td>'+result+'</td></tr>';
+                const state = window.inspectionChecks[scenario + ':' + index] || '';
+                const result = ({ok:'Vyhovuje',fail:'Nevyhovuje',na:'Netýka sa'})[state] || 'Nevykonané';
+                tbody.innerHTML += '<tr><td>'+escapeReportText(r.label)+'</td><td>'+escapeReportText(r.required || '—')+'</td><td><strong>'+escapeReportText(finding)+'</strong></td><td>'+result+'</td></tr>';
             });
         }
         const extraTitle = document.getElementById('out-extra-title');
@@ -1973,7 +2112,7 @@
         if (extraBody) {
             extraBody.innerHTML = '';
             (data.extraRows || []).forEach(r => {
-                extraBody.innerHTML += '<tr><td>'+r.label+'</td><td>'+(r.required || '—')+'</td><td><strong>'+fieldValue(r.field, r.unit || '')+'</strong></td></tr>';
+                extraBody.innerHTML += '<tr><td>'+escapeReportText(r.label)+'</td><td>'+escapeReportText(r.required || '—')+'</td><td><strong>'+escapeReportText(fieldValue(r.field, r.unit || ''))+'</strong></td></tr>';
             });
         }
         if (extraSection) extraSection.style.display = (data.extraRows || []).length ? '' : 'none';
@@ -2028,6 +2167,8 @@
         const c = document.getElementById('full-screen-canvas');
         c.width=c.offsetWidth; c.height=c.offsetHeight;
         modalCtx.lineWidth=8; modalCtx.lineCap='round'; modalCtx.strokeStyle='#000';
+        const preview = document.getElementById('preview-sig-canvas');
+        modalCtx.drawImage(preview, 0, 0, c.width, c.height);
     }
     window.closeModal = () => { document.getElementById('drawing-modal').style.display='none'; };
     window.clearFullCanvas = () => { modalCtx.clearRect(0,0,9999,9999); };
@@ -3903,6 +4044,45 @@
         if (scanState.busy) return;
         lookupDeviceReports(byId('scan-value-serial')?.value || '');
     }
+    window.collectReportAttachments = async () => {
+        const photo = byId('device-photo-preview');
+        let photoData = '';
+        if (photo.getAttribute('src') && photo.style.display !== 'none') {
+            await photo.decode();
+            const scale = Math.min(1, 1400 / Math.max(photo.naturalWidth, photo.naturalHeight));
+            const canvas = newCanvas(photo.naturalWidth * scale, photo.naturalHeight * scale);
+            canvas.getContext('2d').drawImage(photo, 0, 0, canvas.width, canvas.height);
+            photoData = canvas.toDataURL('image/jpeg', .72);
+            if (photoData.length > 650000) photoData = canvas.toDataURL('image/jpeg', .45);
+        }
+        const source = byId('preview-sig-canvas');
+        let signature = '';
+        const pixels = source.width && source.height ? source.getContext('2d').getImageData(0, 0, source.width, source.height).data : [];
+        if (pixels.some((value, index) => index % 4 === 3 && value > 0)) {
+            const scale = Math.min(1, 1000 / source.width);
+            const canvas = newCanvas(source.width * scale, source.height * scale);
+            canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+            signature = canvas.toDataURL('image/png');
+        }
+        if (photoData.length + signature.length > 850000) throw new Error('attachments-too-large');
+        return {photo:photoData, signature, version:1};
+    };
+    window.restoreReportAttachments = async attachments => {
+        const load = async (value, mime) => {
+            if (!value) return null;
+            if (!value.startsWith('data:image/' + mime + ';base64,') || value.length > 850000) throw new Error('invalid-attachment');
+            const image = new Image(); image.src = value; await image.decode(); return image;
+        };
+        const photoImage = await load(attachments.photo, 'jpeg');
+        const signatureImage = await load(attachments.signature, 'png');
+        if (photoImage) { const photo = byId('device-photo-preview'); photo.src = attachments.photo; photo.style.display = 'block'; }
+        if (signatureImage) {
+            for (const id of ['preview-sig-canvas', 'full-screen-canvas']) {
+                const canvas = byId(id); canvas.width = signatureImage.naturalWidth; canvas.height = signatureImage.naturalHeight;
+                canvas.getContext('2d').drawImage(signatureImage, 0, 0);
+            }
+        }
+    };
     window.resetAttachmentsForArchivedReport = () => {
         const photo = byId('device-photo-preview'); photo.removeAttribute('src'); photo.style.display = 'none';
         for (const id of ['preview-sig-canvas', 'full-screen-canvas']) { const canvas = byId(id); canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
@@ -3919,8 +4099,11 @@
         }
     }
 
+    let discardDraft = false;
     function startNewReport() {
         if(confirm('Založiť novú správu?')) {
+            localStorage.removeItem('rs2-draft-v1');
+            discardDraft = true;
             const curNo = document.getElementById('inp-no').value;
             const m = curNo.match(/\/(\d+)/);
             if (m) {
@@ -3935,6 +4118,32 @@
     function togglePreviewMode() { document.body.classList.toggle('preview-mode'); window.scrollTo(0,0); }
     generateNo();
     changeScenario();
+    try {
+        const draft = JSON.parse(localStorage.getItem('rs2-draft-v1') || 'null');
+        if (draft && confirm('Obnoviť rozpracovaný protokol?')) {
+            for (const [id, value] of Object.entries(draft.fields || {})) {
+                const field = document.getElementById(id);
+                if (!field) continue;
+                if (field.type === 'checkbox') field.checked = !!value; else field.value = value;
+            }
+            window.inspectionChecks = draft.checks || {};
+            changeScenario(); render();
+        }
+    } catch (error) { console.warn('Koncept sa nepodarilo obnoviť.', error); }
+    let draftTimer;
+    function saveDraft() {
+        if (discardDraft) return;
+        try {
+            const fields = {};
+            document.querySelectorAll('input[id^="inp-"],select[id^="inp-"],textarea[id^="inp-"]').forEach(field => {
+                if (field.type !== 'file') fields[field.id] = field.type === 'checkbox' ? field.checked : field.value;
+            });
+            localStorage.setItem('rs2-draft-v1', JSON.stringify({fields, checks:window.inspectionChecks || {}, savedAt:Date.now()}));
+        } catch (error) { console.warn('Koncept sa nepodarilo uložiť.', error); }
+    }
+    document.addEventListener('input', () => { clearTimeout(draftTimer); draftTimer = setTimeout(saveDraft, 400); });
+    document.addEventListener('change', saveDraft);
+    window.addEventListener('pagehide', saveDraft);
     setTimeout(showLabelScanModal, 250);
 </script>
 </body>

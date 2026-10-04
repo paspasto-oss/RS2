@@ -1897,29 +1897,74 @@
         document.getElementById('out-pay-vs').textContent = vs || "—";
     }
 
-    async function shareAsPDF() {
-        const element = document.getElementById('printable-content');
-        const reportNo = document.getElementById('inp-no').value;
-        const opt = {
-            margin: 0,
-            filename: `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`,
-            html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 794 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-            pagebreak: { mode: ['css', 'legacy'], before: '.a4-page + .a4-page', avoid: ['.a4-page', '.footer-area', '.signatures'] }
-        };
+    async function waitForPdfLibraries() {
+        for (let i = 0; i < 50; i++) {
+            if (window.html2canvas && window.jspdf?.jsPDF) return;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        throw new Error('PDF knižnica sa nenačítala.');
+    }
+
+    async function buildSharePdfBlob() {
+        await waitForPdfLibraries();
+        syncReportLayout();
+        document.body.classList.add('pdf-exporting');
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        const container = document.getElementById('printable-content');
+        const previousTransform = container.style.transform;
+        const previousMarginBottom = container.style.marginBottom;
+        container.style.transform = 'none';
+        container.style.marginBottom = '0';
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
         try {
-            syncReportLayout();
-            document.body.classList.add('pdf-exporting');
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-            const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            if (navigator.share) await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
+            const pages = Array.from(container.querySelectorAll(':scope > .a4-page'));
+            if (!pages.length) throw new Error('PDF nemá žiadnu stranu.');
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const canvas = await window.html2canvas(page, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: page.scrollWidth,
+                    windowHeight: page.scrollHeight,
+                    width: page.scrollWidth,
+                    height: page.scrollHeight
+                });
+                if (i > 0) pdf.addPage('a4', 'portrait');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+            }
+
+            return pdf.output('blob');
+        } finally {
+            container.style.transform = previousTransform;
+            container.style.marginBottom = previousMarginBottom;
+            document.body.classList.remove('pdf-exporting');
+        }
+    }
+
+    async function shareAsPDF() {
+        const reportNo = document.getElementById('inp-no').value;
+        const filename = `RS2_Revizia_${reportNo.replace(/\//g, '-')}.pdf`;
+        try {
+            const pdfBlob = await buildSharePdfBlob();
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+            if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+                await navigator.share({ files: [file], title: 'RS2 Revízna správa', text: `Revízna správa č. ${reportNo}` });
+            }
             else window.open(URL.createObjectURL(pdfBlob));
         } catch (err) {
             console.error(err);
             alert("Chyba PDF.");
-        } finally {
-            document.body.classList.remove('pdf-exporting');
         }
     }
 
