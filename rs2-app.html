@@ -2215,6 +2215,20 @@
             add('manufacturer', b.value, oem ? 62 : ownLine ? 104 : b.strength, oem ? 'OEM výrobca uvedený na štítku' : ownLine ? 'Samostatne uvedená značka' : 'Značka v texte');
         });
 
+        // Immergas MINI NIKE service sticker: model and two unlabelled barcodes.
+        // Keep the serial suffix; the 13-digit EAN is a product identifier.
+        const immergasModel = text.match(/\b(MINI\s+NIKE\s+\d{2}\s+\d\s+E)\b/i);
+        if (immergasModel) {
+            add('manufacturer', 'Immergas', 112, 'Immergas: modelový rad MINI NIKE na servisnom štítku');
+            add('model', immergasModel[1].replace(/\s+/g, ' ').toUpperCase(), 112, 'Immergas: celý model zo štítku');
+            lines.forEach(line => {
+                for (const match of line.matchAll(/(?:^|\s)(\d{7})\s*[-–—]\s*(\d)(?=\s|$)/g)) {
+                    add('serial', match[1] + '-' + match[2], 112, 'Immergas MINI NIKE: výrobné číslo pod čiarovým kódom');
+                }
+            });
+            if (/\bGAS\s+METANO\b/i.test(text)) add('fuel', 'Zemný plyn G20', 96, 'Immergas: GAS METANO na štítku');
+        }
+
         // Vaillant aroTHERM plus: názov radu a presný typ VWL bývajú na
         // samostatných riadkoch. Znaky v sériovom čísle neopravujeme; odstraňujeme
         // iba medzery, ktoré môže OCR vložiť medzi bloky čísla.
@@ -3556,3 +3570,4 @@
 </script>
 </body>
 </html>
+
