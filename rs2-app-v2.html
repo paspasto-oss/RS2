@@ -652,8 +652,8 @@
         </div>
 
         <div class="section-title">Údaje Prevádzkovateľa</div>
-        <div class="form-group"><input type="text" id="inp-company" placeholder="Firma / Názov" oninput="render()"></div>
-        <div class="form-group"><input type="text" id="inp-name" placeholder="Meno a priezvisko" oninput="render()"></div>
+        <div class="form-group"><input type="text" id="inp-company" list="rs2-contact-companies" autocomplete="off" placeholder="Firma / Názov" oninput="render()" onchange="applySavedContact(this.value, 'company')"><datalist id="rs2-contact-companies"></datalist></div>
+        <div class="form-group"><input type="text" id="inp-name" list="rs2-contact-names" autocomplete="off" placeholder="Meno a priezvisko" oninput="render()" onchange="applySavedContact(this.value, 'name')"><datalist id="rs2-contact-names"></datalist></div>
         <div class="form-row">
             <div class="form-group"><input type="text" id="inp-street" placeholder="Ulica" oninput="render()"></div>
             <div class="form-group"><input type="text" id="inp-city" placeholder="Mesto / PSČ" oninput="render()"></div>
@@ -928,6 +928,7 @@
             statusEl.innerHTML = '<span class="status-on">Cloud zjednotený ✅</span>';
             // Po prihlásení skúsime zosynchronizovať počítadlo z cloudu
             await syncCounterFromCloud();
+            await loadSavedContacts();
         } else {
             statusEl.innerHTML = '<span class="status-off">Čakám na spojenie... ⏳</span>';
         }
@@ -961,6 +962,60 @@
         } catch (e) { console.log("Chyba update counter."); }
     }
     window.updateCloudCounter = updateCloudCounter;
+
+    let savedContacts = [];
+
+    function contactKey(customer = {}) {
+        return [customer.name, customer.company, customer.street, customer.city, customer.phone, customer.email]
+            .map(v => String(v || '').trim().toLowerCase()).join('|');
+    }
+
+    function renderContactSuggestions() {
+        const names = document.getElementById('rs2-contact-names');
+        const companies = document.getElementById('rs2-contact-companies');
+        if (!names || !companies) return;
+        names.replaceChildren(); companies.replaceChildren();
+        const seenNames = new Set(), seenCompanies = new Set();
+        for (const customer of savedContacts) {
+            if (customer.name && !seenNames.has(customer.name.toLowerCase())) {
+                const option = document.createElement('option'); option.value = customer.name;
+                option.label = [customer.company, customer.city].filter(Boolean).join(' · ');
+                names.append(option); seenNames.add(customer.name.toLowerCase());
+            }
+            if (customer.company && !seenCompanies.has(customer.company.toLowerCase())) {
+                const option = document.createElement('option'); option.value = customer.company;
+                option.label = [customer.name, customer.city].filter(Boolean).join(' · ');
+                companies.append(option); seenCompanies.add(customer.company.toLowerCase());
+            }
+        }
+    }
+
+    async function loadSavedContacts() {
+        if (!user) return;
+        try {
+            const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
+            const unique = new Map();
+            snapshot.forEach(record => {
+                const customer = record.data()?.customer || {};
+                if (customer.name || customer.company) unique.set(contactKey(customer), customer);
+            });
+            savedContacts = [...unique.values()].sort((a,b) => String(a.name || a.company || '').localeCompare(String(b.name || b.company || ''), 'sk'));
+            renderContactSuggestions();
+        } catch (error) {
+            console.warn('Contact database load failed', error);
+        }
+    }
+
+    window.applySavedContact = (value, field = 'name') => {
+        const wanted = String(value || '').trim().toLowerCase();
+        if (!wanted) return;
+        const customer = savedContacts.find(c => String(c[field] || '').trim().toLowerCase() === wanted);
+        if (!customer) return;
+        for (const [id,key] of [['company','company'],['name','name'],['street','street'],['city','city'],['phone','phone'],['email','email']]) {
+            const el = document.getElementById('inp-' + id); if (el) el.value = customer[key] || '';
+        }
+        if (typeof window.render === 'function') window.render();
+    };
 
     window.saveToCloudArchive = async () => {
         if (saveBusy) return;
@@ -1088,6 +1143,12 @@
                 transaction.set(attachmentRef, attachments);
             });
             openedArchiveId = docId;
+            const savedCustomer = data.customer || {};
+            if (savedCustomer.name || savedCustomer.company) {
+                const key = contactKey(savedCustomer);
+                if (!savedContacts.some(c => contactKey(c) === key)) savedContacts.push(savedCustomer);
+                renderContactSuggestions();
+            }
             
             // Zároveň aktualizuj globálne počítadlo v cloude
             const m = reportNo.match(/\/(\d+)/);
@@ -1244,11 +1305,11 @@
         const status = document.getElementById('archive-search-status');
         status.textContent = 'Načítavam revízie z databázy…';
         try {
-            const snapshot = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'), orderBy(documentId(), 'desc'), limit(30)));
+            const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
             if (request !== archiveRequest || user?.uid !== userId) return;
             snapshot.forEach(record => archiveRows.push({ ...record.data(), id: record.id }));
-            archiveCursor = snapshot.docs?.at(-1) || null;
-            archiveHasMore = snapshot.size === 30;
+            archiveCursor = null;
+            archiveHasMore = false;
             archiveRows.sort((a, b) =>
                 String(b.date || '').localeCompare(String(a.date || '')) ||
                 Number(b.timestamp || 0) - Number(a.timestamp || 0)
