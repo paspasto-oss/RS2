@@ -625,6 +625,7 @@
             <label>KATEGÓRIA</label>
             <select id="inp-scenario" onchange="changeScenario()">
                 <option value="plyn">🔥 PLYNOVÝ KOTOL (Skupina Bh)</option>
+                <option value="sporak">🔥 PLYNOVÝ SPORÁK / VARNÁ DOSKA (Skupina Bh)</option>
                 <option value="elektro">⚡ ELEKTRICKÝ KOTOL (elektrické zariadenie)</option>
                 <option value="pellet">🪵 PELETOVÝ KOTOL (Biomasa)</option>
                 <option value="tc">❄️ TEPELNÉ ČERPADLO (podľa chladiva)</option>
@@ -1529,6 +1530,82 @@
                 "label": "Vyústenie",
                 "required": "Podľa dokumentácie",
                 "field": "inp-flue-outlet"
+            }
+        ]
+    },
+    "sporak": {
+        "title": "SPRÁVA O ODBORNEJ PREHLIADKE PLYNOVÉHO SPORÁKA",
+        "subtitle": "Odborná prehliadka plynového sporáka / varnej dosky v rozsahu PZ skupiny B h podľa Vyhlášky MPSVR SR č. 508/2009 Z. z. a pokynov výrobcu. Zaradenie podľa výkonu zariadenia alebo funkčného celku overí revízny technik.",
+        "law": "Vyhl. MPSVR SR č. 508/2009 Z. z.",
+        "group": "PZ skupina B h – spotreba plynu spaľovaním od 5 kW do 0,5 MW",
+        "techHeading": "REVÍZNY TECHNIK PZ / ÚDAJE",
+        "techCert": "013-IZA/2017 PZ RT Bd,f,g,h",
+        "signatureLabel": "Revízny technik PZ",
+        "stampType": "gas",
+        "statutory": true,
+        "nextInspectionYears": null,
+        "extraTitle": "3. PLYNOVÁ ČASŤ – MERANIA A TESNOSŤ",
+        "form": {
+            "combustion": false,
+            "gas": true,
+            "hydraulic": false,
+            "electrical": false,
+            "heatPump": false,
+            "flue": false
+        },
+        "rows": [
+            {
+                "label": "Vizuálna kontrola sporáka / varnej dosky",
+                "required": "Bez poškodenia"
+            },
+            {
+                "label": "Umiestnenie a odstupy od horľavých materiálov",
+                "required": "Podľa pokynov výrobcu"
+            },
+            {
+                "label": "Pripojenie plynu a stav prívodnej hadice / potrubia",
+                "required": "Vhodné pripojenie, bez poškodenia"
+            },
+            {
+                "label": "Funkcia a prístupnosť uzáveru plynu",
+                "required": "Funkčný a prístupný"
+            },
+            {
+                "label": "Tesnosť pripojenia a plynovej časti spotrebiča",
+                "required": "Bez zisteného úniku"
+            },
+            {
+                "label": "Horáky a stabilita plameňa pri min. / max. výkone",
+                "required": "Všetky plynové horáky podľa výrobcu"
+            },
+            {
+                "label": "Zapaľovanie a ovládacie kohúty",
+                "required": "Funkčné podľa vyhotovenia"
+            },
+            {
+                "label": "Poistky plameňa / uzavretie plynu po zhasnutí",
+                "required": "Funkčné, ak sú súčasťou zariadenia"
+            },
+            {
+                "label": "Prívod vzduchu a vetranie miestnosti",
+                "required": "Podľa inštalácie a pokynov výrobcu"
+            },
+            {
+                "label": "Plynová rúra a jej bezpečnostné prvky",
+                "required": "Funkčné, ak je súčasťou zariadenia"
+            }
+        ],
+        "extraRows": [
+            {
+                "label": "Tlak plynu",
+                "required": "Podľa výrobcu a prevádzkových podmienok",
+                "field": "inp-gas-pressure",
+                "unit": "mbar"
+            },
+            {
+                "label": "Tesnosť plynu",
+                "required": "Bez úniku",
+                "field": "inp-gas-tightness"
             }
         ]
     },
