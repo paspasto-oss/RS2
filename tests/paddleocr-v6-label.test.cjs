@@ -7,11 +7,11 @@ const assert = require('node:assert/strict');
 
 const html = fs.readFileSync(path.join(__dirname, '../rs2-app-v2.html'), 'utf8');
 
-assert(html.includes('@paddleocr/paddleocr-js@0.4.2'), 'Pinned PaddleOCR browser SDK must be present');
+assert(html.includes('./vendor/paddleocr-0.4.2.mjs'), 'Pinned PaddleOCR browser SDK must be present');
 assert(html.includes("PP-OCRv6_small_det"), 'PP-OCRv6 small detector must be selected');
 assert(html.includes("PP-OCRv6_small_rec"), 'PP-OCRv6 small recognizer must be selected');
-assert(html.includes('async function runTesseractFallback()'), 'Tesseract must remain as an automatic fallback');
-assert(html.includes("await runTesseractFallback()"), 'Primary pipeline must call Tesseract on PaddleOCR failure');
+assert(html.includes('async function runTesseractFallback(preserveEvidence = false)'), 'Tesseract must remain as an automatic fallback');
+assert(html.includes("await runTesseractFallback(true)"), 'Primary pipeline must call Tesseract on PaddleOCR failure');
 assert(html.includes("detectBarcodes(base)"), 'Barcode/QR detection must run before OCR');
 assert(html.includes('async function captureHighResolutionLabelCrop()'), 'Live scanner must support high-resolution still capture');
 assert(html.includes('new ImageCapture(track)'), 'High-resolution capture must use ImageCapture when available');
