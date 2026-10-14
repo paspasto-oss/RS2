@@ -513,13 +513,18 @@
         </div>
         <div class="label-scan-body">
             <div class="label-scan-tip">
-                Odfoťte ostrý štítok bez odlesku. RS2 najprv skúsi čiarový/QR kód a potom lokálne AI OCR PaddleOCR v6 priamo v telefóne. Pri prvom použití sa stiahne OCR model; ďalšie čítania sú rýchlejšie. Ak AI OCR nie je dostupné, automaticky sa použije záložný Tesseract. Fotografia sa neposiela na OCR server.
+                Odfoťte ostrý štítok bez odlesku. RS2 najprv skúsi čiarový/QR kód a potom lokálne AI OCR PaddleOCR v6 priamo v telefóne. Pri prvom použití sa stiahne OCR model; ďalšie čítania sú rýchlejšie. Pri pomalom načítaní môžete zvoliť Tesseract v ponuke Čítačka textu. Ak AI OCR nie je dostupné, automaticky sa použije záložný Tesseract. Fotografia sa neposiela na OCR server.
             </div>
             <div class="label-scan-actions">
                 <button type="button" class="btn-label-camera" data-scan-lock onclick="openLabelCamera('startup')">📷 SPUSTIŤ SKENER ŠTÍTKU</button>
                 <button type="button" class="btn-label-skip" data-scan-lock onclick="openLabelGallery()">Vybrať fotografiu zo súborov</button>
             </div>
 
+            <label class="scan-help" for="label-ocr-engine">Čítačka textu:</label>
+            <select id="label-ocr-engine" data-scan-lock onchange="setLabelOcrEngine(this.value)" style="width:100%;padding:12px;margin:6px 0 12px">
+                <option value="paddle">PaddleOCR – automatická záloha Tesseract</option>
+                <option value="tesseract">Tesseract – bez načítania AI modelov</option>
+            </select>
             <div id="live-scan-panel" hidden>
                 <p class="scan-help">Priblížte sa a držte <strong>celý výrobný štítok</strong> v červenom rámčeku – značka/model hore aj S/N/čiarový kód dole. Kód sa číta priebežne, fotografiu zachytíte tlačidlom.</p>
                 <div class="live-scan-view" id="live-scan-view">
@@ -3666,6 +3671,15 @@
             if (token === scanState.token) { scanBusy(false); scanMessage(error.message); setOcrProgress(0, 'Fotografiu sa nepodarilo načítať.'); }
         }
     };
+    function getLabelOcrEngine() {
+        try { return localStorage.getItem('rs2-ocr-engine') === 'tesseract' ? 'tesseract' : 'paddle'; }
+        catch (_) { return 'paddle'; }
+    }
+    window.setLabelOcrEngine = value => {
+        try { localStorage.setItem('rs2-ocr-engine', value === 'tesseract' ? value : 'paddle'); } catch (_) {}
+    };
+    byId('label-ocr-engine').value = getLabelOcrEngine();
+
     async function loadPaddleOcrEngine() {
         if (scanState.paddle) return scanState.paddle;
         if (scanState.paddlePromise) return scanState.paddlePromise;
@@ -3676,13 +3690,12 @@
 
         scanState.paddlePromise = (async () => {
             const moduleUrls = [
-                'https://cdn.jsdelivr.net/npm/@paddleocr/paddleocr-js@0.4.2/+esm',
-                'https://esm.sh/@paddleocr/paddleocr-js@0.4.2?bundle'
+                './vendor/paddleocr-0.4.2.mjs'
             ];
             let sdk = null, lastError = null;
             for (const url of moduleUrls) {
                 try {
-                    sdk = await import(url);
+                    sdk = await limitTime(import(url), 8000, 'Čítačku sa nepodarilo načítať do 8 s.');
                     if (sdk?.PaddleOCR) {
                         scanState.paddleModuleUrl = url;
                         break;
@@ -3695,7 +3708,8 @@
             if (!sdk?.PaddleOCR) throw lastError || new Error('PaddleOCR modul sa nepodarilo načítať.');
 
             const started = performance.now();
-            const engine = await sdk.PaddleOCR.create({
+            let expired = false;
+            const creation = sdk.PaddleOCR.create({
                 textDetectionModelName: 'PP-OCRv6_small_det',
                 textRecognitionModelName: 'PP-OCRv6_small_rec',
                 textDetectionBatchSize: 1,
@@ -3707,6 +3721,14 @@
                     simd: true
                 }
             });
+            const engine = await limitTime(creation.then(engine => {
+                if (expired) {
+                    Promise.resolve(engine.dispose()).catch(() => {});
+                    throw new Error('Oneskorená inicializácia OCR bola zrušená.');
+                }
+                return engine;
+            }), 20000, 'AI modely sa nenačítali do 20 s. Použijem záložnú čítačku.')
+                .catch(error => { expired = true; throw error; });
             scanState.log.push('PaddleOCR v6 small pripravený za ' + Math.round(performance.now() - started) + ' ms.');
             scanState.paddle = engine;
             return engine;
@@ -3787,6 +3809,7 @@
 
     async function runLabelScan() {
         if (!scanState.image || scanState.busy) return;
+        if (getLabelOcrEngine() === 'tesseract') return runTesseractFallback();
 
         const token = ++scanState.token;
         const initial = Object.fromEntries(LABEL_FIELDS.map(([key, id]) => [key, byId(id).value]));
@@ -3812,12 +3835,12 @@
         const runPaddlePass = async (canvas, name, pass, progress) => {
             active();
             setOcrProgress(progress, name + '…');
-            const engine = await wait(limitTime(loadPaddleOcrEngine(), 90000,
-                'PaddleOCR model sa nenačítal do 90 s. Skontrolujte internet a skúste znova.'));
+            const engine = await wait(limitTime(loadPaddleOcrEngine(), 30000,
+                'PaddleOCR model sa nenačítal do 30 s. Prepínam na záložnú čítačku.'));
             active();
             const started = performance.now();
             const results = await wait(limitTime(engine.predict(canvas, {
-                textDetLimitSideLen: 1280,
+                textDetLimitSideLen: pass === 'paddle-v6-original' ? 960 : 1280,
                 textDetLimitType: 'max',
                 textDetMaxSideLimit: 1600,
                 textDetThresh: 0.25,
@@ -3864,9 +3887,11 @@
                 return ['manufacturer', 'model', 'serial'].every(key => current[key]?.reliable);
             };
 
+            let bestConfidence = first.confidence;
             if (!identityReady()) {
                 const contrast = processedLabelCanvas(base, 'local');
-                await runPaddlePass(contrast, 'PaddleOCR v6 – lokálny kontrast', 'paddle-v6-contrast', 58);
+                const second = await runPaddlePass(contrast, 'PaddleOCR v6 – lokálny kontrast', 'paddle-v6-contrast', 58);
+                bestConfidence = Math.max(bestConfidence, second.confidence);
                 ranked = rankLabelCandidates(scanState.candidates);
             }
 
@@ -3884,7 +3909,7 @@
             const finalRanked = rankLabelCandidates(scanState.candidates);
             const usefulText = String(first.text || '').trim().length;
             const usefulIdentity = ['manufacturer', 'model', 'serial'].some(key => !!finalRanked[key]);
-            if (usefulText < 6 && !usefulIdentity) {
+            if ((usefulText < 6 && !usefulIdentity) || (bestConfidence < 55 && !identityReady())) {
                 fallbackReason = new Error('PaddleOCR z fotografie nezískal použiteľný text.');
             } else {
                 const agreed = ['manufacturer', 'model', 'serial'].filter(key => finalRanked[key]?.reliable).length;
@@ -3908,21 +3933,21 @@
             byId('device-scan-status').textContent = 'AI OCR sa nepodarilo dokončiť. Skúšam záložné OCR…';
             setOcrProgress(8, 'PaddleOCR nedostupný – spúšťam záložný Tesseract…');
             scanState.liveCodes = codes;
-            await runTesseractFallback();
+            await runTesseractFallback(true);
         }
     }
 
-    async function runTesseractFallback() {
+    async function runTesseractFallback(preserveEvidence = false) {
         if (!scanState.image || scanState.busy) return;
         const token = ++scanState.token, initial = Object.fromEntries(LABEL_FIELDS.map(([key, id]) => [key, byId(id).value]));
         scanBusy(true);
         const liveSeed = barcodeCandidates(scanState.liveCodes || []);
-        scanState.candidates = liveSeed.slice();
+        scanState.candidates = (preserveEvidence ? scanState.candidates : []).concat(liveSeed);
         const preservedLog = Array.isArray(scanState.log) ? scanState.log.slice(-4) : [];
         scanState.log = preservedLog;
         if(liveSeed.length) scanState.log.push('Živý skener: '+liveSeed.length+' kandidátov z kódu.');
         scanState.liveCodes = [];
-        lastLabelOcrText = '';
+        if (!preserveEvidence) lastLabelOcrText = '';
         byId('label-review').hidden = true; byId('label-scan-result').style.display = 'none';
         let worker, passIndex = 0, passName = '', aborted = false;
         const scanLayouts = [];
