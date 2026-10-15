@@ -639,6 +639,14 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label for="inp-payment-account">Účet pre platbu QR kódom</label>
+            <select id="inp-payment-account" onchange="render()">
+                <option value="SK5875000000004034450550">Účet 1 – SK58 7500 0000 0040 3445 0550</option>
+                <option value="SK1309000000000425320325">Účet 2 – SK13 0900 0000 0004 2532 0325</option>
+            </select>
+        </div>
+
         <div class="form-group"><label>VS (Číslo faktúry)</label><input type="text" id="inp-invoice" oninput="render()"></div>
 
         <div class="form-row">
@@ -863,7 +871,7 @@
                         <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
                         <div class="payment-details">
                             <div class="pay-row"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
-                            <div class="pay-row"><span>IBAN:</span><strong>SK58 7500 0000 0040 3445 0550</strong></div>
+                            <div class="pay-row"><span>IBAN:</span><strong id="out-pay-iban">SK58 7500 0000 0040 3445 0550</strong></div>
                             <div class="pay-row"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
                             <div class="pay-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
                             <div class="pay-total" id="out-pay-amount">—</div>
@@ -1057,6 +1065,7 @@
                 status: document.getElementById('inp-status').value,
                 price: document.getElementById('inp-price').value,
                 vat: document.getElementById('inp-vat-payer').checked,
+                paymentAccount: document.getElementById('inp-payment-account').value,
                 invoice: document.getElementById('inp-invoice').value
             },
             timestamp: Date.now()
@@ -1251,6 +1260,7 @@
                 ['flow','flow'],['leak-check','leakCheck']
             ]) set('inp-' + id, measurements[key]);
             for (const [id, key] of [['flue-type','type'],['flue-state','state'],['flue-outlet','outlet'],['flue-note','note']]) set('inp-' + id, flue[key]);
+            set('inp-payment-account', result.paymentAccount === 'SK1309000000000425320325' ? result.paymentAccount : 'SK5875000000004034450550');
             set('inp-price', result.price); document.getElementById('inp-vat-payer').checked = !!result.vat;
             set('inp-location-note', result.locationNote);
             if (mode === 'new') {
@@ -1852,6 +1862,11 @@
     }
 };
 
+    function selectedPaymentIban() {
+        const selected = document.getElementById('inp-payment-account').value;
+        return selected === 'SK1309000000000425320325' ? selected : 'SK5875000000004034450550';
+    }
+
     function initQR() {
         if (qr || !window.QRious) return;
         try { qr = new QRious({ element: document.getElementById('qr-canvas'), size: 180, level: 'M' }); }
@@ -1969,7 +1984,9 @@
         const base = parseFloat(document.getElementById('inp-price').value) || 0;
         const total = vat ? base * 1.23 : base;
         const vs = document.getElementById('inp-invoice').value || "";
-        if (qr) qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\nSK5875000000004034450550\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
+        const paymentIban = selectedPaymentIban();
+        document.getElementById('out-pay-iban').textContent = paymentIban.match(/.{1,4}/g).join(' ');
+        if (qr) qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\n${paymentIban}\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
         document.getElementById('out-pay-amount').textContent = total.toFixed(2).replace('.', ',') + " €";
         document.getElementById('out-pay-vs').textContent = vs || "—";
     }
