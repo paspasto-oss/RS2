@@ -880,10 +880,10 @@
                     <div class="qr-flex-row">
                         <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
                         <div class="payment-details">
-                            <div class="pay-row"><span>Príjemca:</span><strong>Spektra Install s.r.o.</strong></div>
+                            <div class="pay-row"><span>Príjemca:</span><strong id="out-pay-recipient">Spektra Install s.r.o.</strong></div>
                             <div class="pay-row"><span>IBAN:</span><strong id="out-pay-iban">SK58 7500 0000 0040 3445 0550</strong></div>
                             <div class="pay-row"><span>VS (Faktúra):</span><strong id="out-pay-vs">—</strong></div>
-                            <div class="pay-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
+                            <div class="pay-row" id="out-pay-note-row"><span>Poznámka:</span><strong id="out-pay-note">—</strong></div>
                             <div class="pay-total" id="out-pay-amount">—</div>
                         </div>
                     </div>
@@ -2120,8 +2120,14 @@
         const total = vat ? base * 1.23 : base;
         const vs = document.getElementById('inp-invoice').value || "";
         const paymentIban = selectedPaymentIban();
+        const personalPayment = paymentIban === 'SK1309000000000425320325';
+        const paymentRecipient = personalPayment ? 'Pavol Pastorek' : 'Spektra Install s.r.o.';
+        const paymentNote = personalPayment ? '' : reportNo;
+        document.getElementById('out-pay-recipient').textContent = paymentRecipient;
+        document.getElementById('out-pay-note-row').style.display = personalPayment ? 'none' : '';
+        document.getElementById('out-pay-note').textContent = paymentNote;
         document.getElementById('out-pay-iban').textContent = paymentIban.match(/.{1,4}/g).join(' ');
-        if (qr) qr.value = `BCD\n002\n1\nSCT\n\nSpektra Install\n${paymentIban}\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${reportNo}`;
+        if (qr) qr.value = `BCD\n002\n1\nSCT\n\n${paymentRecipient}\n${paymentIban}\nEUR${total.toFixed(2)}\n\n${vs.replace(/\D/g,'')}\n${paymentNote}`;
         if (status === 'pending') {
             statusBox.textContent = 'KONTROLA NEDOKONČENÁ';
             conc.textContent = 'Doplňte výsledky jednotlivých kontrol pred vydaním protokolu.';
