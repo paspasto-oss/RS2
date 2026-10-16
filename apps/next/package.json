@@ -1,0 +1,17 @@
+{
+  "name": "rs2-next-sandbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc -p tsconfig.tests.json && node --test tests/model.test.mjs",
+    "build": "node scripts/preview-only.mjs && npm run typecheck && npm test && vite build && node scripts/build-sw.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": { "react": "19.3.0", "react-dom": "19.3.0" },
+  "devDependencies": { "@types/react": "19.2.2", "@types/react-dom": "19.2.2", "typescript": "5.8.3", "vite": "7.3.1", "@playwright/test": "1.56.1" }
+}

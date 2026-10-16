@@ -1,0 +1,1 @@
+{"id":"/rs2-next-sandbox","name":"RS2 Spektra – TEST","short_name":"RS2 TEST","description":"Oddelený prototyp; iba pokusné údaje uložené v tomto zariadení.","lang":"sk","start_url":"./","scope":"./","display":"standalone","theme_color":"#c8212b","background_color":"#f5f6f8","icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
