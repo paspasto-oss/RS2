@@ -11,12 +11,27 @@
   <div id="rs2-loader" style="font-family:Arial,sans-serif;padding:24px;text-align:center">Načítavam RS2…</div>
   <script>
   (async () => {
-    const sourceUrl = './rs2-app-v2.html?v=20261015-payment2';
+    const sourceUrl = './rs2-app-v2.html?v=20261016-archive-bottom';
     const closeScript = '</scr' + 'ipt>';
     try {
       const response = await fetch(sourceUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
       let html = await response.text();
+
+      // 1) Cloudový archív patrí na koniec formulára, za ostatné akcie.
+      //    Presúvame pôvodný blok bez zmeny obsluhy tlačidiel alebo stavu cloudu.
+      const archiveBlock = `        <div class="section-title">Cloudové úložisko</div>
+        <button class="btn-archive-save" onclick="saveToCloudArchive()">💾 Uložiť do archívu</button>
+        <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
+        <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
+`;
+      const controlsEnd = '    </section>\n\n    <section class="preview-scroll-wrapper">';
+      if (html.includes(archiveBlock) && html.includes(controlsEnd)) {
+        html = html.replace(archiveBlock, '');
+        html = html.replace(controlsEnd, '\n' + archiveBlock + controlsEnd);
+      } else {
+        console.warn('RS2: Blok archívu alebo koniec formulára nebol nájdený.');
+      }
 
       // 2) Firebase Auth: počkáme na obnovenie persistovaného prihlásenia.
       //    Ak používateľ stále nie je prihlásený, nový pokus dovolíme najviac raz za 30 s.
