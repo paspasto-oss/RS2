@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "domain_test_count": 18,
+  "build_test_count": 2,
+  "node_test_total": 20,
+  "browser": "Chromium (local about:blank rendering)",
+  "ui_checks": [
+    "empty real workspace",
+    "customer create and escaped XSS text",
+    "device create",
+    "job scheduling",
+    "status isolation",
+    "job to knowledge",
+    "diacritic search",
+    "demo isolation",
+    "all modules at 320/390/768 px",
+    "desktop 1440 px"
+  ],
+  "limitations": [
+    "IndexedDB is an in-memory test double in UI tests",
+    "service worker and installed PWA not tested",
+    "no hosted deployment or real Google integration tested"
+  ],
+  "page_errors": []
+}
