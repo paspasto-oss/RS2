@@ -1,0 +1,14 @@
+{
+  "name": "spektra-servis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spektra Servis — samostatná modulárna aplikácia pre jedného technika",
+  "scripts": {
+    "build": "node tools/build.cjs",
+    "start": "node tools/serve.cjs",
+    "test": "node tools/build.cjs && node --test tests/*.test.cjs",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": { "typescript": "5.8.3" },
+  "engines": { "node": ">=20" }
+}

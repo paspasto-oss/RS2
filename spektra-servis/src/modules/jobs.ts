@@ -1,0 +1,8 @@
+import { type Data, STATUSES, matches, deviceName } from '../domain.js';
+import { heading, button, searchBox, jobCard, empty, type ViewState, e } from '../ui.js';
+export function jobsPage(data: Data, state: ViewState): string {
+  const list = data.jobs.filter(j => (!state.filter || (state.filter === 'open' ? !['done', 'cancelled'].includes(j.status) : j.status === state.filter)) && (!state.selectedCustomer || j.customerId === state.selectedCustomer) && matches([j.number, j.title, j.address, data.customers.find(c => c.id === j.customerId)?.name, deviceName(data.devices.find(d => d.id === j.deviceId))].join(' '), state.query)).sort((a, b) => (b.start || b.updatedAt).localeCompare(a.start || a.updatedAt));
+  return heading('SERVIS A REVÍZIE', 'Zákazky', 'Od prvého dopytu po dokončený výjazd.', button('Nová zákazka', 'new-job', 'plus', 'btn primary')) +
+  `<div class="toolbar">${searchBox(state.query, 'Zákazka, zákazník, zariadenie…')}<label class="filter-label">Stav<select id="job-filter"><option value="">Všetky zákazky</option><option value="open" ${state.filter === 'open' ? 'selected' : ''}>Otvorené</option>${Object.entries(STATUSES).map(([id, label]) => `<option value="${id}" ${state.filter === id ? 'selected' : ''}>${e(label)}</option>`).join('')}</select></label><span class="count">${list.length} záznamov</span></div>${state.selectedCustomer ? `<div class="inline-note">Zobrazená história vybraného zákazníka. ${button('Zrušiť výber', 'clear-customer', '', 'btn ghost')}</div>` : ''}
+  <section class="panel jobs-panel">${list.length ? list.map(j => jobCard(j, data)).join('') : empty('Zatiaľ tu nie sú zákazky', 'Začnite zákazníkom a priraďte mu zariadenie alebo výjazd.', button('Vytvoriť zákazku', 'new-job', 'plus'))}</section>`;
+}
