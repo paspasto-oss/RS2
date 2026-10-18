@@ -1,0 +1,50 @@
+name: RS2 NEXT isolated prototype
+on:
+  pull_request:
+    paths: ['apps/next/**', 'vercel.json', '.github/workflows/rs2-next-tests.yml']
+  push:
+    branches: ['feature/rs2-next-stage-1']
+    paths: ['apps/next/**', 'vercel.json', '.github/workflows/rs2-next-tests.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: apps/next
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Verify legacy source is untouched
+        run: node scripts/check-legacy.mjs
+      - name: Install pinned direct dependencies
+        run: npm install --ignore-scripts --no-fund
+      - name: Validate, typecheck, test and build preview
+        run: npm run build
+        env:
+          VERCEL_ENV: preview
+      - name: Verify production guard
+        run: |
+          if VERCEL_ENV=production node scripts/preview-only.mjs; then
+            echo 'Production guard failed'; exit 1
+          fi
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests on mobile and desktop
+        run: npm run test:e2e
+      - name: Preserve lockfile and test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rs2-next-verification
+          path: |
+            apps/next/package-lock.json
+            apps/next/test-results
+            apps/next/playwright-report
+          retention-days: 7
