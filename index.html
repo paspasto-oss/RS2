@@ -74,7 +74,7 @@ document.addEventListener('click', (event) => {
 }, true);
 ` + closeScript;
 
-      html = html.replace('</body>', clickGuard + '\n</body>');
+      html = html.replace('</body>', clickGuard + '<script src="./spektra-servis-bridge.js?v=20261018-1">' + closeScript + '\n</body>');
 
       document.open();
       document.write(html);
@@ -89,4 +89,5 @@ document.addEventListener('click', (event) => {
   </script>
 </body>
 </html>
+
 
