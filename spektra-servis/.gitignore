@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.build/
+.firebase/
+.env*
+!.env.example
+*backup*.json
+*backup*.spektra
