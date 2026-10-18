@@ -309,7 +309,14 @@
         }
 
         /* QR Page */
-        .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .qr-page-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+        .document-photo-area { display: none; width: 170mm; height: 135mm; margin: 0 auto 10mm; align-items: center; justify-content: center; overflow: hidden; }
+        .document-photo-area.has-photo { display: flex; }
+        #document-photo-preview { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+        .document-photo-actions { display: flex; gap: 8px; }
+        .document-photo-actions button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-weight: 700; cursor: pointer; }
+        .document-photo-select { background: #111827; color: #fff; }
+        .document-photo-remove { background: #fff; color: #b91c1c; }
         .qr-flex-row { display: flex; align-items: center; gap: 20px; justify-content: center; }
         .payment-details { font-size: 12px; }
         .pay-total { font-size: 20px; font-weight: 900; color: var(--primary); margin-top: 10px; }
@@ -655,6 +662,16 @@
             </select>
         </div>
 
+        <div class="form-group">
+            <label>Fotografia na zadnú stranu nad QR kód</label>
+            <div class="document-photo-actions">
+                <button type="button" class="document-photo-select" onclick="document.getElementById('document-photo-upload').click()">🖼️ VYBRAŤ Z GALÉRIE</button>
+                <button type="button" class="document-photo-remove" id="document-photo-remove" onclick="removeDocumentPhoto()" hidden>Odstrániť</button>
+            </div>
+            <input type="file" id="document-photo-upload" hidden accept="image/*" onchange="handleDocumentPhoto(event)">
+            <small style="font-size:10px;color:#6b7280;">Fotografia sa vloží iba na druhú stranu dokumentu a uloží sa aj do archívu.</small>
+        </div>
+
         <div class="form-group"><label>VS (Číslo faktúry)</label><input type="text" id="inp-invoice" oninput="render()"></div>
 
         <div class="form-row">
@@ -876,6 +893,9 @@
             <div class="a4-page">
                 <div class="header"><div class="brand"><h1>SPEKTRA <span>INSTALL</span></h1></div></div>
                 <div class="qr-page-content">
+                    <div class="document-photo-area" id="document-photo-area">
+                        <img id="document-photo-preview" alt="Fotografia k protokolu">
+                    </div>
                     <div class="qr-title">PODKLADY PRE PLATBU</div>
                     <div class="qr-flex-row">
                         <div class="qr-box"><canvas id="qr-canvas"></canvas></div>
@@ -1146,8 +1166,8 @@
         try {
             saveBusy = true;
             const attachments = await window.collectReportAttachments();
-            data.schemaVersion = 3;
-            data.hasAttachments = !!(attachments.photo || attachments.signature);
+            data.schemaVersion = 4;
+            data.hasAttachments = !!(attachments.photo || attachments.documentPhoto || attachments.signature);
             const attachmentRef = doc(db, 'artifacts', appId, 'public', 'data', 'inspection_attachments', docId);
             // ZMENA NA VEREJNÚ CESTU (RULE 1) - aby to všetci videli rovnako
             const ref = doc(db, 'artifacts', appId, 'public', 'data', 'inspections', docId);
@@ -3694,6 +3714,35 @@
             if (token === scanState.token) { scanBusy(false); scanMessage(error.message); setOcrProgress(0, 'Fotografiu sa nepodarilo načítať.'); }
         }
     };
+    window.handleDocumentPhoto = async event => {
+        const input = event.target;
+        const file = input.files?.[0];
+        if (!file) return;
+        try {
+            const source = await prepareImageForOcr(file);
+            const scale = Math.min(1, 1800 / Math.max(source.width, source.height));
+            const canvas = newCanvas(Math.round(source.width * scale), Math.round(source.height * scale));
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+            const preview = byId('document-photo-preview');
+            preview.src = canvas.toDataURL('image/jpeg', .82);
+            byId('document-photo-area').classList.add('has-photo');
+            byId('document-photo-remove').hidden = false;
+        } catch (error) {
+            alert('Fotografiu sa nepodarilo načítať. Skúste vybrať iný obrázok.');
+        } finally {
+            input.value = '';
+        }
+    };
+    window.removeDocumentPhoto = () => {
+        const preview = byId('document-photo-preview');
+        preview.removeAttribute('src');
+        byId('document-photo-area').classList.remove('has-photo');
+        byId('document-photo-remove').hidden = true;
+        const input = byId('document-photo-upload');
+        if (input) input.value = '';
+    };
     function getLabelOcrEngine() {
         try { return localStorage.getItem('rs2-ocr-engine') === 'tesseract' ? 'tesseract' : 'paddle'; }
         catch (_) { return 'paddle'; }
@@ -4273,6 +4322,18 @@
             photoData = canvas.toDataURL('image/jpeg', .72);
             if (photoData.length > 650000) photoData = canvas.toDataURL('image/jpeg', .45);
         }
+        const documentPhoto = byId('document-photo-preview');
+        let documentPhotoData = '';
+        if (documentPhoto?.getAttribute('src') && byId('document-photo-area')?.classList.contains('has-photo')) {
+            await documentPhoto.decode();
+            const scale = Math.min(1, 1200 / Math.max(documentPhoto.naturalWidth, documentPhoto.naturalHeight));
+            const canvas = newCanvas(documentPhoto.naturalWidth * scale, documentPhoto.naturalHeight * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(documentPhoto, 0, 0, canvas.width, canvas.height);
+            documentPhotoData = canvas.toDataURL('image/jpeg', .65);
+            if (documentPhotoData.length > 400000) documentPhotoData = canvas.toDataURL('image/jpeg', .4);
+        }
         const source = byId('preview-sig-canvas');
         let signature = '';
         const pixels = source.width && source.height ? source.getContext('2d').getImageData(0, 0, source.width, source.height).data : [];
@@ -4282,8 +4343,8 @@
             canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
             signature = canvas.toDataURL('image/png');
         }
-        if (photoData.length + signature.length > 850000) throw new Error('attachments-too-large');
-        return {photo:photoData, signature, version:1};
+        if (photoData.length + documentPhotoData.length + signature.length > 850000) throw new Error('attachments-too-large');
+        return {photo:photoData, documentPhoto:documentPhotoData, signature, version:2};
     };
     window.restoreReportAttachments = async attachments => {
         const load = async (value, mime) => {
@@ -4292,8 +4353,14 @@
             const image = new Image(); image.src = value; await image.decode(); return image;
         };
         const photoImage = await load(attachments.photo, 'jpeg');
+        const documentPhotoImage = await load(attachments.documentPhoto, 'jpeg');
         const signatureImage = await load(attachments.signature, 'png');
         if (photoImage) { const photo = byId('device-photo-preview'); photo.src = attachments.photo; photo.style.display = 'block'; }
+        if (documentPhotoImage) {
+            byId('document-photo-preview').src = attachments.documentPhoto;
+            byId('document-photo-area').classList.add('has-photo');
+            byId('document-photo-remove').hidden = false;
+        }
         if (signatureImage) {
             for (const id of ['preview-sig-canvas', 'full-screen-canvas']) {
                 const canvas = byId(id); canvas.width = signatureImage.naturalWidth; canvas.height = signatureImage.naturalHeight;
@@ -4303,6 +4370,7 @@
     };
     window.resetAttachmentsForArchivedReport = () => {
         const photo = byId('device-photo-preview'); photo.removeAttribute('src'); photo.style.display = 'none';
+        window.removeDocumentPhoto();
         for (const id of ['preview-sig-canvas', 'full-screen-canvas']) { const canvas = byId(id); canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); }
         scanState.image = null; scanState.crop = null; scanState.candidates = []; scanState.results = {}; lastLabelOcrText = '';
         byId('label-raw-text').value = ''; byId('label-review').hidden = true; byId('label-editor').hidden = true;

@@ -4,7 +4,12 @@ const elements = new Map();
 function canvas(alpha = 0) {
     return {width:400,height:100,style:{},getAttribute:()=>'',getContext:()=>({getImageData:()=>({data:[0,0,0,alpha]}),drawImage(){}}),toDataURL:type=>'data:'+type+';base64,AAAA'};
 }
+function classList() { const values = new Set(); return {add:v=>values.add(v),remove:v=>values.delete(v),contains:v=>values.has(v)}; }
 elements.set('device-photo-preview',canvas());
+elements.set('document-photo-preview',canvas());
+elements.set('document-photo-area',{classList:classList()});
+elements.set('document-photo-remove',{hidden:true});
+elements.set('document-photo-upload',{value:''});
 elements.set('preview-sig-canvas',canvas());
 elements.set('full-screen-canvas',canvas());
 const context = vm.createContext({byId:id=>elements.get(id),newCanvas:()=>canvas(),Image:class {naturalWidth=400;naturalHeight=100;async decode(){};}});
@@ -14,11 +19,12 @@ const end=html.indexOf('    window.resetAttachmentsForArchivedReport =',start);
 vm.runInContext(html.slice(start,end),context);
 (async()=>{
     let media=await context.collectReportAttachments();
-    assert.equal(media.photo,''); assert.equal(media.signature,'');
+    assert.equal(media.photo,''); assert.equal(media.documentPhoto,''); assert.equal(media.signature,'');
     elements.set('preview-sig-canvas',canvas(255));
     media=await context.collectReportAttachments(); assert(media.signature.startsWith('data:image/png;base64,'));
-    await context.restoreReportAttachments({photo:'data:image/jpeg;base64,AAAA',signature:media.signature});
+    await context.restoreReportAttachments({photo:'data:image/jpeg;base64,AAAA',documentPhoto:'data:image/jpeg;base64,AAAA',signature:media.signature});
     assert.equal(elements.get('device-photo-preview').style.display,'block');
+    assert(elements.get('document-photo-area').classList.contains('has-photo'));
     assert.equal(elements.get('preview-sig-canvas').width,400);
     await assert.rejects(context.restoreReportAttachments({photo:'https://example.com/photo',signature:''}));
     await assert.rejects(context.restoreReportAttachments({photo:'data:image/jpeg;base64,'+'A'.repeat(850001),signature:''}));
