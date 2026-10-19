@@ -101,6 +101,7 @@
         .report-meta { text-align: right; max-width: 65%; }
         
         .report-type { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1.2; }
+        .report-subject { font-size: 11px; line-height: 1.25; font-weight: 700; color: #000; margin-top: 4px; overflow-wrap: anywhere; }
         .report-subtitle { font-size: 7.2px; line-height: 1.25; color: #555; margin-top: 3px; max-width: 115mm; }
         .report-no { font-size: 11px; margin-top: 5px; font-weight: 700; border: 0.5pt solid #000; padding: 2px 8px; display: inline-block; }
 
@@ -812,6 +813,7 @@
                     </div>
                     <div class="report-meta">
                         <div class="report-type" id="out-title">SPRÁVA O ODBORNEJ PREHLIADKE</div>
+                        <div class="report-subject" id="out-subject"></div>
                         <div class="report-subtitle" id="out-subtitle">Vyhotovená podľa príslušných právnych a technických predpisov.</div>
                         <div class="report-no" id="out-no">Číslo: -</div>
                     </div>
@@ -1065,6 +1067,7 @@
         const companyAuthRender = document.getElementById('out-company-auth');
         if(outTitleRender) outTitleRender.textContent = scenarioDataForRender.title;
         if(outSubtitleRender) outSubtitleRender.textContent = scenarioDataForRender.subtitle || '';
+        window.renderReportSubject();
         if(outLawRender) outLawRender.textContent = scenarioDataForRender.law;
         if(outGroupRender) outGroupRender.textContent = scenarioDataForRender.group;
         if(techHeadingRender) techHeadingRender.textContent = scenarioDataForRender.techHeading || 'TECHNIK / ÚDAJE';
@@ -2059,6 +2062,7 @@
         const techSignLabelRender = document.getElementById('out-tech-sign-label');
         if(outTitleRender) outTitleRender.textContent = scenarioDataForRender.title;
         if(outSubtitleRender) outSubtitleRender.textContent = scenarioDataForRender.subtitle || '';
+        window.renderReportSubject();
         if(outLawRender) outLawRender.textContent = scenarioDataForRender.law;
         if(outGroupRender) outGroupRender.textContent = scenarioDataForRender.group;
         if(techHeadingRender) techHeadingRender.textContent = scenarioDataForRender.techHeading || 'TECHNIK / ÚDAJE';
@@ -2236,6 +2240,24 @@
         return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     }
     
+    window.renderReportSubject = function() {
+        const labels = {
+            plyn: 'Plynový kotol',
+            sporak: 'Plynový sporák / varná doska',
+            elektro: 'Elektrický kotol',
+            pellet: 'Peletový kotol',
+            tc: 'Tepelné čerpadlo',
+            rozvod: 'Rozvod plynu'
+        };
+        const value = id => String(document.getElementById(id)?.value || '').trim();
+        const key = value('inp-scenario');
+        const subject = document.getElementById('out-subject');
+        if (!subject) return;
+        const category = labels[key] || 'Zariadenie';
+        const identity = [value('inp-manuf'), value('inp-dev')].filter(Boolean).join(' ');
+        subject.textContent = category + (identity ? ' – ' + identity : '');
+    };
+
     function currentScenarioData() {
         const key = document.getElementById('inp-scenario')?.value || 'plyn';
         const base = SCENARIOS[key] || SCENARIOS.plyn;
@@ -2329,6 +2351,7 @@
         const companyAuth = document.getElementById('out-company-auth');
         if(outTitle) outTitle.textContent = data.title;
         if(outSubtitle) outSubtitle.textContent = data.subtitle || '';
+        window.renderReportSubject();
         if(outLaw) outLaw.textContent = data.law;
         if(outGroup) outGroup.textContent = data.group;
         if(techHeading) techHeading.textContent = data.techHeading || 'TECHNIK / ÚDAJE';
