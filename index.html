@@ -11,7 +11,7 @@
   <div id="rs2-loader" style="font-family:Arial,sans-serif;padding:24px;text-align:center">Načítavam RS2…</div>
   <script>
   (async () => {
-    const sourceUrl = './rs2-app-v2.html?v=20261018-document-photo';
+    const sourceUrl = './rs2-app-v2.html?v=20261024-shared-contacts';
     const closeScript = '</scr' + 'ipt>';
     try {
       const response = await fetch(sourceUrl, { cache: 'no-store' });
@@ -24,6 +24,13 @@
         <button class="btn-archive-save" onclick="saveToCloudArchive()">💾 Uložiť do archívu</button>
         <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
         <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
+        <div class="form-group" id="shared-contacts-login" style="background:#f0f9ff;padding:10px;border-radius:6px;">
+            <label>Spoločný adresár (Ponuky · Servis · RS2)</label>
+            <input type="email" id="shared-contacts-email" placeholder="E-mail z Cenových ponúk" autocomplete="username">
+            <input type="password" id="shared-contacts-password" placeholder="Heslo" autocomplete="current-password" style="margin-top:6px;">
+            <button type="button" onclick="loginSharedContacts()" style="margin-top:6px;">Prihlásiť adresár</button>
+            <small id="shared-contacts-status" style="display:block;margin-top:6px;color:#6b7280;">Prihláste sa rovnakým účtom ako v Cenových ponukách.</small>
+        </div>
 `;
       const controlsEnd = '    </section>\n\n    <section class="preview-scroll-wrapper">';
       if (html.includes(archiveBlock) && html.includes(controlsEnd)) {

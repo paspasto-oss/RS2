@@ -632,6 +632,13 @@
         <button class="btn-archive-save" onclick="saveToCloudArchive()">💾 Uložiť do archívu</button>
         <button class="btn-archive-view" onclick="openArchive()">📂 Otvoriť archív</button>
         <div class="cloud-status" id="cloud-status-text">Pripájanie k cloudu...</div>
+        <div class="form-group" id="shared-contacts-login" style="background:#f0f9ff;padding:10px;border-radius:6px;">
+            <label>Spoločný adresár (Ponuky · Servis · RS2)</label>
+            <input type="email" id="shared-contacts-email" placeholder="E-mail z Cenových ponúk" autocomplete="username">
+            <input type="password" id="shared-contacts-password" placeholder="Heslo" autocomplete="current-password" style="margin-top:6px;">
+            <button type="button" onclick="loginSharedContacts()" style="margin-top:6px;">Prihlásiť adresár</button>
+            <small id="shared-contacts-status" style="display:block;margin-top:6px;color:#6b7280;">Prihláste sa rovnakým účtom ako v Cenových ponukách.</small>
+        </div>
 
         <div class="section-title">Základné údaje</div>
         <div class="form-group">
@@ -915,6 +922,7 @@
     </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0/dist/umd/supabase.min.js"></script>
 <!-- Firebase Modular SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
@@ -938,6 +946,38 @@
 
     let user = null;
     let openedArchiveId = null, saveBusy = false;
+    let sharedContactsClient = null, sharedContactsUser = null;
+
+    function sharedStatus(text, ok = false) {
+        const el = document.getElementById('shared-contacts-status');
+        if (el) { el.textContent = text; el.style.color = ok ? '#047857' : '#6b7280'; }
+    }
+
+    async function initSharedContacts() {
+        if (!window.supabase) return sharedStatus('Spoločný adresár sa nenačítal. Skontrolujte internet.');
+        sharedContactsClient = window.supabase.createClient('https://rrakzoicawqbcpnzavet.supabase.co','sb_publishable_ZZOAMeOcSHS6IGghKIu1lA_xss5sJzK',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'spektra-rs2-auth'}});
+        sharedContactsClient.auth.onAuthStateChange((_event, session) => {
+            sharedContactsUser = session?.user || null;
+            document.getElementById('shared-contacts-login').hidden = !!sharedContactsUser;
+            sharedStatus(sharedContactsUser ? 'Spoločný adresár je pripojený.' : 'Prihláste sa rovnakým účtom ako v Cenových ponukách.', !!sharedContactsUser);
+            if (sharedContactsUser) loadSavedContacts();
+        });
+        const { data } = await sharedContactsClient.auth.getUser();
+        sharedContactsUser = data.user || null;
+        document.getElementById('shared-contacts-login').hidden = !!sharedContactsUser;
+        if (sharedContactsUser) { sharedStatus('Spoločný adresár je pripojený.', true); await loadSavedContacts(); }
+    }
+    window.loginSharedContacts = async () => {
+        if (!sharedContactsClient) await initSharedContacts();
+        const email = document.getElementById('shared-contacts-email').value.trim();
+        const password = document.getElementById('shared-contacts-password').value;
+        if (!email || !password) return alert('Zadajte e-mail a heslo z Cenových ponúk.');
+        const { data, error } = await sharedContactsClient.auth.signInWithPassword({ email, password });
+        if (error || !data.user) return alert('Prihlásenie adresára sa nepodarilo. Skontrolujte e-mail a heslo.');
+        sharedContactsUser = data.user; document.getElementById('shared-contacts-login').hidden = true;
+        sharedStatus('Spoločný adresár je pripojený.', true); await loadSavedContacts();
+    };
+    initSharedContacts().catch(error => { console.warn('Shared contacts init failed', error); sharedStatus('Spoločný adresár je dočasne nedostupný.'); });
 
     // RULE 3 - Auth s fallbackom pri chybe tokenu
     const initAuth = async () => {
@@ -1027,19 +1067,37 @@
     }
 
     async function loadSavedContacts() {
-        if (!user) return;
+        const unique = new Map();
         try {
-            const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
-            const unique = new Map();
-            snapshot.forEach(record => {
-                const customer = record.data()?.customer || {};
-                if (customer.name || customer.company) unique.set(contactKey(customer), customer);
-            });
-            savedContacts = [...unique.values()].sort((a,b) => String(a.name || a.company || '').localeCompare(String(b.name || b.company || ''), 'sk'));
-            renderContactSuggestions();
+            if (user) {
+                const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'inspections'));
+                snapshot.forEach(record => { const customer = record.data()?.customer || {}; if (customer.name || customer.company) unique.set(contactKey(customer), customer); });
+            }
         } catch (error) {
             console.warn('Contact database load failed', error);
         }
+        try {
+            if (sharedContactsClient && sharedContactsUser) {
+                const { data, error } = await sharedContactsClient.from('customers').select('id,name,company,phone,email,address,street,city,notes').eq('archived',false).order('name');
+                if (error) throw error;
+                for (const row of data || []) {
+                    const customer = {...row, street:row.street || row.address || '', city:row.city || ''};
+                    unique.set('shared:'+row.id, customer);
+                }
+            }
+        } catch (error) { console.warn('Shared contact database load failed', error); sharedStatus('Spoločný adresár sa nepodarilo načítať. Zobrazené sú kontakty z RS2.'); }
+        savedContacts = [...unique.values()].sort((a,b) => String(a.name || a.company || '').localeCompare(String(b.name || b.company || ''), 'sk'));
+        renderContactSuggestions();
+    }
+
+    async function saveSharedContact(customer = {}) {
+        if (!sharedContactsClient || !sharedContactsUser || (!customer.name && !customer.company)) return;
+        let existing = null;
+        if (customer.phone) { const r = await sharedContactsClient.from('customers').select('id').eq('phone',customer.phone).limit(1).maybeSingle(); existing = r.data; }
+        if (!existing && customer.email) { const r = await sharedContactsClient.from('customers').select('id').ilike('email',customer.email).limit(1).maybeSingle(); existing = r.data; }
+        const now = new Date().toISOString(), values = {name:customer.name || customer.company,company:customer.company || null,phone:customer.phone || null,email:customer.email || null,street:customer.street || null,city:customer.city || null,address:[customer.street,customer.city].filter(Boolean).join(', ') || null,updated_at:now,updated_by:sharedContactsUser.id,source_app:'rs2',archived:false};
+        const result = existing ? await sharedContactsClient.from('customers').update(values).eq('id',existing.id) : await sharedContactsClient.from('customers').insert({...values,created_by:sharedContactsUser.id});
+        if (result.error) throw result.error;
     }
 
     window.applySavedContact = (value, field = 'name') => {
@@ -1182,6 +1240,7 @@
             });
             openedArchiveId = docId;
             const savedCustomer = data.customer || {};
+            try { await saveSharedContact(savedCustomer); } catch (error) { console.warn('Shared contact save failed', error); }
             if (savedCustomer.name || savedCustomer.company) {
                 const key = contactKey(savedCustomer);
                 if (!savedContacts.some(c => contactKey(c) === key)) savedContacts.push(savedCustomer);

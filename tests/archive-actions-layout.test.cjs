@@ -46,7 +46,8 @@ test('archive controls are last in the form and outside the printable preview', 
   assert.ok(save > controls.indexOf('class="btn-print"'));
   assert.ok(view > save);
   assert.ok(status > view);
-  assert.match(controls, /id="cloud-status-text">Pripájanie k cloudu\.\.\.<\/div>\s*$/);
+  assert.match(controls, /id="cloud-status-text">Pripájanie k cloudu\.\.\.<\/div>[\s\S]*id="shared-contacts-login"[\s\S]*$/);
+  assert.equal((output.match(/id="shared-contacts-login"/g) || []).length, 1);
   for (const name of ['btn-archive-save', 'btn-archive-view']) {
     assert.deepEqual(output.match(archiveButton(name)), source.match(archiveButton(name)));
     assert.equal(output.match(archiveButton(name)).length, 1);
