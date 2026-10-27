@@ -1,0 +1,7 @@
+{
+  "framework": null,
+  "installCommand": "npm install --prefix apps/next --ignore-scripts --no-audit --no-fund",
+  "buildCommand": "npm --prefix apps/next run build",
+  "outputDirectory": "apps/next/dist",
+  "headers": [{"source":"/(.*)","headers":[{"key":"X-Robots-Tag","value":"noindex, nofollow"},{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"no-referrer"},{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"}]},{"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache"}]}]
+}
