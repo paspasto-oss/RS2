@@ -3680,6 +3680,23 @@
     changeScenario();
     setTimeout(showLabelScanModal, 250);
 </script>
+<script>
+/* Select the existing value once on entry; subsequent clicks can position the caret. */
+(() => {
+  const types = new Set(['text', 'number', 'email', 'tel', 'url', 'search']);
+  let entering = null;
+  const editable = el => el instanceof HTMLInputElement && types.has(el.type) && !el.disabled && !el.readOnly;
+  const select = el => { if (editable(el) && el.value) el.select(); };
+  document.addEventListener('pointerdown', event => {
+    entering = editable(event.target) && document.activeElement !== event.target ? event.target : null;
+  }, true);
+  document.addEventListener('focusin', event => { select(event.target); });
+  document.addEventListener('click', event => {
+    if (entering === event.target && document.activeElement === event.target) select(event.target);
+    entering = null;
+  });
+  document.addEventListener('pointercancel', () => { entering = null; }, true);
+})();
+</script>
 </body>
 </html>
-
