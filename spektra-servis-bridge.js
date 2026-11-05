@@ -42,6 +42,7 @@
   set('inp-dev',d?.model);set('inp-manuf',d?.manufacturer);set('inp-sn',d?.serial);
   set('inp-location-note',[j.number,j.title,j.issue].filter(Boolean).join('\n'));
   window.render();document.getElementById('inp-name').dispatchEvent(new Event('input',{bubbles:true}));
+  window.selectSharedCustomer?.({...c,directoryAddress:c.address||''});
   return {prefilled:true};
 
  }
